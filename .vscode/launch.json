@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Debug React",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}",
+            "userDataDir": false
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Node.js Server",
+            "program": "${workspaceFolder}/server/src/app.js",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
