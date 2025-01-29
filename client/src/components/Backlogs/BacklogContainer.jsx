@@ -38,7 +38,6 @@ export const BacklogContainer = ({
       });
 
       if (currentStatusId !== targetStatusId) {
-        const wipStatusId = findStatusByType('wip');
 
         if (statusName.toLowerCase() === 'wip') {
           if (!taskData.resourceId) {
