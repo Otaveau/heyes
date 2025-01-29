@@ -1,0 +1,34 @@
+/* Style pour l'en-tête des mois */
+.fc .month-header {
+  background-color: #f8f9fa !important;
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+}
+
+/* Styles pour les labels des jours spéciaux */
+.fc .holiday-slot,
+.fc .holiday-lane {
+  background-color: rgba(240, 240, 240, 0.5) !important;
+}
+
+.fc .weekend-slot,
+.fc .weekend-lane {
+  background-color: rgba(240, 240, 240, 0.5) !important;
+}
+
+/* Nouveaux styles pour les colonnes complètes */
+.fc .holiday-column {
+  background-color: rgba(240, 240, 240, 0.5) !important;
+}
+
+.fc .weekend-column {
+  background-color: rgba(240, 240, 240, 0.5) !important;
+}
+
+/* Styles pour le texte des créneaux */
+.fc .holiday-slot .fc-timeline-slot-cushion,
+.fc .weekend-slot .fc-timeline-slot-cushion {
+  color: #666;
+}

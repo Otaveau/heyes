@@ -1,0 +1,5 @@
+.mainContainer {
+  width: 1800px;
+  display: flex;
+  justify-content: center;
+}
