@@ -1,4 +1,3 @@
-const { request } = require('../app');
 const { Task } = require('../models/Task');
 
 const getTasks = async (req, res) => {
@@ -25,14 +24,14 @@ const getTaskById = async (req, res) => {
 };
 
 const createTask = async (req, res) => {
-  console.log('request :', req.body);
-  const { title, start_date, end_date, owner_id, status } = req.body;
+  console.log('Create task request:', req.body);
+  const { title, start_date, end_date, owner_id, status_id } = req.body; // Changé status en status_id
   const data = {
     title,
     startDate: start_date,
     endDate: end_date,
     ownerId: owner_id,
-    statusId: status, // Assurez-vous que `status` est bien l'ID attendu
+    statusId: status_id, // Utilisation de status_id au lieu de status
   };
   try {
     const task = await Task.create(data, req.user.id);
@@ -44,13 +43,13 @@ const createTask = async (req, res) => {
 
 const updateTask = async (req, res) => {
   const { id } = req.params;
-  const { title, start_date, end_date, owner_id, status } = req.body;
+  const { title, start_date, end_date, owner_id, status_id } = req.body; // Changé status en status_id
   const data = {
     title,
     startDate: start_date,
     endDate: end_date,
     ownerId: owner_id,
-    statusId: status,
+    statusId: status_id, // Utilisation de status_id au lieu de status
   };
   try {
     const task = await Task.update(id, data, req.user.id);
@@ -64,13 +63,14 @@ const updateTask = async (req, res) => {
 const updateTaskStatus = async (req, res) => {
   const { id } = req.params;
   const { statusId } = req.body;
+  console.log('Updating task status:', { taskId: id, statusId });
 
   try {
-      const task = await Task.updateStatus(id, statusId, req.user.id);
-      if (!task) return res.status(404).json({ error: 'Task not found' });
-      res.json(task);
+    const task = await Task.updateStatus(id, statusId, req.user.id);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    res.json(task);
   } catch (error) {
-      res.status(400).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 };
 

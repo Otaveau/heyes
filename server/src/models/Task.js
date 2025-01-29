@@ -24,6 +24,9 @@ class Task {
   }
 
   static async updateStatus(id, statusId, userId) {
+    console.log('updateStatus id :', id);
+    console.log('updateStatus statusId :', statusId);
+    console.log('updateStatus userId :', userId);
     const result = await pool.query(
       'UPDATE tasks SET status_id = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
       [statusId, id, userId]
