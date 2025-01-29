@@ -1,68 +1,72 @@
-import React, { useState, useEffect } from 'react';
-import { createTask } from '../../services/apiService';
-import { syncTaskWithBacklog } from '../../utils/CalendarUtils';
+import React, { useState, useEffect, useCallback } from 'react';
 
-export const TaskForm = ({
-    isOpen,
-    onClose,
-    selectedDates,
-    selectedTask,
-    resources = [], // Valeur par défaut
-    statuses = [],
-    onSubmit,
-    fromBacklog
+export const TaskForm = ({ 
+    isOpen, 
+    onClose, 
+    selectedDates, 
+    selectedTask, 
+    resources = [], 
+    statuses = [], 
+    onSubmit 
 }) => {
     const defaultStartDate = new Date().toISOString().split('T')[0];
-    const getInitialStatusId = (statuses) => {
-        const entrantStatus = statuses.find(s => s.status_type.toLowerCase() === 'entrant');
-        return entrantStatus ? entrantStatus.status_id : '';
-    };
+    
+    const formatDate = useCallback((date) => {
+        if (!date) return defaultStartDate;
+        
+        try {
+            // Si la date est une chaîne ISO, on l'utilise directement
+            if (typeof date === 'string') {
+                // Vérifier si la date est déjà au format YYYY-MM-DD
+                if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    return date;
+                }
+                // Sinon, on essaie de la convertir
+                return new Date(date).toISOString().split('T')[0];
+            }
+            // Si c'est un objet Date
+            if (date instanceof Date) {
+                return date.toISOString().split('T')[0];
+            }
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return defaultStartDate;
+        }
+        return defaultStartDate;
+    }, [defaultStartDate]);
+
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        startDate: selectedDates?.start ? selectedDates.start.toISOString().split('T')[0] : defaultStartDate,
-        endDate: selectedDates?.end ? selectedDates.end.toISOString().split('T')[0] : defaultStartDate,
+        startDate: formatDate(selectedDates?.start),
+        endDate: formatDate(selectedDates?.end),
         resourceId: selectedDates?.resourceId || '',
-        status_id: getInitialStatusId(statuses)
+        status_id: ''
     });
 
-    // Effet pour initialiser le formulaire avec les valeurs de la tâche sélectionnée ou les dates sélectionnées
     useEffect(() => {
         if (selectedTask) {
             setFormData({
                 title: selectedTask.title || '',
                 description: selectedTask.description || '',
-                startDate: new Date(selectedTask.start).toISOString().split('T')[0],
-                endDate: new Date(selectedTask.end).toISOString().split('T')[0],
+                startDate: formatDate(selectedTask.start),
+                endDate: formatDate(selectedTask.end),
                 resourceId: selectedTask.resourceId || '',
-                status_id: selectedTask.status_id || selectedTask.status || getInitialStatusId(statuses)
+                status_id: selectedTask.status_id || ''
             });
         } else if (selectedDates) {
             setFormData(prev => ({
                 ...prev,
-                startDate: new Date(selectedDates.start).toISOString().split('T')[0],
-                endDate: new Date(selectedDates.end).toISOString().split('T')[0],
+                startDate: formatDate(selectedDates.start),
+                endDate: formatDate(selectedDates.end),
                 resourceId: selectedDates.resourceId || ''
             }));
         }
-    }, [selectedTask, selectedDates, statuses]);
+    }, [selectedTask, selectedDates, formatDate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (fromBacklog && !formData.resourceId) {
-            alert('Une ressource doit être sélectionnée');
-            return;
-        }
-
-        const updatedTask = await onSubmit(formData, selectedTask?.id);
-
-        if (fromBacklog && updatedTask) {
-            // Créer une copie dans le calendrier
-            const calendarTask = syncTaskWithBacklog(updatedTask, 'backlog');
-            await createTask(calendarTask);
-        }
-
+        await onSubmit(formData, selectedTask?.id);
         onClose();
     };
 
@@ -77,15 +81,8 @@ export const TaskForm = ({
     if (!isOpen) return null;
 
     return (
-        <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                    onClose();
-                }
-            }}
-        >
-            <div className="bg-white p-6 rounded-lg w-96 relative z-50 shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg w-96 relative">
                 <h2 className="text-xl font-bold mb-4">
                     {selectedTask ? 'Modifier la tâche' : 'Nouvelle tâche'}
                 </h2>
@@ -117,11 +114,10 @@ export const TaskForm = ({
                             value={formData.resourceId}
                             onChange={handleChange}
                             className="w-full border rounded p-2"
-                            required
                         >
                             <option value="">Sélectionner une personne</option>
                             {resources.map(resource => (
-                                <option key={`resource-${resource.id}`} value={resource.id}>
+                                <option key={resource.id} value={resource.id}>
                                     {resource.title}
                                 </option>
                             ))}
@@ -158,11 +154,9 @@ export const TaskForm = ({
                             className="w-full border rounded p-2"
                             required
                         >
+                            <option value="">Sélectionner un statut</option>
                             {statuses.map(status => (
-                                <option
-                                    key={`status-${status.status_id}`}
-                                    value={status.status_id}
-                                >
+                                <option key={status.status_id} value={status.status_id}>
                                     {status.status_type}
                                 </option>
                             ))}

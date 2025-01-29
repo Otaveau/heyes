@@ -15,7 +15,14 @@ const CalendarView = () => {
   const { tasks, setTasks, resources, holidays, statuses } = useCalendarData();
 
   const getStatusIdByType = (type) => {
-    const status = statuses.find(s => s.status_type.toLowerCase() === type.toLowerCase());
+    if (!type || !statuses || statuses.length === 0) {
+      return null; // ou une valeur par défaut appropriée
+    }
+    
+    const status = statuses.find(s => 
+      s.status_type && s.status_type.toLowerCase() === type.toLowerCase()
+    );
+    
     return status?.status_id;
   };
 
@@ -46,8 +53,8 @@ const CalendarView = () => {
         endDate: info.event.end
       };
       await updateTask(info.event.id, updatedData);
-      setTasks(tasks.map(task => 
-        task.id === info.event.id 
+      setTasks(tasks.map(task =>
+        task.id === info.event.id
           ? { ...task, start: info.event.start, end: info.event.end }
           : task
       ));
@@ -68,34 +75,68 @@ const CalendarView = () => {
   const handleEventDrop = async (dropInfo) => {
     const { event } = dropInfo;
     const resourceId = event.getResources()[0]?.id;
-    
+
     try {
-      const updatedData = {
-        startDate: event.start,
-        endDate: event.end,
-        ownerId: resourceId,
-        status_id: getStatusIdByType('wip'),  // Changé statusId en status_id
-        title: event.title,
-        description: event.extendedProps.description
-      };
-      
-      await updateTask(event.id, updatedData);
-      setTasks(tasks.map(task => 
-        task.id === event.id 
-          ? { 
-              ...task, 
-              start: updatedData.startDate,
-              end: updatedData.endDate,
-              resourceId: updatedData.ownerId,
-              status_id: updatedData.status_id,
-              title: updatedData.title,
-              description: updatedData.description
+      console.log('Drop event:', {
+        event,
+        eventProps: event.extendedProps,
+        resourceId
+      });
+
+      // Si l'événement vient d'un backlog
+      if (event.extendedProps.source === 'backlog') {
+        const wipStatusId = getStatusIdByType('wip');
+
+        // Créer une nouvelle tâche avec le statut WIP
+        const newTaskData = {
+          title: event.title,
+          description: event.extendedProps.description,
+          startDate: event.start,
+          endDate: event.end || new Date(event.start.getTime() + 24 * 60 * 60 * 1000), // +1 jour si pas de date de fin
+          ownerId: resourceId,
+          status_id: wipStatusId
+        };
+
+        console.log('Creating new task:', newTaskData);
+
+        // Créer la nouvelle tâche
+        const newTask = await createTask(newTaskData);
+
+        // Ajouter la nouvelle tâche à l'état local
+        setTasks(prevTasks => [...prevTasks, {
+          id: newTask.id,
+          title: newTask.title,
+          start: newTask.start_date,
+          end: newTask.end_date,
+          resourceId: newTask.owner_id,
+          description: newTask.description,
+          status_id: wipStatusId
+        }]);
+
+      } else {
+        // Comportement normal pour les tâches déjà dans le calendrier
+        const updatedData = {
+          startDate: event.start,
+          endDate: event.end || event.start,
+          ownerId: resourceId,
+          title: event.title
+        };
+
+        await updateTask(event.id, updatedData);
+        setTasks(tasks.map(task =>
+          task.id === event.id
+            ? {
+              ...task,
+              start: event.start,
+              end: event.end || event.start,
+              resourceId
             }
-          : task
-      ));
+            : task
+        ));
+      }
     } catch (error) {
+      console.error('Drop error:', error);
       dropInfo.revert();
-      console.error('Error updating task:', error);
     }
   };
 
@@ -111,18 +152,18 @@ const CalendarView = () => {
           end_date: formData.endDate,
           status_id: formData.status_id  // Changé status en status_id
         };
-        
+
         await updateTask(taskId, updatedData);
-        setTasks(tasks.map(task => 
+        setTasks(tasks.map(task =>
           task.id === taskId
             ? {
-                ...task,
-                title: formData.title,
-                start: formData.startDate,
-                end: formData.endDate,
-                resourceId: formData.resourceId,
-                status_id: formData.status_id  // Changé status en status_id
-              }
+              ...task,
+              title: formData.title,
+              start: formData.startDate,
+              end: formData.endDate,
+              resourceId: formData.resourceId,
+              status_id: formData.status_id  // Changé status en status_id
+            }
             : task
         ));
       } else {
@@ -151,16 +192,16 @@ const CalendarView = () => {
     try {
       console.log('Updating task status:', { taskId, status_id: statusId });
       const updatedTask = await updateTaskStatus(taskId, statusId);
-      
-      setTasks(currentTasks => currentTasks.map(task => 
-        task.id === taskId 
+
+      setTasks(currentTasks => currentTasks.map(task =>
+        task.id === taskId
           ? {
-              ...task,
-              status_id: statusId,
-              owner_id: updatedTask.owner_id,
-              start_date: updatedTask.start_date,
-              end_date: updatedTask.end_date
-            }
+            ...task,
+            status_id: statusId,
+            owner_id: updatedTask.owner_id,
+            start_date: updatedTask.start_date,
+            end_date: updatedTask.end_date
+          }
           : task
       ));
     } catch (error) {

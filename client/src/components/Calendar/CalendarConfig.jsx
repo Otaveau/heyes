@@ -13,6 +13,7 @@ export const createCalendarOptions = ({
     handleDateSelect,
     handleEventResize,
     handleEventClick,
+    handleEventDrop
 }) => {
 
     const isHoliday = (date) => {
@@ -33,8 +34,72 @@ export const createCalendarOptions = ({
         plugins: [resourceTimelinePlugin, interactionPlugin, dayGridPlugin, timeGridPlugin],
         initialView: 'resourceTimelineYear',
         eventStartEditable: true,
-        eventDurationEditable: true, 
+        eventDurationEditable: true,
         eventResizableFromStart: true,
+        resourceLabelClassNames: 'resource-label',
+        weekends: showWeekends,
+        editable: true,
+        droppable: true,
+        dropAccept: '.task-card',
+        selectable: true,
+        selectMirror: true,
+        select: handleDateSelect,
+        resourceAreaWidth: '20%',
+        resources,
+        events: tasks.map(task => ({
+            ...task,
+            resourceId: task.resourceId || task.owner_id
+        })),
+        eventClick: handleEventClick, // Ajout de l'option eventClick   // Pour la sélection de dates
+        eventResize: handleEventResize,
+        eventDrop: handleEventDrop,
+        dragRevertDuration: 0,
+        eventOverlap: true, // Permet le chevauchement d'événements
+        eventAllow: () => true, // Permet tous les événements
+        eventDragStart: function (info) {
+            console.log('Calendar: Event drag start', info);
+        },
+        dragStart: (info) => {
+            console.log('Calendar dragStart:', info);
+        },
+        drop: (dropInfo) => {
+            console.log('Calendar drop:', dropInfo);
+            try {
+                const taskData = JSON.parse(dropInfo.draggedEl.dataset.event);
+                console.log('Parsed task data:', taskData);
+                
+                // Créer un nouvel événement à partir des données
+                const event = {
+                    title: taskData.title,
+                    start: dropInfo.date,
+                    end: dropInfo.date,
+                    resourceId: dropInfo.resource?.id,
+                    extendedProps: {
+                        description: taskData.description,
+                        source: 'backlog',
+                        status_id: taskData.status_id
+                    }
+                };
+                
+                // Ajouter l'événement au calendrier
+                const calendarApi = dropInfo.view.calendar;
+                calendarApi.addEvent(event);
+            } catch (error) {
+                console.error('Error handling drop:', error);
+            }
+        },
+        eventReceive: (info) => {
+            console.log('Calendar eventReceive:', info);
+            handleEventDrop({ event: info.event });
+        },
+        eventDragStop: function (info) {
+            console.log('Calendar: Event drag stop', info);
+        },
+        eventConstraint: {
+            startTime: '00:00',
+            endTime: '24:00',
+            dows: [1, 2, 3, 4, 5]
+        },
         headerToolbar: {
             left: 'toggleWeekends',
             center: 'title',
@@ -70,23 +135,6 @@ export const createCalendarOptions = ({
                 return isHoliday(arg.date) ? 'holiday-column' : 'weekend-column';
             }
             return '';
-        },
-        resourceLabelClassNames: 'resource-label',
-        weekends: showWeekends,
-        editable: true,
-        droppable: true,
-        selectable: true,
-        selectMirror: true,
-        select: handleDateSelect,
-        resourceAreaWidth: '20%',
-        resources,
-        events: tasks,
-        eventClick: handleEventClick, // Ajout de l'option eventClick   // Pour la sélection de dates
-        eventResize: handleEventResize,
-        eventConstraint: {
-            startTime: '00:00',
-            endTime: '24:00',
-            dows: [1, 2, 3, 4, 5]
         },
     };
 };
