@@ -11,7 +11,7 @@ export const createCalendarOptions = ({
     tasks,
     showWeekends,
     setShowWeekends,
-    holidays,
+    holidays =[],
     handleDateSelect,
     handleEventResize,
     handleEventClick,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { formatUTCDate } from '../../utils/dateUtils';
-import { getStatusId, formatTasksUtil } from '../../utils/taskFormatters';
+import { formatUTCDate } from '../utils/dateUtils';
+import { getStatusId, formatTasksUtil } from '../utils/taskFormatters';
 import { STATUS_TYPES } from '../constants/constants';
 import { fetchHolidays, getOwners, getTasks, getStatuses } from '../services/apiService';
 

@@ -1,18 +1,20 @@
+import { format } from 'date-fns';
 
 export const isHoliday = (date, holidays) => {
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
-    const dateStr = localDate.toISOString().split('T')[0];
-    return holidays.includes(dateStr);
+  if (!holidays || !Array.isArray(holidays)) return false;
+  
+  const formattedDate = format(date, 'yyyy-MM-dd');
+  return holidays.includes(formattedDate);
 };
 
-export const isHolidayOrWeekend = (date) => {
-    const day = date.getDay();
-    return day === 0 || day === 6 || isHoliday(date);
+export const isHolidayOrWeekend = (date, holidays) => {
+  const dayOfWeek = date.getDay();
+  return dayOfWeek === 0 || dayOfWeek === 6 || isHoliday(date, holidays);
 };
 
 export const formatUTCDate = (dateString) => {
-    const [year, month, day] = dateString.split('-');
-    return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)))
-        .toISOString()
-        .split('T')[0];
+  const [year, month, day] = dateString.split('-');
+  return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)))
+      .toISOString()
+      .split('T')[0];
 };

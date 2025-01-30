@@ -1,5 +1,5 @@
 import { BacklogContainer } from './BacklogContainer';
-import {STATUS_TYPES} from '../../constant/constants';
+import {STATUS_TYPES} from '../../constants/constants';
 
 export const BacklogTaskList = ({ statuses, tasks, onStatusUpdate, resources, onTaskClick }) => {
 

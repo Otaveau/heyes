@@ -7,6 +7,8 @@ import OwnerManagement from './components/Management/OwnerManagement';
 import TeamManagement from './components/Management/TeamManagement';
 import Navigation from './components/ui/navigation';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 const PrivateWrapper = ({ children }) => {
@@ -70,7 +72,18 @@ const AppContent = () => {
 
 const App = () => (
   <AuthProvider>
-    <AppContent />
+    <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      <AppContent />
   </AuthProvider>
 );
 

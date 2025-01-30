@@ -11,3 +11,5 @@ export const STATUS_COLORS = {
   completed: '#A78BFA',
   blocked: '#F87171'
 };
+
+export const DEFAULT_TASK_DURATION = 24 * 60 * 60 * 1000;
