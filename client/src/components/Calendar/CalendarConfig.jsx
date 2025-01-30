@@ -11,7 +11,7 @@ export const createCalendarOptions = ({
     tasks,
     showWeekends,
     setShowWeekends,
-    holidays =[],
+    holidays,
     handleDateSelect,
     handleEventResize,
     handleEventClick,
@@ -115,15 +115,18 @@ export const createCalendarOptions = ({
             }
         ],
         slotLabelClassNames: (arg) => {
+            if (!arg || !arg.date) return [];
             const classes = [];
-            if (arg.level === 1 && isHolidayOrWeekend(arg.date)) {
-                classes.push(isHoliday(arg.date) ? 'holiday-slot' : 'weekend-slot');
+            if (arg.level === 1 && isHolidayOrWeekend(arg.date, holidays)) {
+                classes.push(isHoliday(arg.date, holidays) ? 'holiday-slot' : 'weekend-slot');
             }
             return classes;
         },
+        
         slotLaneClassNames: (arg) => {
-            if (isHolidayOrWeekend(arg.date)) {
-                return isHoliday(arg.date) ? 'holiday-column' : 'weekend-column';
+            if (!arg || !arg.date) return '';
+            if (isHolidayOrWeekend(arg.date, holidays)) {
+                return isHoliday(arg.date, holidays) ? 'holiday-column' : 'weekend-column';
             }
             return '';
         },
