@@ -3,6 +3,8 @@ import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import { isHoliday, isHolidayOrWeekend } from '../../utils/dateUtils';
+
 
 export const createCalendarOptions = ({
     resources,
@@ -15,17 +17,6 @@ export const createCalendarOptions = ({
     handleEventClick,
     handleEventDrop
 }) => {
-
-    const isHoliday = (date) => {
-        const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
-        const dateStr = localDate.toISOString().split('T')[0];
-        return holidays.includes(dateStr);
-    };
-
-    const isHolidayOrWeekend = (date) => {
-        const day = date.getDay();
-        return day === 0 || day === 6 || isHoliday(date);
-    };
 
     return {
         locale: frLocale,

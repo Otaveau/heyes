@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import { createCalendarOptions } from './CalendarConfig';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { TaskForm } from '../Tasks/TaskForm';
 import { BacklogTaskList } from '../Backlogs/BacklogTaskList';
 import { updateTask, createTask, updateTaskStatus } from '../../services/apiService';
+import { getStatusId } from '../../utils/taskFormatters';
 import '../../style/CalendarView.css';
 
 const CalendarView = () => {
@@ -14,19 +15,7 @@ const CalendarView = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const { tasks, setTasks, resources, holidays, statuses } = useCalendarData();
 
-  const getStatusIdByType = (type) => {
-    if (!type || !statuses || statuses.length === 0) {
-      return null; // ou une valeur par défaut appropriée
-    }
-    
-    const status = statuses.find(s => 
-      s.status_type && s.status_type.toLowerCase() === type.toLowerCase()
-    );
-    
-    return status?.status_id;
-  };
-
-  const handleTaskClick = (task) => {
+  const handleTaskClick = useCallback((task) => {
     setSelectedTask({
       id: task.id,
       title: task.title,
@@ -34,19 +23,19 @@ const CalendarView = () => {
       start: task.start,
       end: task.end,
       resourceId: task.resourceId,
-      status_id: task.status_id  // Changé status en status_id
+      status_id: task.status_id
     });
     setIsFormOpen(true);
-  };
+  }, []);
 
-  const handleEventClick = (clickInfo) => {
+  const handleEventClick = useCallback((clickInfo) => {
     const task = tasks.find(t => t.id === parseInt(clickInfo.event.id));
     if (task) {
       handleTaskClick(task);
     }
-  };
+  }, [tasks, handleTaskClick]);
 
-  const handleEventResize = async (info) => {
+  const handleEventResize = useCallback(async (info) => {
     try {
       const updatedData = {
         startDate: info.event.start,
@@ -61,48 +50,36 @@ const CalendarView = () => {
     } catch (error) {
       info.revert();
     }
-  };
+  }, [tasks, setTasks]);
 
-  const handleDateSelect = (selectInfo) => {
+  const handleDateSelect = useCallback((selectInfo) => {
     setSelectedDates({
       start: selectInfo.start,
       end: selectInfo.end,
       resourceId: selectInfo.resource?.id
     });
     setIsFormOpen(true);
-  };
+  }, []);
 
-  const handleEventDrop = async (dropInfo) => {
+  const handleEventDrop = useCallback(async (dropInfo) => {
     const { event } = dropInfo;
     const resourceId = event.getResources()[0]?.id;
 
     try {
-      console.log('Drop event:', {
-        event,
-        eventProps: event.extendedProps,
-        resourceId
-      });
-
-      // Si l'événement vient d'un backlog
       if (event.extendedProps.source === 'backlog') {
-        const wipStatusId = getStatusIdByType('wip');
+        const wipStatusId = getStatusId('wip');
 
-        // Créer une nouvelle tâche avec le statut WIP
         const newTaskData = {
           title: event.title,
           description: event.extendedProps.description,
           startDate: event.start,
-          endDate: event.end || new Date(event.start.getTime() + 24 * 60 * 60 * 1000), // +1 jour si pas de date de fin
+          endDate: event.end || new Date(event.start.getTime() + 24 * 60 * 60 * 1000),
           ownerId: resourceId,
           status_id: wipStatusId
         };
 
-        console.log('Creating new task:', newTaskData);
-
-        // Créer la nouvelle tâche
         const newTask = await createTask(newTaskData);
 
-        // Ajouter la nouvelle tâche à l'état local
         setTasks(prevTasks => [...prevTasks, {
           id: newTask.id,
           title: newTask.title,
@@ -114,7 +91,6 @@ const CalendarView = () => {
         }]);
 
       } else {
-        // Comportement normal pour les tâches déjà dans le calendrier
         const updatedData = {
           startDate: event.start,
           endDate: event.end || event.start,
@@ -138,19 +114,18 @@ const CalendarView = () => {
       console.error('Drop error:', error);
       dropInfo.revert();
     }
-  };
+  }, [tasks, setTasks]);
 
-  const handleSubmit = async (formData, taskId) => {
+  const handleSubmit = useCallback(async (formData, taskId) => {
     try {
       if (taskId) {
-        // Mode modification
         const updatedData = {
           title: formData.title,
           description: formData.description,
           owner_id: formData.resourceId,
           start_date: formData.startDate,
           end_date: formData.endDate,
-          status_id: formData.status_id  // Changé status en status_id
+          status_id: formData.status_id
         };
 
         await updateTask(taskId, updatedData);
@@ -162,16 +137,15 @@ const CalendarView = () => {
               start: formData.startDate,
               end: formData.endDate,
               resourceId: formData.resourceId,
-              status_id: formData.status_id  // Changé status en status_id
+              status_id: formData.status_id
             }
             : task
         ));
       } else {
-        // Mode création
-        const entrantStatusId = getStatusIdByType('entrant'); // Obtenir l'ID du status entrant
+        const entrantStatusId = getStatusId('entrant');
         const response = await createTask({
           ...formData,
-          status_id: entrantStatusId  // Utiliser status_id avec l'ID correct
+          status_id: entrantStatusId
         });
 
         setTasks([...tasks, {
@@ -180,17 +154,17 @@ const CalendarView = () => {
           start: formData.startDate,
           end: formData.endDate,
           resourceId: formData.resourceId,
-          status_id: entrantStatusId  // Utiliser status_id
+          status_id: entrantStatusId
         }]);
       }
     } catch (error) {
       console.error('Error saving task:', error);
     }
-  };
+  }, [tasks, setTasks]);
 
-  const handleStatusUpdate = async (taskId, statusId) => {
+
+  const handleStatusUpdate = useCallback(async (taskId, statusId) => {
     try {
-      console.log('Updating task status:', { taskId, status_id: statusId });
       const updatedTask = await updateTaskStatus(taskId, statusId);
 
       setTasks(currentTasks => currentTasks.map(task =>
@@ -207,9 +181,9 @@ const CalendarView = () => {
     } catch (error) {
       console.error('Error updating task status:', error);
     }
-  };
+  }, [setTasks]);
 
-  const calendarOptions = createCalendarOptions({
+  const calendarOptions = useMemo(() => createCalendarOptions({
     resources,
     tasks,
     showWeekends,
@@ -219,7 +193,7 @@ const CalendarView = () => {
     handleEventResize,
     handleEventClick,
     handleEventDrop
-  });
+  }), [resources, tasks, showWeekends, holidays, handleDateSelect, handleEventResize, handleEventClick, handleEventDrop]);
 
   return (
     <div className="h-screen flex flex-col relative">
