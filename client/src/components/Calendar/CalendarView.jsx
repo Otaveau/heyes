@@ -228,13 +228,11 @@ const CalendarView = () => {
   const handleSubmit = useCallback(async (formData, taskId) => {
     console.log('FormData avant traitement:', formData);
 
-    // Vérification des dates avant l'envoi
     if (!formData.startDate || !formData.endDate) {
         toast.error('Les dates de début et de fin sont requises');
         return;
     }
 
-    // Normaliser les données avant l'envoi
     const sanitizedFormData = {
       title: formData.title,
       description: formData.description || '',
@@ -244,21 +242,26 @@ const CalendarView = () => {
       statusId: formData.statusId,
     }
 
-    console.log('Données à envoyer:', sanitizedFormData);
-
     try {
       if (taskId) {
-        await updateTask(sanitizedFormData, taskId);
+        const updatedTask = await updateTask(sanitizedFormData, taskId);
+        setTasks(prevTasks => prevTasks.map(task =>
+          task.id === taskId
+              ? formatTaskResponse(updatedTask, updatedTask.status_id)
+              : task
+      ));
       } else {
-        await createTask(sanitizedFormData);
+        const newTask = await createTask(sanitizedFormData);
+        setTasks(prevTasks => [...prevTasks, formatTaskResponse(newTask, newTask.status_id)]);
       }
       setCalendarState(prev => ({ ...prev, isFormOpen: false, selectedTask: null }));
+      toast.success(taskId ? 'Tâche mise à jour avec succès' : 'Tâche créée avec succès');
     } catch (error) {
       console.error('Error saving task:', error);
       console.error('Données qui ont causé l\'erreur:', sanitizedFormData);
       toast.error('Erreur lors de la sauvegarde de la tâche');
     }
-  }, []);
+  }, [formatTaskResponse, setTasks]);
 
 
   const handleStatusUpdate = useCallback(async (taskId, statusId) => {
