@@ -68,7 +68,7 @@ export const createCalendarOptions = ({
                     extendedProps: {
                         description: taskData.description,
                         source: 'backlog',
-                        status_id: taskData.status_id
+                        statusId: taskData.statusId
                     }
                 };
                 

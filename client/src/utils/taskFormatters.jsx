@@ -41,10 +41,10 @@ export const getStatusId = (statusList, statusType) => {
     // Si pas de type fourni, retourner le statut "entrant" par défaut
     if (!statusType) {
         const defaultStatus = statusList.find(s =>
-            s.status_type.toLowerCase().trim() === STATUS_TYPES.ENTRANT
+            s.statusType.toLowerCase().trim() === STATUS_TYPES.ENTRANT
         );
         if (defaultStatus) {
-            return defaultStatus.status_id;
+            return defaultStatus.statusId;
         }
         console.warn('Statut entrant non trouvé');
         return null;
@@ -54,7 +54,7 @@ export const getStatusId = (statusList, statusType) => {
     if (typeof statusType === 'number' || !isNaN(Number(statusType))) {
         const numericId = Number(statusType);
         // Vérifier si l'ID existe dans la liste
-        if (statusList.some(s => s.status_id === numericId)) {
+        if (statusList.some(s => s.statusId === numericId)) {
             return numericId;
         }
         console.warn(`ID de statut ${numericId} non trouvé`);
@@ -64,7 +64,7 @@ export const getStatusId = (statusList, statusType) => {
     // Recherche par type
     const normalizedType = statusType.toLowerCase().trim();
     const status = statusList.find(s =>
-        s.status_type.toLowerCase().trim() === normalizedType
+        s.statusType.toLowerCase().trim() === normalizedType
     );
 
     if (!status) {
@@ -72,7 +72,7 @@ export const getStatusId = (statusList, statusType) => {
         return null;
     }
 
-    return status.status_id;
+    return status.statusId;
 };
 
 export const formatTasksUtil = (tasksData, statusesData) => {
@@ -89,23 +89,23 @@ export const formatTasksUtil = (tasksData, statusesData) => {
         return null;
       }
   
-      // Récupération du status_id
-      let taskStatusId = task.status_id;
+      // Récupération du statusId
+      let taskStatusId = task.statusId;
       
-      // Si pas de status_id, essayer de le trouver via le type de statut
+      // Si pas de statusId, essayer de le trouver via le type de statut
       if (!taskStatusId && task.status) {
         const matchingStatus = statusesData.find(s => 
-          s.status_type.toLowerCase().trim() === task.status.toLowerCase().trim()
+          s.statusType.toLowerCase().trim() === task.status.toLowerCase().trim()
         );
-        taskStatusId = matchingStatus?.status_id;
+        taskStatusId = matchingStatus?.statusId;
       }
   
       // Si toujours pas de status, utiliser le statut "entrant" par défaut
       if (!taskStatusId) {
         const defaultStatus = statusesData.find(s => 
-          s.status_type.toLowerCase().trim() === STATUS_TYPES.ENTRANT
+          s.statusType.toLowerCase().trim() === STATUS_TYPES.ENTRANT
         );
-        taskStatusId = defaultStatus?.status_id || statusesData[0]?.status_id || 0;
+        taskStatusId = defaultStatus?.statusId || statusesData[0]?.statusId || 0;
       }
   
       return {
@@ -114,7 +114,7 @@ export const formatTasksUtil = (tasksData, statusesData) => {
         start: task.start_date || task.startDate || new Date().toISOString(),
         end: task.end_date || task.endDate || new Date().toISOString(),
         resourceId: task.owner_id || task.resourceId,
-        status_id: taskStatusId,
+        statusId: taskStatusId,
         extendedProps: {
           description: task.description || '',
           originalStatus: task.status,

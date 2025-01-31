@@ -17,16 +17,15 @@ export const BacklogTaskList = ({ statuses, tasks, onStatusUpdate, resources, on
 
     // Trier les statuts selon l'ordre défini
     const sortedStatuses = [...statuses].sort((a, b) => {
-        const orderA = getStatusOrderIndex(a.status_type);
-        const orderB = getStatusOrderIndex(b.status_type);
+        const orderA = getStatusOrderIndex(a.statusType);
+        const orderB = getStatusOrderIndex(b.statusType);
         return orderA - orderB;
     });
 
     const filterTasksByStatus = (tasks, statusId) => {
         return tasks.filter(task => {
-            const taskStatusId = parseInt(task.status_id || task.status);
+            const taskStatusId = task.statusId;
             const compareStatusId = parseInt(statusId);
-
             return taskStatusId === compareStatusId;
         });
     };
@@ -36,9 +35,8 @@ export const BacklogTaskList = ({ statuses, tasks, onStatusUpdate, resources, on
         <div className="bg-gray-100 p-4">
             <div className="flex gap-4">
                 {sortedStatuses.map(status => {
-                    
-                    const statusId = status.status_id;
-                    const statusName = status.status_type;
+                    const statusId = status.statusId;
+                    const statusName = status.statusType;
                     
                     const filteredTasks = filterTasksByStatus(tasks, statusId);
 

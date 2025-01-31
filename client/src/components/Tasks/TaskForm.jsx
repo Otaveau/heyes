@@ -1,35 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { formatUTCDate } from '../../utils/dateUtils';
 
-export const TaskForm = ({ 
-    isOpen, 
-    onClose, 
-    selectedDates, 
-    selectedTask, 
-    resources = [], 
+export const TaskForm = ({
+    isOpen,
+    onClose,
+    selectedDates,
+    selectedTask,
+    resources = [],
     statuses = [],
-    onSubmit 
+    backlogs = [],
+    onSubmit
 }) => {
     const defaultStartDate = new Date().toISOString().split('T')[0];
-    
+
     const [formData, setFormData] = useState({
         title: '',
-        description: '',
+        description: '',  // Déjà présent mais on s'assure qu'il est bien initialisé
         startDate: formatUTCDate(selectedDates?.start) || defaultStartDate,
         endDate: formatUTCDate(selectedDates?.end) || defaultStartDate,
         resourceId: selectedDates?.resourceId || '',
-        status_id: selectedDates?.resourceId ? '2' : ''
+        statusId: selectedDates?.resourceId ? '2' : ''
     });
 
     useEffect(() => {
         if (selectedTask) {
             setFormData({
                 title: selectedTask.title || '',
-                description: selectedTask.description || '',
+                description: selectedTask.description || '',  // Gestion du null
                 startDate: formatUTCDate(selectedTask.start) || defaultStartDate,
                 endDate: formatUTCDate(selectedTask.end) || defaultStartDate,
                 resourceId: selectedTask.resourceId || '',
-                status_id: selectedTask.resourceId ? '2' : (selectedTask.status_id || '')
+                statusId: selectedTask.resourceId ? '2' : (selectedTask.statusId || '')
             });
         } else if (selectedDates) {
             setFormData(prev => ({
@@ -37,10 +38,11 @@ export const TaskForm = ({
                 startDate: formatUTCDate(selectedDates.start) || defaultStartDate,
                 endDate: formatUTCDate(selectedDates.end) || defaultStartDate,
                 resourceId: selectedDates.resourceId || '',
-                status_id: selectedDates.resourceId ? '2' : prev.status_id
+                statusId: selectedDates.resourceId ? '2' : prev.statusId
             }));
         }
     }, [selectedTask, selectedDates, defaultStartDate]);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -55,7 +57,7 @@ export const TaskForm = ({
                 ...prev,
                 [name]: value
             };
-            if (name === 'resourceId' && value !== '') { newData.status_id = '2'; }
+            if (name === 'resourceId' && value !== '') { newData.statusId = '2'; }
             return newData;
         });
     };
@@ -92,9 +94,11 @@ export const TaskForm = ({
                         <label className="block mb-1">Description</label>
                         <textarea
                             name="description"
-                            value={formData.description}
+                            value={formData.description || ''}  // Gérer le cas null
                             onChange={handleChange}
                             className="w-full border rounded p-2"
+                            rows="4"  // Ajout d'une hauteur par défaut
+                            placeholder="Description optionnelle de la tâche"  // Ajout d'un placeholder
                         />
                     </div>
                     <div>
@@ -138,8 +142,8 @@ export const TaskForm = ({
                     <div>
                         <label className="block mb-1">Statut</label>
                         <select
-                            name="status_id"
-                            value={formData.status_id}
+                            name="statusId"
+                            value={formData.statusId}
                             onChange={handleChange}
                             className={getSelectClassName(formData.resourceId !== '')}
                             required
@@ -147,8 +151,8 @@ export const TaskForm = ({
                         >
                             <option value="">Sélectionner un statut</option>
                             {statuses.map(status => (
-                                <option key={status.status_id} value={status.status_id}>
-                                    {status.status_type}
+                                <option key={status.statusId} value={status.statusId}>
+                                    {status.statusType}
                                 </option>
                             ))}
                         </select>

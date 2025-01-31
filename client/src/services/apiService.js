@@ -1,4 +1,5 @@
 import { API_URL } from "../constants/constants";
+import { formatUTCDate } from "../utils/dateUtils";
 
 
 // Task APIs
@@ -13,9 +14,9 @@ export const fetchTasks = async () => {
   const formattedTasks = tasks.map(task => ({
     id: task.id,
     title: task.title,
-    description: task.description,
     startDate: task.start_date,
     endDate: task.end_date,
+    description: task.description,
     ownerId: task.owner_id,
     statusId: task.status_id,
     userId: task.user_id
@@ -28,10 +29,15 @@ export const fetchTasks = async () => {
 export const createTask = async (taskData) => {
   console.log('createTask taskData:', taskData);
 
+  if (!taskData.startDate || !taskData.endDate) {
+    throw new Error('Les dates de début et de fin sont requises');
+  }
+
   const formattedData = {
     title: taskData.title,
-    startDate: taskData.startDate,
-    endDate: taskData.endDate,
+    startDate: taskData.startDate ? formatUTCDate(taskData.startDate) : null,
+    endDate: taskData.endDate ? formatUTCDate(taskData.endDate) : null,
+    description: taskData.description || '',
     ownerId: taskData.ownerId,
     statusId: taskData.statusId
   };
@@ -229,15 +235,25 @@ export const getTeamOwners = async (teamId) => {
   return handleResponse(response);
 };
 
-
 // Status APIs
 export const fetchStatuses = async () => {
   const response = await fetch(`${API_URL}/status`, {
     headers: getAuthHeaders()
   });
-  console.log('response Status : ', response);
-  return handleResponse(response);
+
+  const statuses = await handleResponse(response);
+  console.log('response statuses : ', statuses);
+
+  const formattedStatuses = statuses.map(status => ({
+    id: status.id,
+    statusId: status.status_id,
+    statusType: status.status_type,
+  }));
+
+  console.log('formatted Statuses:', formattedStatuses);
+  return formattedStatuses;
 };
+
 
 // Holidays API
 export const fetchHolidays = async (year) => {

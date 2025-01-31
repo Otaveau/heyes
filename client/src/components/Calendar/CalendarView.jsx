@@ -110,7 +110,8 @@ const CalendarView = () => {
     toast.success(`Tâche "${event.title}" créée depuis le backlog`);
   }, [setTasks, formatTaskResponse]);
 
-  const handleCalendarDrop = useCallback(async (event,  resourceId, statusId) => {
+
+  const handleCalendarDrop = useCallback(async (event, resourceId, statusId) => {
     // Formatage des dates
     const startDate = formatUTCDate(event.start.toISOString());
     const endDate = event.end
@@ -151,6 +152,7 @@ const CalendarView = () => {
     }
   }, [setTasks]);
 
+
   const handleEventDrop = useCallback(async (dropInfo) => {
     const { event } = dropInfo;
     console.log('Event drop info:', {
@@ -188,8 +190,6 @@ const CalendarView = () => {
       endDate
     });
 
-
-    // Vérification explicite des dates
     if (!startDate) {
       console.error('Start date is null after formatting');
       toast.error(`Erreur de format de date pour la tâche "${event.title}"`);
@@ -225,62 +225,41 @@ const CalendarView = () => {
   }, [handleBacklogDrop, handleCalendarDrop]);
 
 
-  const handleTaskUpdate = useCallback(async (formData, taskId) => {
-    const updatedData = {
+  const handleSubmit = useCallback(async (formData, taskId) => {
+    console.log('FormData avant traitement:', formData);
+
+    // Vérification des dates avant l'envoi
+    if (!formData.startDate || !formData.endDate) {
+        toast.error('Les dates de début et de fin sont requises');
+        return;
+    }
+
+    // Normaliser les données avant l'envoi
+    const sanitizedFormData = {
       title: formData.title,
-      description: formData.description,
-      ownerId: formData.resourceId,
+      description: formData.description || '',
       startDate: formData.startDate,
       endDate: formData.endDate,
-      statusId: formData.statusId
-    };
+      ownerId: formData.resourceId,
+      statusId: formData.statusId,
+    }
 
-    await updateTask(taskId, updatedData);
-
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === taskId
-        ? {
-          ...task,
-          title: formData.title,
-          start: formData.startDate,
-          end: formData.endDate,
-          resourceId: formData.resourceId,
-          statusId: formData.statusId
-        }
-        : task
-    ));
-    toast.success(`Tâche "${formData.title}" mise à jour avec succès`);
-  }, [setTasks]);
-
-  const handleTaskCreate = useCallback(async (formData) => {
-
-    console.log('handleTaskCreate formData :', formData);
-    const response = await createTask({
-      ...formData,
-
-    });
-
-    setTasks(prevTasks => [...prevTasks, formatTaskResponse(response)]);
-    toast.success(`Nouvelle tâche "${formData.title}" créée`);
-  }, [setTasks, formatTaskResponse]);
-
-  const handleSubmit = useCallback(async (formData, taskId) => {
-
-    console.log('handleSubmit formData :', formData);
-    console.log('handleSubmit taskId :', taskId);
+    console.log('Données à envoyer:', sanitizedFormData);
 
     try {
       if (taskId) {
-        await handleTaskUpdate(formData, taskId);
+        await updateTask(sanitizedFormData, taskId);
       } else {
-        await handleTaskCreate(formData);
+        await createTask(sanitizedFormData);
       }
       setCalendarState(prev => ({ ...prev, isFormOpen: false, selectedTask: null }));
     } catch (error) {
       console.error('Error saving task:', error);
+      console.error('Données qui ont causé l\'erreur:', sanitizedFormData);
       toast.error('Erreur lors de la sauvegarde de la tâche');
     }
-  }, [handleTaskUpdate, handleTaskCreate]);
+  }, []);
+
 
   const handleStatusUpdate = useCallback(async (taskId, statusId) => {
     try {

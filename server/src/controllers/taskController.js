@@ -23,19 +23,18 @@ const getTaskById = async (req, res) => {
 
 const createTask = async (req, res) => {
   console.log('Create task request:', req.body);
-  const { title, startDate, endDate, ownerId, statusId } = req.body;
-
-  if (!title) {
-    return res.status(400).json({ error: 'Title is required' });
-  }
-
+  const { title, startDate, endDate, description, ownerId, statusId } = req.body;
   const data = {
     title,
-    start_date: startDate ,
+    start_date: startDate,
     end_date: endDate,
-    owner_id: ownerId,
-    status_id: statusId,
+    description: description || null,
+    owner_id: ownerId || null,
+    status_id: statusId || null
   };
+
+  console.log('Data after formatting:', data);
+  
   try {
     const task = await Task.create(data, req.user.id);
     res.status(201).json(task);
@@ -54,6 +53,7 @@ const updateTask = async (req, res) => {
     title,
     start_date: startDate,
     end_date: endDate,
+    description: description,
     owner_id: ownerId,
     status_id: statusId
   };
@@ -91,14 +91,6 @@ const deleteTask = async (req, res) => {
   }
 };
 
-const getTaskTasks = async (req, res) => {
-  try {
-    const tasks = await Task.getTasks(req.params.id, req.user.id);
-    res.json(tasks);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
 module.exports = {
   getTasks,
@@ -106,6 +98,5 @@ module.exports = {
   createTask,
   updateTask,
   deleteTask,
-  getTaskTasks,
   updateTaskStatus
 };

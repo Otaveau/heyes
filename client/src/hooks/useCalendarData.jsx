@@ -55,7 +55,7 @@ export const useCalendarData = () => {
       // Utilisation de la fonction utilitaire pour formater les tâches
       const formattedTasks = formatTasksUtil(tasksData, statusesData);
       setTasks(formattedTasks);
-
+      console.log('fetchTasks :', formattedTasks);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       setError(new Error(errorMessage));

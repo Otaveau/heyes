@@ -8,7 +8,7 @@ export const TaskCard = ({ task, statusName, onTaskClick }) => {
       start: task.start_date || task.start,
       end: task.end_date || task.end,
       resourceId: task.owner_id || task.resourceId,
-      status_id: task.status_id,
+      statusId: task.statusId,
       source: 'backlog'
     };
 
