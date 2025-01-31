@@ -6,6 +6,7 @@ import { TaskForm } from '../Tasks/TaskForm';
 import { BacklogTaskList } from '../Backlogs/BacklogTaskList';
 import { updateTask, createTask, updateTaskStatus } from '../../services/apiService';
 import { getStatusId } from '../../utils/taskFormatters';
+import { formatUTCDate } from '../../utils/dateUtils';
 import { DEFAULT_TASK_DURATION, STATUS_TYPES } from '../../constants/constants';
 import { toast } from 'react-toastify';
 import '../../style/CalendarView.css';
@@ -25,9 +26,9 @@ const CalendarView = () => {
     title: task.title,
     start: task.start_date,
     end: task.end_date,
-    resourceId: task.owner_id,
     description: task.description,
-    status_id: statusId
+    resourceId: task.ownerId,
+    statusId: statusId
   }), []);
 
   const handleTaskClick = useCallback((task) => {
@@ -36,11 +37,11 @@ const CalendarView = () => {
       selectedTask: {
         id: task.id,
         title: task.title,
-        description: task.description,
         start: task.start,
         end: task.end,
+        description: task.description,
         resourceId: task.resourceId,
-        status_id: task.status_id
+        statusId: task.statusId
       },
       isFormOpen: true
     }));
@@ -60,7 +61,7 @@ const CalendarView = () => {
         endDate: info.event.end
       };
       await updateTask(info.event.id, updatedData);
-      
+
       setTasks(prevTasks => prevTasks.map(task =>
         task.id === info.event.id
           ? { ...task, start: info.event.start, end: info.event.end }
@@ -88,13 +89,20 @@ const CalendarView = () => {
 
   const handleBacklogDrop = useCallback(async (event, resourceId) => {
     const wipStatusId = getStatusId(STATUS_TYPES.WIP);
+
+    // Formatage des dates
+    const startDate = formatUTCDate(event.start.toISOString());
+    const endDate = event.end
+      ? formatUTCDate(event.end.toISOString())
+      : formatUTCDate(new Date(event.start.getTime() + DEFAULT_TASK_DURATION).toISOString());
+
     const newTaskData = {
       title: event.title,
+      startDate,
+      endDate,
       description: event.extendedProps.description,
-      startDate: event.start,
-      endDate: event.end || new Date(event.start.getTime() + DEFAULT_TASK_DURATION),
       ownerId: resourceId,
-      status_id: wipStatusId
+      statusId: wipStatusId
     };
 
     const newTask = await createTask(newTaskData);
@@ -102,57 +110,133 @@ const CalendarView = () => {
     toast.success(`Tâche "${event.title}" créée depuis le backlog`);
   }, [setTasks, formatTaskResponse]);
 
-  const handleCalendarDrop = useCallback(async (event, resourceId) => {
+  const handleCalendarDrop = useCallback(async (event,  resourceId, statusId) => {
+    // Formatage des dates
+    const startDate = formatUTCDate(event.start.toISOString());
+    const endDate = event.end
+      ? formatUTCDate(event.end.toISOString())
+      : startDate;
+    const description = event.extendedProps?.description || '';
+
+    // Conversion explicite de resourceId et statusId en nombres
     const updatedData = {
-      startDate: event.start,
-      endDate: event.end || event.start,
+      startDate,
+      endDate,
+      description,
       ownerId: resourceId,
-      title: event.title
+      title: event.title,
+      statusId: statusId
     };
 
-    await updateTask(event.id, updatedData);
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === event.id
-        ? {
-          ...task,
-          start: event.start,
-          end: event.end || event.start,
-          resourceId
-        }
-        : task
-    ));
-    toast.success(`Tâche "${event.title}" déplacée avec succès`);
+    console.log('handleCalendarDrop updatedData:', updatedData);
+
+    try {
+      await updateTask(event.id, updatedData);
+      setTasks(prevTasks => prevTasks.map(task =>
+        task.id === event.id
+          ? {
+            ...task,
+            start: startDate,
+            end: endDate,
+            description,
+            resourceId: parseInt(resourceId, 10),
+            statusId: parseInt(statusId, 10)
+          }
+          : task
+      ));
+      toast.success(`Tâche "${event.title}" déplacée avec succès`);
+    } catch (error) {
+      console.error('Drop error details:', error);
+      throw error;
+    }
   }, [setTasks]);
 
   const handleEventDrop = useCallback(async (dropInfo) => {
     const { event } = dropInfo;
+    console.log('Event drop info:', {
+      event: event,
+      start: event.start,
+      end: event.end,
+      rawStart: event.start?.toISOString(),
+      rawEnd: event.end?.toISOString()
+    });
+
     const resourceId = event.getResources()[0]?.id;
+    const statusId = event.extendedProps.statusId;
+
+    // S'assurer que event.start existe
+    if (!event.start) {
+      console.error('No start date provided');
+      toast.error(`Date de début manquante pour la tâche "${event.title}"`);
+      dropInfo.revert();
+      return;
+    }
+
+    console.log('Dates avant formatage:', {
+      start: event.start,
+      end: event.end
+    });
+
+    // Formatage des dates avec des vérifications supplémentaires
+    const startDate = formatUTCDate(event.start.toISOString());
+    const endDate = event.end
+      ? formatUTCDate(event.end.toISOString())
+      : startDate; // Utiliser la date de début si pas de fin
+
+    console.log('Dates après formatage:', {
+      startDate,
+      endDate
+    });
+
+
+    // Vérification explicite des dates
+    if (!startDate) {
+      console.error('Start date is null after formatting');
+      toast.error(`Erreur de format de date pour la tâche "${event.title}"`);
+      dropInfo.revert();
+      return;
+    }
+
+    const updatedData = {
+      title: event.title,
+      startDate: startDate,
+      endDate: endDate || startDate, // Fallback supplémentaire
+      ownerId: resourceId || event.extendedProps.owner_id,
+      statusId: statusId
+    };
+
+    console.log('Updated data before API call:', updatedData);
 
     try {
       if (event.extendedProps.source === 'backlog') {
-        await handleBacklogDrop(event, resourceId);
+        await handleBacklogDrop(event, updatedData);
       } else {
-        await handleCalendarDrop(event, resourceId);
+        await handleCalendarDrop(event, updatedData);
       }
     } catch (error) {
-      console.error('Drop error:', error);
+      console.error('Drop error details:', {
+        error,
+        eventData: event,
+        updatedData
+      });
       toast.error(`Erreur lors du déplacement de la tâche "${event.title}"`);
       dropInfo.revert();
     }
   }, [handleBacklogDrop, handleCalendarDrop]);
 
+
   const handleTaskUpdate = useCallback(async (formData, taskId) => {
     const updatedData = {
       title: formData.title,
       description: formData.description,
-      owner_id: formData.resourceId,
-      start_date: formData.startDate,
-      end_date: formData.endDate,
-      status_id: formData.status_id
+      ownerId: formData.resourceId,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      statusId: formData.statusId
     };
 
     await updateTask(taskId, updatedData);
-    
+
     setTasks(prevTasks => prevTasks.map(task =>
       task.id === taskId
         ? {
@@ -161,7 +245,7 @@ const CalendarView = () => {
           start: formData.startDate,
           end: formData.endDate,
           resourceId: formData.resourceId,
-          status_id: formData.status_id
+          statusId: formData.statusId
         }
         : task
     ));
@@ -169,17 +253,22 @@ const CalendarView = () => {
   }, [setTasks]);
 
   const handleTaskCreate = useCallback(async (formData) => {
-    const entrantStatusId = getStatusId(STATUS_TYPES.ENTRANT);
+
+    console.log('handleTaskCreate formData :', formData);
     const response = await createTask({
       ...formData,
-      status_id: entrantStatusId
+
     });
 
-    setTasks(prevTasks => [...prevTasks, formatTaskResponse(response, entrantStatusId)]);
+    setTasks(prevTasks => [...prevTasks, formatTaskResponse(response)]);
     toast.success(`Nouvelle tâche "${formData.title}" créée`);
   }, [setTasks, formatTaskResponse]);
 
   const handleSubmit = useCallback(async (formData, taskId) => {
+
+    console.log('handleSubmit formData :', formData);
+    console.log('handleSubmit taskId :', taskId);
+
     try {
       if (taskId) {
         await handleTaskUpdate(formData, taskId);
@@ -202,10 +291,10 @@ const CalendarView = () => {
         task.id === taskId
           ? {
             ...task,
-            status_id: statusId,
-            owner_id: updatedTask.owner_id,
-            start_date: updatedTask.start_date,
-            end_date: updatedTask.end_date
+            statusId: statusId,
+            ownerId: updatedTask.owner_id,
+            startDate: updatedTask.start_date,
+            endDate: updatedTask.end_date
           }
           : task
       ));

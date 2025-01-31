@@ -36,7 +36,6 @@ export const BacklogTaskList = ({ statuses, tasks, onStatusUpdate, resources, on
         <div className="bg-gray-100 p-4">
             <div className="flex gap-4">
                 {sortedStatuses.map(status => {
-                    console.log('Processing backlog for status:', status);
                     
                     const statusId = status.status_id;
                     const statusName = status.status_type;

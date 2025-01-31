@@ -7,7 +7,7 @@
             "name": "Debug React",
             "url": "http://localhost:3000",
             "webRoot": "${workspaceFolder}",
-            "userDataDir": false
+            "userDataDir": true
         },
         {
             "type": "node",

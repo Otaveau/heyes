@@ -1,10 +1,8 @@
 const { Task } = require('../models/Task');
 
 const getTasks = async (req, res) => {
-  console.log('Getting tasks for user:', req.user.id);
   try {
     const tasks = await Task.findAll(req.user.id);
-    console.log('Found tasks:', tasks);
     res.json(tasks);
   } catch (error) {
     console.error('Error:', error);
@@ -25,32 +23,41 @@ const getTaskById = async (req, res) => {
 
 const createTask = async (req, res) => {
   console.log('Create task request:', req.body);
-  const { title, start_date, end_date, owner_id, status_id } = req.body; // Changé status en status_id
+  const { title, startDate, endDate, ownerId, statusId } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ error: 'Title is required' });
+  }
+
   const data = {
     title,
-    startDate: start_date,
-    endDate: end_date,
-    ownerId: owner_id,
-    statusId: status_id, // Utilisation de status_id au lieu de status
+    start_date: startDate ,
+    end_date: endDate,
+    owner_id: ownerId,
+    status_id: statusId,
   };
   try {
     const task = await Task.create(data, req.user.id);
     res.status(201).json(task);
   } catch (error) {
+    console.error('Error creating task:', error);
     res.status(400).json({ error: error.message });
   }
 };
 
 const updateTask = async (req, res) => {
   const { id } = req.params;
-  const { title, start_date, end_date, owner_id, status_id } = req.body; // Changé status en status_id
+  const { title, startDate, endDate, ownerId, statusId } = req.body;
+  
+  // Transformation en snake_case pour le modèle
   const data = {
     title,
-    startDate: start_date,
-    endDate: end_date,
-    ownerId: owner_id,
-    statusId: status_id, // Utilisation de status_id au lieu de status
+    start_date: startDate,
+    end_date: endDate,
+    owner_id: ownerId,
+    status_id: statusId
   };
+
   try {
     const task = await Task.update(id, data, req.user.id);
     if (!task) return res.status(404).json({ error: 'Task not found' });

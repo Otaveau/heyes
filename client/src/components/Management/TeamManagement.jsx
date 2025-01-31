@@ -3,14 +3,14 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Trash2 } from 'lucide-react';
-import { getTeams } from '../../services/apiService';
+import { fetchTeams } from '../../services/apiService';
 
 const TeamManagement = () => {
   const [teams, setTeams] = useState([]);
   const [newTeam, setNewTeam] = useState({ name: '' });
-  const fetchTeams = async () => {
+  const loadTeams = async () => {
     try {
-      const data = await getTeams();
+      const data = await fetchTeams();
       setTeams(data);
     } catch (error) {
       console.error('Error fetching teams:', error);
@@ -18,13 +18,13 @@ const TeamManagement = () => {
   };
 
   useEffect(() => {
-    fetchTeams();
+    loadTeams();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token'); // Récupérez le token stocké
-    
+
     try {
       const response = await fetch('/api/teams', {
         method: 'POST',
@@ -34,7 +34,7 @@ const TeamManagement = () => {
         },
         body: JSON.stringify(newTeam),
       });
-      
+
       if (response.status === 401) {
         // Redirect to login page
         window.location.href = '/login';
@@ -69,7 +69,7 @@ const TeamManagement = () => {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">Gestion des équipes</h2>
-      
+
       <form onSubmit={handleSubmit} className="mb-8">
         <div className="flex gap-4">
           <Input
@@ -87,8 +87,8 @@ const TeamManagement = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {teams.map(team => (
           <Card key={team.id} className="p-4">
-          <div className="space-y-2">
-            <h3 className="font-semibold">{team.name}</h3>
+            <div className="space-y-2">
+              <h3 className="font-semibold">{team.name}</h3>
               <Button
                 variant="ghost"
                 size="icon"

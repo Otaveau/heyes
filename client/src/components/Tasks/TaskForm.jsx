@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { formatUTCDate } from '../../utils/dateUtils';
 
 export const TaskForm = ({ 
     isOpen, 
@@ -6,42 +7,18 @@ export const TaskForm = ({
     selectedDates, 
     selectedTask, 
     resources = [], 
-    statuses = [], 
+    statuses = [],
     onSubmit 
 }) => {
     const defaultStartDate = new Date().toISOString().split('T')[0];
     
-    const formatDate = useCallback((date) => {
-        if (!date) return defaultStartDate;
-        
-        try {
-            // Si la date est une chaîne ISO, on l'utilise directement
-            if (typeof date === 'string') {
-                // Vérifier si la date est déjà au format YYYY-MM-DD
-                if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    return date;
-                }
-                // Sinon, on essaie de la convertir
-                return new Date(date).toISOString().split('T')[0];
-            }
-            // Si c'est un objet Date
-            if (date instanceof Date) {
-                return date.toISOString().split('T')[0];
-            }
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return defaultStartDate;
-        }
-        return defaultStartDate;
-    }, [defaultStartDate]);
-
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        startDate: formatDate(selectedDates?.start),
-        endDate: formatDate(selectedDates?.end),
+        startDate: formatUTCDate(selectedDates?.start) || defaultStartDate,
+        endDate: formatUTCDate(selectedDates?.end) || defaultStartDate,
         resourceId: selectedDates?.resourceId || '',
-        status_id: ''
+        status_id: selectedDates?.resourceId ? '2' : ''
     });
 
     useEffect(() => {
@@ -49,20 +26,21 @@ export const TaskForm = ({
             setFormData({
                 title: selectedTask.title || '',
                 description: selectedTask.description || '',
-                startDate: formatDate(selectedTask.start),
-                endDate: formatDate(selectedTask.end),
+                startDate: formatUTCDate(selectedTask.start) || defaultStartDate,
+                endDate: formatUTCDate(selectedTask.end) || defaultStartDate,
                 resourceId: selectedTask.resourceId || '',
-                status_id: selectedTask.status_id || ''
+                status_id: selectedTask.resourceId ? '2' : (selectedTask.status_id || '')
             });
         } else if (selectedDates) {
             setFormData(prev => ({
                 ...prev,
-                startDate: formatDate(selectedDates.start),
-                endDate: formatDate(selectedDates.end),
-                resourceId: selectedDates.resourceId || ''
+                startDate: formatUTCDate(selectedDates.start) || defaultStartDate,
+                endDate: formatUTCDate(selectedDates.end) || defaultStartDate,
+                resourceId: selectedDates.resourceId || '',
+                status_id: selectedDates.resourceId ? '2' : prev.status_id
             }));
         }
-    }, [selectedTask, selectedDates, formatDate]);
+    }, [selectedTask, selectedDates, defaultStartDate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -72,13 +50,25 @@ export const TaskForm = ({
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => {
+            const newData = {
+                ...prev,
+                [name]: value
+            };
+            if (name === 'resourceId' && value !== '') { newData.status_id = '2'; }
+            return newData;
+        });
     };
 
     if (!isOpen) return null;
+
+    const getSelectClassName = (isDisabled) => {
+        const baseClasses = "w-full border rounded p-2";
+        if (isDisabled) {
+            return `${baseClasses} bg-gray-100 cursor-not-allowed text-gray-700 border-gray-300`;
+        }
+        return baseClasses;
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -128,7 +118,7 @@ export const TaskForm = ({
                         <input
                             type="date"
                             name="startDate"
-                            value={formData.startDate}
+                            value={formData.startDate || ''}
                             onChange={handleChange}
                             className="w-full border rounded p-2"
                             required
@@ -139,7 +129,7 @@ export const TaskForm = ({
                         <input
                             type="date"
                             name="endDate"
-                            value={formData.endDate}
+                            value={formData.endDate || ''}
                             onChange={handleChange}
                             className="w-full border rounded p-2"
                             required
@@ -151,8 +141,9 @@ export const TaskForm = ({
                             name="status_id"
                             value={formData.status_id}
                             onChange={handleChange}
-                            className="w-full border rounded p-2"
+                            className={getSelectClassName(formData.resourceId !== '')}
                             required
+                            disabled={formData.resourceId !== ''}
                         >
                             <option value="">Sélectionner un statut</option>
                             {statuses.map(status => (

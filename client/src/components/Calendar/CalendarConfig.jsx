@@ -48,10 +48,10 @@ export const createCalendarOptions = ({
         eventOverlap: true, // Permet le chevauchement d'événements
         eventAllow: () => true, // Permet tous les événements
         eventDragStart: function (info) {
-            console.log('Calendar: Event drag start', info);
+            console.log('Calendar: Event drag start', info.event);
         },
-        dragStart: (info) => {
-            console.log('Calendar dragStart:', info);
+        eventDragStop: function (info) {
+            console.log('Calendar: Event drag stop', info.event);
         },
         drop: (dropInfo) => {
             console.log('Calendar drop:', dropInfo);
@@ -82,9 +82,6 @@ export const createCalendarOptions = ({
         eventReceive: (info) => {
             console.log('Calendar eventReceive:', info);
             handleEventDrop({ event: info.event });
-        },
-        eventDragStop: function (info) {
-            console.log('Calendar: Event drag stop', info);
         },
         eventConstraint: {
             startTime: '00:00',

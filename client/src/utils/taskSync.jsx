@@ -1,4 +1,4 @@
-import {getStatusId} from './CalendarUtils';
+import {getStatusId} from './taskFormatters';
 import { STATUS_TYPES } from '../constants/constants';
 
 export const syncTaskWithBacklog = (task, sourceType, statusList) => {

@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Trash2 } from 'lucide-react';
-import { getOwners, getTeams } from '../../services/apiService';
+import { fetchOwners, fetchTeams } from '../../services/apiService';
 
 
 const OwnerManagement = () => {
@@ -15,18 +15,18 @@ const OwnerManagement = () => {
   });
   const [teams, setTeams] = useState([]);
 
-  const fetchOwners = async () => {
+  const loadOwners = async () => {
     try {
-      const data = await getOwners();
+      const data = await fetchOwners();
       setOwners(data);
     } catch (error) {
       console.error('Error fetching owners:', error);
     }
   };
 
-  const fetchTeams = async () => {
+  const loadTeams = async () => {
     try {
-      const data = await getTeams();
+      const data = await fetchTeams();
       setTeams(data);
     } catch (error) {
       console.error('Error fetching teams:', error);
@@ -34,26 +34,26 @@ const OwnerManagement = () => {
   };
 
   useEffect(() => {
-    fetchOwners();
-    fetchTeams();
+    loadOwners();
+    loadTeams();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-   
+
     try {
       const existingOwner = owners.find(owner => owner.email === newOwner.email);
       if (existingOwner) {
         alert('Un propriétaire avec cet email existe déjà');
         return;
       }
-   
+
       const sanitizedOwner = {
         ...newOwner,
         teamId: newOwner.teamId ? parseInt(newOwner.teamId, 10) : null
       };
-   
+
       const response = await fetch('/api/owners', {
         method: 'POST',
         headers: {
@@ -62,12 +62,12 @@ const OwnerManagement = () => {
         },
         body: JSON.stringify(sanitizedOwner),
       });
-   
+
       if (response.status === 401) {
         window.location.href = '/login';
         return;
       }
-   
+
       if (response.ok) {
         fetchOwners();
         setNewOwner({ name: '', email: '', teamId: '' });
@@ -78,7 +78,7 @@ const OwnerManagement = () => {
     } catch (error) {
       console.error('Error creating owner:', error);
     }
-   };
+  };
 
   const handleDelete = async (ownerId) => {
     const token = localStorage.getItem('token');

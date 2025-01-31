@@ -14,19 +14,19 @@ class Task {
   }
 
   static async create(data, userId) {
-    const { title, startDate, endDate, ownerId, statusId } = data;
-    console.log('Data to insert:', { title, startDate, endDate, ownerId, statusId, userId });
+
+    const { title, start_date, end_date, owner_id, status_id} = data;
+    
+    console.log('Data to insert:', { title, start_date, end_date, owner_id, status_id, userId, description });
+
     const result = await pool.query(
-      'INSERT INTO tasks (title, start_date, end_date, owner_id, status_id, user_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [title, startDate, endDate, ownerId, statusId, userId]
+      'INSERT INTO tasks (title, start_date, end_date, owner_id, status_id, user_id, description) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [title, start_date, end_date, owner_id, status_id, id, userId]
     );
     return result.rows[0];
   }
 
   static async updateStatus(id, statusId, userId) {
-    console.log('updateStatus id :', id);
-    console.log('updateStatus statusId :', statusId);
-    console.log('updateStatus userId :', userId);
     const result = await pool.query(
       'UPDATE tasks SET status_id = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
       [statusId, id, userId]
@@ -36,17 +36,17 @@ class Task {
 
   static async update(id, data, userId) {
     // Si seul le statut est fourni, utiliser updateStatus
-    if (data.statusId && Object.keys(data).length === 1) {
-      return this.updateStatus(id, data.statusId, userId);
+    if (data.status_id && Object.keys(data).length === 1) {
+      return this.updateStatus(id, data.status_id, userId);
     }
 
-    const { title, startDate, endDate, ownerId, statusId } = data;
+    const { title, start_date, end_date, owner_id, status_id } = data;
     const result = await pool.query(
       'UPDATE tasks SET title = $1, start_date = $2, end_date = $3, owner_id = $4, status_id = $5 WHERE id = $6 AND user_id = $7 RETURNING *',
-      [title, startDate, endDate, ownerId, statusId, id, userId]
+      [title, start_date, end_date, owner_id, status_id, id, userId]
     );
     return result.rows[0];
-  }
+}
 
   static async findAll(userId) {
     const result = await pool.query(`

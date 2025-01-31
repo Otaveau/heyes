@@ -29,6 +29,9 @@ export const getEventColor = (status) => {
 };
 
 export const getStatusId = (statusList, statusType) => {
+
+    console.error('Liste de statuts :', statusList);
+    console.error('statut type :',statusType);
     // Validation des paramètres
     if (!statusList || !Array.isArray(statusList)) {
         console.error('Liste de statuts invalide:', statusList);

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { formatUTCDate } from '../utils/dateUtils';
 import { getStatusId, formatTasksUtil } from '../utils/taskFormatters';
 import { STATUS_TYPES } from '../constants/constants';
-import { fetchHolidays, getOwners, getTasks, getStatuses } from '../services/apiService';
+import { fetchHolidays, fetchOwners, fetchTasks, fetchStatuses } from '../services/apiService';
 
 export const useCalendarData = () => {
   const [tasks, setTasks] = useState([]);
@@ -26,15 +26,12 @@ export const useCalendarData = () => {
     if (!Array.isArray(ownersData)) {
       return [];
     }
-
+    console.log('formatResources ownersData :', ownersData);
     return ownersData.map(owner => ({
-      id: owner.owner_id,
+      id: owner.ownerId,
       title: owner.name || 'Sans nom'
     }));
   }, []);
-
-
-  
 
 
   // Fonction principale de chargement des données
@@ -45,9 +42,9 @@ export const useCalendarData = () => {
 
       const [holidayDates, ownersData, tasksData, statusesData] = await Promise.all([
         fetchHolidays(new Date().getFullYear()),
-        getOwners(),
-        getTasks(),
-        getStatuses()
+        fetchOwners(),
+        fetchTasks(),
+        fetchStatuses()
       ]);
 
       // Traitement et mise à jour des données
@@ -94,7 +91,7 @@ export const useCalendarData = () => {
   const addTask = useCallback((newTask) => {
     setTasks(currentTasks => [...currentTasks, {
       ...newTask,
-      status_id: getStatusId(statuses, STATUS_TYPES.ENTRANT)
+      statusId: getStatusId(statuses, STATUS_TYPES.ENTRANT)
     }]);
   }, [statuses]);
 
