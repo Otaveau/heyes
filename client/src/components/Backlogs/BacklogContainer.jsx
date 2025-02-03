@@ -48,12 +48,40 @@ export const BacklogContainer = ({
     setError(null);
 
     try {
-      const taskData = JSON.parse(e.dataTransfer.getData('application/json'));
-      const currentStatusId = taskData.status_id || taskData.status;
+      // Log détaillé de tous les types de données disponibles
+      console.log('Drop event data types:', e.dataTransfer.types);
+      
+      // Essayer de récupérer les données de plusieurs façons
+      let taskData;
+      
+      // Essayer JSON en premier
+      try {
+        const jsonData = e.dataTransfer.getData('application/json');
+        console.log('JSON data:', jsonData);
+        taskData = JSON.parse(jsonData);
+      } catch (jsonError) {
+        // Essayer texte brut si JSON échoue
+        try {
+          const textData = e.dataTransfer.getData('text/plain');
+          console.log('Text data:', textData);
+          taskData = JSON.parse(textData);
+        } catch (textError) {
+          console.error('Impossible de parser les données:', textError);
+          throw new Error('Données de tâche invalides');
+        }
+      }
+
+      console.log('Parsed task data:', taskData);
+
+      // Normaliser la récupération du statusId
+      const currentStatusId = taskData.statusId || 
+                               taskData.status_id || 
+                               taskData.status || 
+                               taskData.statusId;
       const targetStatusId = parseInt(status);
 
       if (currentStatusId === targetStatusId) {
-        console.log('No status update needed - same status_id');
+        console.log('Pas de changement de statut nécessaire');
         return;
       }
 
@@ -67,10 +95,11 @@ export const BacklogContainer = ({
         await onStatusUpdate(taskData.id, targetStatusId);
       }
     } catch (error) {
-      console.error('Drop error:', error);
+      console.error('Erreur de drop:', error);
       setError('Erreur lors du déplacement de la tâche');
     }
-  }, [status, isWipStatus, onStatusUpdate]);
+}, [status, isWipStatus, onStatusUpdate]);
+
 
   const handleFormSubmit = useCallback(async (formData) => {
     setError(null);

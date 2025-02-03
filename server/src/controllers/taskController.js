@@ -46,7 +46,7 @@ const createTask = async (req, res) => {
 
 const updateTask = async (req, res) => {
   const { id } = req.params;
-  const { title, startDate, endDate, ownerId, statusId } = req.body;
+  const { title, startDate, endDate, description, ownerId, statusId } = req.body;
   
   // Transformation en snake_case pour le modèle
   const data = {

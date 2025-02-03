@@ -34,12 +34,11 @@ export const TaskCard = ({
   } = task;
 
   const handleDragStart = (e) => {
-    // Prevent drag if disabled
     if (disabled) {
       e.preventDefault();
       return;
     }
-
+  
     const taskData = {
       id,
       title,
@@ -50,15 +49,16 @@ export const TaskCard = ({
       statusId,
       source: 'backlog'
     };
-
+  
     try {
+      console.log('Drag start task data:', taskData);
       e.dataTransfer.setData('application/json', JSON.stringify(taskData));
+      e.dataTransfer.setData('text/plain', JSON.stringify(taskData));
       e.dataTransfer.effectAllowed = "move";
     } catch (error) {
       console.error('Error setting drag data:', error);
     }
   };
-
   const handleClick = () => {
     if (!disabled && onTaskClick) {
       onTaskClick(task);

@@ -56,8 +56,6 @@ export const useCalendarData = () => {
   }, []);
 
 const formatTasksWithCalendar = useCallback((tasksData, statusesData) => {
-    console.log('Raw tasksData:', tasksData);
-    console.log('Raw statusesData:', statusesData);
 
     if (!Array.isArray(tasksData) || !Array.isArray(statusesData)) {
         console.error('Données invalides:', { tasksData, statusesData });
@@ -71,8 +69,8 @@ const formatTasksWithCalendar = useCallback((tasksData, statusesData) => {
         return {
             id: task.id,
             title: task.title || 'Sans titre',
-            start: new Date(task.startDate),  // Convertir en objet Date
-            end: new Date(task.endDate),      // Convertir en objet Date
+            start: new Date(task.startDate),
+            end: new Date(task.endDate),      
             resourceId: task.ownerId,
             statusId: task.statusId,
             description: task.description,
@@ -83,7 +81,6 @@ const formatTasksWithCalendar = useCallback((tasksData, statusesData) => {
         };
     });
 
-    console.log('Formatted tasks for calendar:', formattedTasks);
     return formattedTasks;
 }, []);
 
@@ -102,19 +99,9 @@ const loadData = useCallback(async () => {
       fetchStatuses()
     ]);
 
-    // Ajoutez ces logs de débogage
-    console.log('Fetched Holiday Dates:', holidayDates);
-    console.log('Fetched Owners:', ownersData);
-    console.log('Fetched Tasks:', tasksData);
-    console.log('Fetched Statuses:', statusesData);
-
     const formattedHolidays = formatHolidays(holidayDates);
     const formattedResources = formatResources(ownersData);
     const formattedTasks = formatTasksWithCalendar(tasksData, statusesData);
-
-    console.log('Formatted Holidays:', formattedHolidays);
-    console.log('Formatted Resources:', formattedResources);
-    console.log('Formatted Tasks:', formattedTasks);
 
     setHolidays(formattedHolidays);
     setResources(formattedResources);

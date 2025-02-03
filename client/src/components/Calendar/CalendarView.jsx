@@ -23,12 +23,6 @@ const CalendarView = () => {
 
   const { tasks, setTasks, resources, holidays, statuses, error: dataError } = useCalendarData();
 
-   // Ajoutez ces logs
-   console.log('Calendar Tasks:', tasks);
-   console.log('Calendar Resources:', resources);
-   console.log('Calendar Holidays:', holidays);
-   console.log('Calendar Statuses:', statuses);
-
   const formatTaskResponse = useCallback((task, statusId) => {
     if (!task) return null;
     

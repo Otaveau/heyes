@@ -18,9 +18,6 @@ export const createCalendarOptions = ({
     handleEventDrop
 }) => {
 
-    console.log('Calendar Options - Resources:', resources);
-    console.log('Calendar Options - Tasks:', tasks);
-
     return {
         locale: frLocale,
         schedulerLicenseKey: "GPL-My-Project-Is-Open-Source",
