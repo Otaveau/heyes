@@ -23,6 +23,7 @@ const CalendarView = () => {
 
   const { tasks, setTasks, resources, holidays, statuses, error: dataError } = useCalendarData();
 
+
   const formatTaskResponse = useCallback((task, statusId) => {
     if (!task) return null;
     
@@ -183,38 +184,75 @@ const CalendarView = () => {
     ));
   }, [setTasks]);
 
+
   const handleEventDrop = useCallback(async (dropInfo) => {
-    if (calendarState.isProcessing) {
-      dropInfo.revert();
-      return;
-    }
-
     try {
-      setCalendarState(prev => ({ ...prev, isProcessing: true }));
-
       const { event } = dropInfo;
-      if (!event?.start) {
-        throw new Error('Date de début manquante');
+      
+      if (!event?.start || !event?.end) {
+        throw new Error('Dates invalides');
       }
-
-      const resourceId = event.getResources()[0]?.id;
-      const statusId = event.extendedProps?.statusId;
-
-      if (event.extendedProps?.source === 'backlog') {
-        await handleBacklogDrop(event, resourceId);
-      } else {
-        await handleCalendarDrop(event, resourceId, statusId);
+  
+      const resourceId = event.getResources()[0]?.id || 
+                        event.extendedProps?.originalTask?.resourceId;
+      
+      const originalTask = event.extendedProps?.originalTask || {};
+  
+      // Convertir les dates UTC en dates locales
+      const localStart = new Date(event.start);
+      const localEnd = new Date(event.end);
+      localStart.setDate(localStart.getDate() + 1);
+      localEnd.setDate(localEnd.getDate() + 1);
+  
+      // Formater en YYYY-MM-DD
+      const startDate = localStart.toISOString().split('T')[0];
+      const endDate = localEnd.toISOString().split('T')[0];
+  
+      const updatedData = {
+        title: event.title || originalTask.title,
+        startDate,
+        endDate,
+        description: event.extendedProps?.description || originalTask.description || '',
+        ownerId: parseInt(resourceId, 10),
+        statusId: parseInt(event.extendedProps?.statusId || originalTask.statusId, 10)
+      };
+  
+      if (!updatedData.title) {
+        throw new Error('Titre requis');
       }
-
-      toast.success(`Tâche "${event.title}" déplacée`, TOAST_CONFIG);
+  
+      // Mise à jour de la tâche
+      await updateTask(event.id, updatedData);
+      
+      // Mise à jour de l'état local
+      setTasks(prevTasks => prevTasks.map(task =>
+        task.id === parseInt(event.id, 10)
+          ? {
+            ...task,
+            start: startDate,
+            end: endDate,
+            title: updatedData.title,
+            description: updatedData.description,
+            resourceId: updatedData.ownerId,
+            statusId: updatedData.statusId
+          }
+          : task
+      ));
+  
+      toast.success(`Tâche "${updatedData.title}" déplacée`, TOAST_CONFIG);
     } catch (error) {
       console.error('Erreur de déplacement:', error);
-      toast.error('Erreur lors du déplacement', TOAST_CONFIG);
-      dropInfo.revert();
-    } finally {
-      setCalendarState(prev => ({ ...prev, isProcessing: false }));
+      toast.error(`Erreur lors du déplacement: ${error.message}`, TOAST_CONFIG);
+      if (dropInfo.revert) {
+        try {
+          dropInfo.revert();
+        } catch (revertError) {
+          console.error('Erreur lors de la réversion:', revertError);
+        }
+      }
     }
-  }, [handleBacklogDrop, handleCalendarDrop, calendarState.isProcessing]);
+  }, [setTasks]);
+
 
   const handleSubmit = useCallback(async (formData, taskId) => {
     if (!formData?.title) {

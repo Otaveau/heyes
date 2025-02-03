@@ -77,6 +77,8 @@ export const updateTask = async (id, taskData) => {
     try {
         validateTaskData(taskData);
 
+        console.log('taskData :', taskData);
+
         const taskId = parseInt(id);
         if (isNaN(taskId)) throw new Error('ID de tâche invalide');
 

@@ -30,22 +30,50 @@ export const formatUTCDate = (date) => {
   try {
     // Si c'est déjà une chaîne au format YYYY-MM-DD
     if (typeof date === 'string') {
+      // Test du format YYYY-MM-DD
       if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
         return date;
       }
-      const [year, month, day] = date.split('-');
-      return new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)))
-        .toISOString()
-        .split('T')[0];
+      
+      // Pour les dates avec timezone (format ISO)
+      if (date.includes('T')) {
+        // Utiliser directement la partie date sans conversion UTC
+        return date.split('T')[0];
+      }
+      
+      // Pour les dates au format YYYY-MM-DD avec ou sans timezone
+      const [datePart] = date.split('T');
+      // Retourner directement la partie date
+      return datePart;
     }
     
     // Si c'est un objet Date
     if (date instanceof Date) {
-      return date.toISOString().split('T')[0];
+      // Vérifier si la date est valide
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid Date object');
+      }
+      
+      // Utiliser les composants locaux de la date
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
     }
 
-    // Si c'est une chaîne ISO
-    return new Date(date).toISOString().split('T')[0];
+    // Pour tout autre type d'entrée
+    const d = new Date(date);
+    if (isNaN(d.getTime())) {
+      throw new Error('Invalid date input');
+    }
+    
+    // Utiliser les composants locaux de la date
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
     
   } catch (error) {
     console.error('Error in formatUTCDate:', error);

@@ -22,7 +22,12 @@ export const createCalendarOptions = ({
         locale: frLocale,
         schedulerLicenseKey: "GPL-My-Project-Is-Open-Source",
         height: "auto",
-        plugins: [resourceTimelinePlugin, interactionPlugin, dayGridPlugin, timeGridPlugin],
+        plugins: [
+            resourceTimelinePlugin, 
+            interactionPlugin, 
+            dayGridPlugin, 
+            timeGridPlugin
+        ],
         initialView: 'resourceTimelineYear',
         eventStartEditable: true,
         eventDurationEditable: true,
@@ -38,63 +43,76 @@ export const createCalendarOptions = ({
         resourceAreaWidth: '20%',
         resources,
         events: tasks.map(task => ({
-            id: task.id, // Assurez-vous d'inclure l'ID de la tâche
-            title: task.title,
-            start: task.start, // Utilisez start au lieu de start_date
-            end: task.end, // Utilisez end au lieu de end_date
-            resourceId: task.resourceId || task.owner_id,
+            id: task.id?.toString(),
+            title: task.title || 'Tâche sans titre',
+            start: task.start || task.startDate,
+            end: task.end || task.endDate || task.start,
+            resourceId: task.resourceId || task.owner_id || null,
+            allDay: true, // Forcer les événements à être sur toute la journée
             extendedProps: {
-                description: task.description || '',
-                status: task.status, // Ajoutez le statut si disponible
-                statusId: task.statusId
+              description: task.description || '',
+              status: task.status,
+              statusId: task.statusId,
+              originalTask: { ...task }
             }
-        })),
-        eventClick: handleEventClick, // Ajout de l'option eventClick   // Pour la sélection de dates
+          })),
+        slotDuration: { days: 1 },
+        defaultAllDay: true,
+        forceEventDuration: true,
+        eventClick: handleEventClick,
         eventResize: handleEventResize,
-        eventDrop: handleEventDrop,
+        eventDrop: (info) => {
+            console.log('Event dropped:', info);
+            handleEventDrop(info);
+        },
         dragRevertDuration: 0,
         eventOverlap: true, // Permet le chevauchement d'événements
         eventAllow: () => true, // Permet tous les événements
-        eventDragStart: function (info) {
-            console.log('Calendar: Event drag start', info.event);
+        eventDragStart: (info) => {
+            info.el.style.opacity = '0.7';
         },
-        eventDragStop: function (info) {
-            console.log('Calendar: Event drag stop', info.event);
+        
+        eventDragStop: (info) => {
+            info.el.style.opacity = '1';
         },
         drop: (dropInfo) => {
-            console.log('Calendar drop:', dropInfo);
             try {
-                const taskData = JSON.parse(dropInfo.draggedEl.dataset.event);
-                console.log('Parsed task data:', taskData);
+                const rawData = dropInfo.draggedEl.dataset.event;
+                console.debug('Données de drop brutes:', rawData);
                 
-                // Créer un nouvel événement à partir des données
+                const taskData = rawData ? JSON.parse(rawData) : null;
+                if (!taskData) {
+                    console.warn('Aucune donnée de tâche trouvée');
+                    return;
+                }
+                
                 const event = {
-                    title: taskData.title,
+                    title: taskData.title || 'Nouvelle tâche',
                     start: dropInfo.date,
                     end: dropInfo.date,
                     resourceId: dropInfo.resource?.id,
                     extendedProps: {
-                        description: taskData.description,
+                        description: taskData.description || '',
                         source: 'backlog',
                         statusId: taskData.statusId
                     }
                 };
                 
-                // Ajouter l'événement au calendrier
                 const calendarApi = dropInfo.view.calendar;
                 calendarApi.addEvent(event);
             } catch (error) {
-                console.error('Error handling drop:', error);
+                console.error('Erreur de gestion du drop:', error);
             }
         },
         eventReceive: (info) => {
-            console.log('Calendar eventReceive:', info);
-            handleEventDrop({ event: info.event });
+            console.log('Event received:', info);
+            if (info.event.extendedProps?.source === 'backlog') {
+                handleEventDrop({ event: info.event });
+            }
         },
         eventConstraint: {
             startTime: '00:00',
-            endTime: '24:00',
-            dows: [1, 2, 3, 4, 5]
+            endTime: '24:00'
         },
         headerToolbar: {
             left: 'toggleWeekends',
