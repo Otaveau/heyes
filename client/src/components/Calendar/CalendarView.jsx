@@ -30,6 +30,8 @@ const CalendarView = () => {
     resourceId: task.ownerId,
     statusId: statusId
   }), []);
+  
+
 
   const handleTaskClick = useCallback((task) => {
     setCalendarState(prev => ({
@@ -228,11 +230,6 @@ const CalendarView = () => {
   const handleSubmit = useCallback(async (formData, taskId) => {
     console.log('FormData avant traitement:', formData);
 
-    if (!formData.startDate || !formData.endDate) {
-        toast.error('Les dates de début et de fin sont requises');
-        return;
-    }
-
     const sanitizedFormData = {
       title: formData.title,
       description: formData.description || '',
@@ -245,14 +242,46 @@ const CalendarView = () => {
     try {
       if (taskId) {
         const updatedTask = await updateTask(sanitizedFormData, taskId);
-        setTasks(prevTasks => prevTasks.map(task =>
-          task.id === taskId
-              ? formatTaskResponse(updatedTask, updatedTask.status_id)
-              : task
-      ));
+        const formattedTask = formatTaskResponse(updatedTask, updatedTask.status_id);
+
+        setTasks(prevTasks => {
+          const otherTasks = prevTasks.filter(task => task.id !== taskId);
+
+          // Si la tâche est en WIP et a un owner, ajouter la version calendrier
+          if (updatedTask.status_id === 2 && updatedTask.owner_id) {
+            return [
+              ...otherTasks,
+              formattedTask, // version backlog
+              {
+                ...formattedTask,
+                source: 'calendar',
+                resourceId: updatedTask.owner_id
+              } // version calendrier
+            ];
+          }
+
+          return [...otherTasks, formattedTask];
+        });
       } else {
         const newTask = await createTask(sanitizedFormData);
-        setTasks(prevTasks => [...prevTasks, formatTaskResponse(newTask, newTask.status_id)]);
+        const formattedTask = formatTaskResponse(newTask, newTask.status_id);
+
+        setTasks(prevTasks => {
+          // Si la nouvelle tâche est en WIP et a un owner, ajouter la version calendrier
+          if (newTask.status_id === 2 && newTask.owner_id) {
+            return [
+              ...prevTasks,
+              formattedTask, // version backlog
+              {
+                ...formattedTask,
+                source: 'calendar',
+                resourceId: newTask.owner_id
+              } // version calendrier
+            ];
+          }
+
+          return [...prevTasks, formattedTask];
+        });
       }
       setCalendarState(prev => ({ ...prev, isFormOpen: false, selectedTask: null }));
       toast.success(taskId ? 'Tâche mise à jour avec succès' : 'Tâche créée avec succès');

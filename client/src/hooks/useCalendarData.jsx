@@ -33,6 +33,30 @@ export const useCalendarData = () => {
     }));
   }, []);
 
+  const formatTasksWithCalendar = useCallback((tasksData, statusesData) => {
+    const formattedTasks = [];
+    
+    // D'abord, formater toutes les tâches avec l'utilitaire existant
+    const basicFormattedTasks = formatTasksUtil(tasksData, statusesData);
+    
+    // Ensuite, dupliquer les tâches WIP avec owner pour le calendrier
+    basicFormattedTasks.forEach(task => {
+      formattedTasks.push(task); // Ajouter la version backlog
+      
+      // Si la tâche est en WIP et a un owner, ajouter la version calendrier
+      if (task.statusId === 2 && task.resourceId) {
+        formattedTasks.push({
+          ...task,
+          source: 'calendar',
+          isCalendarTask: true // Marquer comme tâche de calendrier
+        });
+      }
+    });
+    
+    return formattedTasks;
+  }, []);
+
+
 
   // Fonction principale de chargement des données
   const loadData = useCallback(async () => {
@@ -47,15 +71,14 @@ export const useCalendarData = () => {
         fetchStatuses()
       ]);
 
-      // Traitement et mise à jour des données
       setHolidays(formatHolidays(holidayDates));
       setResources(formatResources(ownersData));
       setStatuses(statusesData);
 
-      // Utilisation de la fonction utilitaire pour formater les tâches
-      const formattedTasks = formatTasksUtil(tasksData, statusesData);
+      // Utiliser la nouvelle fonction de formatage
+      const formattedTasks = formatTasksWithCalendar(tasksData, statusesData);
       setTasks(formattedTasks);
-      console.log('fetchTasks :', formattedTasks);
+      console.log('Tâches formatées avec calendrier:', formattedTasks);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       setError(new Error(errorMessage));
@@ -63,7 +86,7 @@ export const useCalendarData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [formatHolidays, formatResources]);
+  }, [formatHolidays, formatResources, formatTasksWithCalendar]);
 
 
   // Effet initial pour charger les données
@@ -71,28 +94,56 @@ export const useCalendarData = () => {
     loadData();
   }, [loadData]);
 
-  // Fonction pour mettre à jour une tâche
-  const updateTask = useCallback(async (taskId, updates) => {
+   // Mettre à jour la fonction updateTask pour gérer les tâches dupliquées
+   const updateTask = useCallback(async (taskId, updates) => {
     try {
-      setTasks(currentTasks => 
-        currentTasks.map(task => 
-          task.id === taskId 
-            ? { ...task, ...updates }
-            : task
-        )
-      );
+      setTasks(currentTasks => {
+        const updatedTasks = currentTasks.filter(task => task.id !== taskId);
+        const taskToUpdate = currentTasks.find(task => task.id === taskId);
+        
+        if (!taskToUpdate) return currentTasks;
+        
+        const updatedTask = { ...taskToUpdate, ...updates };
+        updatedTasks.push(updatedTask);
+        
+        // Si la tâche mise à jour est en WIP et a un owner, ajouter/mettre à jour la version calendrier
+        if (updatedTask.statusId === 2 && updatedTask.resourceId) {
+          updatedTasks.push({
+            ...updatedTask,
+            source: 'calendar',
+            isCalendarTask: true
+          });
+        }
+        
+        return updatedTasks;
+      });
     } catch (err) {
       console.error('Erreur lors de la mise à jour de la tâche:', err);
       throw err;
     }
   }, []);
 
-  // Fonction pour ajouter une tâche
+  // Mettre à jour la fonction addTask pour gérer les tâches dupliquées
   const addTask = useCallback((newTask) => {
-    setTasks(currentTasks => [...currentTasks, {
-      ...newTask,
-      statusId: getStatusId(statuses, STATUS_TYPES.ENTRANT)
-    }]);
+    setTasks(currentTasks => {
+      const taskToAdd = {
+        ...newTask,
+        statusId: getStatusId(statuses, STATUS_TYPES.ENTRANT)
+      };
+      
+      const updatedTasks = [...currentTasks, taskToAdd];
+      
+      // Si la nouvelle tâche est en WIP et a un owner, ajouter la version calendrier
+      if (taskToAdd.statusId === 2 && taskToAdd.resourceId) {
+        updatedTasks.push({
+          ...taskToAdd,
+          source: 'calendar',
+          isCalendarTask: true
+        });
+      }
+      
+      return updatedTasks;
+    });
   }, [statuses]);
 
   return {
