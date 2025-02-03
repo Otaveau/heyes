@@ -28,6 +28,8 @@ export const fetchTasks = async () => {
 
         const tasks = await handleResponse(response);
 
+        console.log('taskService :', tasks);
+
         return tasks.map(task => ({
             id: task.id,
             title: task.title,

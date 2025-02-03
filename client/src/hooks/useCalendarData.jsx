@@ -55,95 +55,79 @@ export const useCalendarData = () => {
     }));
   }, []);
 
-  const formatTasksWithCalendar = useCallback((tasksData, statusesData) => {
+const formatTasksWithCalendar = useCallback((tasksData, statusesData) => {
+    console.log('Raw tasksData:', tasksData);
+    console.log('Raw statusesData:', statusesData);
+
     if (!Array.isArray(tasksData) || !Array.isArray(statusesData)) {
-      console.warn('Invalid tasks or statuses data format');
-      return [];
+        console.error('Données invalides:', { tasksData, statusesData });
+        return [];
     }
 
-    try {
-      const formattedTasks = [];
-      const basicFormattedTasks = formatTasksUtil(tasksData, statusesData);
-      
-      basicFormattedTasks.forEach(task => {
-        // Valider les dates de la tâche
-        const startDate = new Date(task.start || task.startDate);
-        const endDate = new Date(task.end || task.endDate);
-        
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-          console.warn(`Invalid dates for task ${task.id}`);
-          return;
-        }
+    const formattedTasks = tasksData.map(task => {
+        // Trouver le statut correspondant
+        const status = statusesData.find(s => s.status_id === task.statusId) || {};
 
-        // Ajouter la version backlog
-        formattedTasks.push({
-          ...task,
-          source: 'backlog',
-          start: startDate,
-          end: endDate,
-        });
-        
-        // Ajouter la version calendrier si nécessaire
-        if (task.statusId === STATUS_TYPES.WIP && task.resourceId) {
-          formattedTasks.push({
-            ...task,
-            source: 'calendar',
-            isCalendarTask: true,
-            start: startDate,
-            end: endDate,
-          });
-        }
-      });
-      
-      return formattedTasks;
-    } catch (error) {
-      console.error('Error formatting tasks:', error);
-      return [];
-    }
-  }, []);
+        return {
+            id: task.id,
+            title: task.title || 'Sans titre',
+            start: new Date(task.startDate),  // Convertir en objet Date
+            end: new Date(task.endDate),      // Convertir en objet Date
+            resourceId: task.ownerId,
+            statusId: task.statusId,
+            description: task.description,
+            extendedProps: {
+                userId: task.userId,
+                originalStatus: status.status_type
+            }
+        };
+    });
 
-  const loadData = useCallback(async () => {
-    if (!isMounted.current) return;
+    console.log('Formatted tasks for calendar:', formattedTasks);
+    return formattedTasks;
+}, []);
+
+
+const loadData = useCallback(async () => {
+  try {
+    setIsLoading(true);
+    setError(null);
+
+    const year = new Date().getFullYear();
     
-    try {
-      setIsLoading(true);
-      setError(null);
+    const [holidayDates, ownersData, tasksData, statusesData] = await Promise.all([
+      fetchHolidays(year),
+      fetchOwners(),
+      fetchTasks(),
+      fetchStatuses()
+    ]);
 
-      const year = new Date().getFullYear();
-      
-      const [holidayDates, ownersData, tasksData, statusesData] = await Promise.all([
-        fetchHolidays(year),
-        fetchOwners(),
-        fetchTasks(),
-        fetchStatuses()
-      ]);
+    // Ajoutez ces logs de débogage
+    console.log('Fetched Holiday Dates:', holidayDates);
+    console.log('Fetched Owners:', ownersData);
+    console.log('Fetched Tasks:', tasksData);
+    console.log('Fetched Statuses:', statusesData);
 
-      if (!isMounted.current) return;
+    const formattedHolidays = formatHolidays(holidayDates);
+    const formattedResources = formatResources(ownersData);
+    const formattedTasks = formatTasksWithCalendar(tasksData, statusesData);
 
-      const formattedHolidays = formatHolidays(holidayDates);
-      const formattedResources = formatResources(ownersData);
-      const formattedTasks = formatTasksWithCalendar(tasksData, statusesData);
+    console.log('Formatted Holidays:', formattedHolidays);
+    console.log('Formatted Resources:', formattedResources);
+    console.log('Formatted Tasks:', formattedTasks);
 
-      setHolidays(formattedHolidays);
-      setResources(formattedResources);
-      setStatuses(statusesData);
-      setTasks(formattedTasks);
+    setHolidays(formattedHolidays);
+    setResources(formattedResources);
+    setStatuses(statusesData);
+    setTasks(formattedTasks);
 
-    } catch (err) {
-      if (!isMounted.current) return;
-      
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : 'Une erreur est survenue lors du chargement des données';
-      
-      setError(new Error(errorMessage));
-      console.error('Error loading data:', err);
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
-    }
-  }, [formatHolidays, formatResources, formatTasksWithCalendar]);
+  } catch (err) {
+    console.error('Detailed Error in loadData:', err);
+    setError(err);
+  } finally {
+    setIsLoading(false);
+  }
+}, [formatHolidays, formatResources, formatTasksWithCalendar]);
 
   const updateTask = useCallback(async (taskId, updates) => {
     if (!taskId) {
@@ -154,30 +138,30 @@ export const useCalendarData = () => {
       setTasks(currentTasks => {
         const updatedTasks = currentTasks.filter(task => task.id !== taskId);
         const taskToUpdate = currentTasks.find(task => task.id === taskId);
-        
+
         if (!taskToUpdate) {
           console.warn(`Task with id ${taskId} not found`);
           return currentTasks;
         }
-        
-        const updatedTask = { 
-          ...taskToUpdate, 
+
+        const updatedTask = {
+          ...taskToUpdate,
           ...updates,
           lastUpdated: new Date().toISOString()
         };
 
         // Ajouter la version backlog
         updatedTasks.push(updatedTask);
-        
+
         // Gérer la version calendrier
-        if (updatedTask.statusId ===  STATUS_TYPES.WIP && updatedTask.resourceId) {
+        if (updatedTask.statusId === STATUS_TYPES.WIP && updatedTask.resourceId) {
           updatedTasks.push({
             ...updatedTask,
             source: 'calendar',
             isCalendarTask: true
           });
         }
-        
+
         return updatedTasks;
       });
     } catch (err) {
@@ -199,9 +183,9 @@ export const useCalendarData = () => {
           statusId: getStatusId(statuses, STATUS_TYPES.ENTRANT),
           createdAt: new Date().toISOString()
         };
-        
+
         const updatedTasks = [...currentTasks, taskToAdd];
-        
+
         if (taskToAdd.statusId === STATUS_TYPES.WIP && taskToAdd.resourceId) {
           updatedTasks.push({
             ...taskToAdd,
@@ -209,7 +193,7 @@ export const useCalendarData = () => {
             isCalendarTask: true
           });
         }
-        
+
         return updatedTasks;
       } catch (error) {
         console.error('Error adding task:', error);

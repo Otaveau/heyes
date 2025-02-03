@@ -16,4 +16,13 @@ export const STATUS_COLORS = {
   blocked: '#F87171'
 };
 
+export const TOAST_CONFIG= {
+  position: "top-right",
+  autoClose: 3000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true
+};
+
 export const DEFAULT_TASK_DURATION = 24 * 60 * 60 * 1000;

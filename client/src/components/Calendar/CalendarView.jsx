@@ -8,18 +8,9 @@ import { BacklogTaskList } from '../Backlogs/BacklogTaskList';
 import { updateTask, createTask, updateTaskStatus } from '../../services/api/taskService';
 import { getStatusId } from '../../utils/taskFormatters';
 import { formatUTCDate } from '../../utils/dateUtils';
-import { DEFAULT_TASK_DURATION, STATUS_TYPES } from '../../constants/constants';
+import { DEFAULT_TASK_DURATION, STATUS_TYPES, TOAST_CONFIG } from '../../constants/constants';
 import { toast } from 'react-toastify';
 import '../../style/CalendarView.css';
-
-const TOAST_CONFIG = {
-  position: "top-right",
-  autoClose: 3000,
-  hideProgressBar: false,
-  closeOnClick: true,
-  pauseOnHover: true,
-  draggable: true
-};
 
 const CalendarView = () => {
   const [calendarState, setCalendarState] = useState({
@@ -32,17 +23,24 @@ const CalendarView = () => {
 
   const { tasks, setTasks, resources, holidays, statuses, error: dataError } = useCalendarData();
 
+   // Ajoutez ces logs
+   console.log('Calendar Tasks:', tasks);
+   console.log('Calendar Resources:', resources);
+   console.log('Calendar Holidays:', holidays);
+   console.log('Calendar Statuses:', statuses);
+
   const formatTaskResponse = useCallback((task, statusId) => {
     if (!task) return null;
     
     return {
       id: task.id,
       title: task.title || 'Sans titre',
-      start: task.start_date,
-      end: task.end_date,
+      start: task.start_date || task.startDate,
+      end: task.end_date || task.endDate,
       description: task.description || '',
-      resourceId: task.ownerId,
-      statusId: statusId
+      resourceId: task.owner_id || task.ownerId,
+      statusId: statusId || task.status_id,
+      status: task.status_type  // Ajoutez cette ligne si disponible
     };
   }, []);
 

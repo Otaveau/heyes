@@ -18,6 +18,9 @@ export const createCalendarOptions = ({
     handleEventDrop
 }) => {
 
+    console.log('Calendar Options - Resources:', resources);
+    console.log('Calendar Options - Tasks:', tasks);
+
     return {
         locale: frLocale,
         schedulerLicenseKey: "GPL-My-Project-Is-Open-Source",
@@ -38,8 +41,16 @@ export const createCalendarOptions = ({
         resourceAreaWidth: '20%',
         resources,
         events: tasks.map(task => ({
-            ...task,
-            resourceId: task.resourceId || task.owner_id
+            id: task.id, // Assurez-vous d'inclure l'ID de la tâche
+            title: task.title,
+            start: task.start, // Utilisez start au lieu de start_date
+            end: task.end, // Utilisez end au lieu de end_date
+            resourceId: task.resourceId || task.owner_id,
+            extendedProps: {
+                description: task.description || '',
+                status: task.status, // Ajoutez le statut si disponible
+                statusId: task.statusId
+            }
         })),
         eventClick: handleEventClick, // Ajout de l'option eventClick   // Pour la sélection de dates
         eventResize: handleEventResize,
