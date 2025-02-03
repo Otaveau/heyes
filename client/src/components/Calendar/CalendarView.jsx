@@ -5,7 +5,7 @@ import { createCalendarOptions } from './CalendarConfig';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { TaskForm } from '../Tasks/TaskForm';
 import { BacklogTaskList } from '../Backlogs/BacklogTaskList';
-import { updateTask, createTask, updateTaskStatus } from '../../services/apiService';
+import { updateTask, createTask, updateTaskStatus } from '../../services/api/taskService';
 import { getStatusId } from '../../utils/taskFormatters';
 import { formatUTCDate } from '../../utils/dateUtils';
 import { DEFAULT_TASK_DURATION, STATUS_TYPES } from '../../constants/constants';

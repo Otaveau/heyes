@@ -3,7 +3,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Trash2 } from 'lucide-react';
-import { fetchOwners, fetchTeams } from '../../services/apiService';
+import { fetchOwners } from '../../services/api/ownerService';
+import { fetchTeams} from '../../services/api/teamService';
 
 
 const OwnerManagement = () => {

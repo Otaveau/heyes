@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { validateToken } from '../services/apiService';
+import { validateToken } from '../services/api/authService';
 
 const AuthContext = createContext();
 

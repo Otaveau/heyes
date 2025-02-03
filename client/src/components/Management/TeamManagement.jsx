@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
 import { Trash2 } from 'lucide-react';
-import { fetchTeams } from '../../services/apiService';
+import { fetchTeams} from '../../services/api/teamService';
 
 const TeamManagement = () => {
   const [teams, setTeams] = useState([]);

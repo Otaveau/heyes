@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { formatUTCDate } from '../utils/dateUtils';
 import { getStatusId, formatTasksUtil } from '../utils/taskFormatters';
 import { STATUS_TYPES } from '../constants/constants';
-import { fetchHolidays, fetchOwners, fetchTasks, fetchStatuses } from '../services/apiService';
+import { fetchTasks } from '../services/api/taskService';
+import { fetchOwners } from '../services/api/ownerService';
+import { fetchHolidays } from '../services/api/holidayService';
+import { fetchStatuses } from '../services/api/statusService';
 
 
 export const useCalendarData = () => {
