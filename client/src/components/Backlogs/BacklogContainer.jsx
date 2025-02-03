@@ -1,64 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { TaskCard } from '../Tasks/TaskCard';
 import { TaskForm } from '../Tasks/TaskForm';
 
 export const BacklogContainer = ({
   status,
   statusName,
-  tasks,
+  tasks = [],
   onStatusUpdate,
-  resources,
-  statuses,
-  onTaskClick
+  resources = [],
+  statuses = [],
+  onTaskClick,
+  className = ''
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleDragOver = (e) => {
+  const isWipStatus = statusName.toLowerCase() === 'wip';
+
+  const resetState = useCallback(() => {
+    setIsFormOpen(false);
+    setSelectedTask(null);
+    setError(null);
+  }, []);
+
+  const handleDragEnter = useCallback((e) => {
+    e.preventDefault();
+    setDragActive(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setDragActive(false);
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-  };
+    setDragActive(true);
+  }, []);
 
-  const handleDrop = async (e) => {
+  const handleDrop = useCallback(async (e) => {
     e.preventDefault();
+    setDragActive(false);
+    setError(null);
+
     try {
       const taskData = JSON.parse(e.dataTransfer.getData('application/json'));
-      console.log('Dropped task data:', taskData);
-
       const currentStatusId = taskData.status_id || taskData.status;
       const targetStatusId = parseInt(status);
 
-      console.log('Status comparison:', {
-        currentStatusId,
-        targetStatusId
-      });
-
-      if (currentStatusId !== targetStatusId) {
-        if (statusName.toLowerCase() === 'wip') {
-          // Pour WIP, toujours ouvrir le formulaire pour sélectionner dates et ressource
-          setSelectedTask({
-            ...taskData,
-            status_id: targetStatusId
-          });
-          setIsFormOpen(true);
-        } else {
-          // Pour tous les autres statuts, mise à jour directe
-          await onStatusUpdate(taskData.id, targetStatusId);
-        }
-      } else {
+      if (currentStatusId === targetStatusId) {
         console.log('No status update needed - same status_id');
+        return;
+      }
+
+      if (isWipStatus) {
+        setSelectedTask({
+          ...taskData,
+          status_id: targetStatusId
+        });
+        setIsFormOpen(true);
+      } else {
+        await onStatusUpdate(taskData.id, targetStatusId);
       }
     } catch (error) {
       console.error('Drop error:', error);
+      setError('Erreur lors du déplacement de la tâche');
     }
-  };
+  }, [status, isWipStatus, onStatusUpdate]);
 
-  const handleFormSubmit = async (formData) => {
+  const handleFormSubmit = useCallback(async (formData) => {
+    setError(null);
+    
     try {
-      // Pour WIP, vérifier que tous les champs requis sont présents
-      if (statusName.toLowerCase() === 'wip') {
-        if (!formData.resourceId || !formData.startDate || !formData.endDate) {
-          throw new Error('Pour le statut WIP, vous devez sélectionner une ressource et des dates de début et de fin');
+      if (isWipStatus) {
+        const missingFields = [];
+        if (!formData.resourceId) missingFields.push('une ressource');
+        if (!formData.startDate) missingFields.push('une date de début');
+        if (!formData.endDate) missingFields.push('une date de fin');
+
+        if (missingFields.length > 0) {
+          throw new Error(
+            `Pour le statut WIP, vous devez sélectionner ${missingFields.join(', ')}`
+          );
+        }
+
+        // Vérifier que la date de fin est après la date de début
+        if (new Date(formData.startDate) > new Date(formData.endDate)) {
+          throw new Error('La date de fin doit être postérieure à la date de début');
         }
       }
 
@@ -69,45 +101,80 @@ export const BacklogContainer = ({
       };
 
       await onStatusUpdate(selectedTask.id, status, updatedData);
-      setIsFormOpen(false);
-      setSelectedTask(null);
+      resetState();
     } catch (error) {
       console.error('Error updating task:', error);
-      alert(error.message);
+      setError(error.message);
     }
-  };
+  }, [selectedTask, status, isWipStatus, onStatusUpdate, resetState]);
+
+  const handleCloseForm = useCallback(() => {
+    resetState();
+  }, [resetState]);
 
   return (
     <div
-      className="flex-1 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+      role="region"
+      aria-label={`Liste des tâches ${statusName}`}
+      className={`
+        relative 
+        flex-1 
+        bg-gray-50 
+        p-4 
+        rounded-lg 
+        transition-all 
+        duration-200
+        ${dragActive ? 'ring-2 ring-blue-400 bg-blue-50' : 'hover:bg-gray-100'}
+        ${className}
+      `}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <h3 className="text-lg font-semibold mb-4">{statusName}</h3>
-      <div className="space-y-2">
-        {tasks.map(task => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            draggable={true}
-            onTaskClick={onTaskClick}
-            statusName={statusName}
-          />
-        ))}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">{statusName}</h3>
+        <span className="text-sm text-gray-500">
+          {tasks.length} tâche{tasks.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded flex items-center gap-2">
+          <AlertTriangle size={20} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div 
+        className="space-y-2 min-h-[100px]"
+        aria-live="polite"
+      >
+        {tasks.length === 0 ? (
+          <div className="text-gray-500 text-center py-4">
+            Déposez une tâche ici
+          </div>
+        ) : (
+          tasks.map(task => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              statusName={statusName}
+              onTaskClick={onTaskClick}
+            />
+          ))
+        )}
       </div>
 
       {isFormOpen && (
         <TaskForm
           isOpen={isFormOpen}
-          onClose={() => {
-            setIsFormOpen(false);
-            setSelectedTask(null);
-          }}
+          onClose={handleCloseForm}
           selectedTask={selectedTask}
           resources={resources}
           statuses={statuses}
           onSubmit={handleFormSubmit}
-          requireResource={statusName.toLowerCase() === 'wip'}
+          requireResource={isWipStatus}
         />
       )}
     </div>
