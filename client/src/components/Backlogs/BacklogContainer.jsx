@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { Draggable } from '@fullcalendar/interaction';
 import { AlertTriangle } from 'lucide-react';
 import { TaskCard } from '../Tasks/TaskCard';
 import { TaskForm } from '../Tasks/TaskForm';
@@ -20,30 +19,6 @@ export const BacklogContainer = ({
   const [error, setError] = useState(null);
 
   const isWipStatus = statusName.toLowerCase() === 'wip';
-
-  React.useEffect(() => {
-    tasks.forEach(task => {
-      const taskElement = document.querySelector(`[data-task-id="${task.id}"]`);
-      if (taskElement) {
-        new Draggable(taskElement, {
-          itemSelector: '.task-card',
-          eventData: () => ({
-            id: task.id,
-            title: task.title,
-            start: task.startDate || new Date(),
-            end: task.endDate || new Date(new Date().setHours(new Date().getHours() + 1)),
-            allDay: true,
-            extendedProps: {
-              description: task.description,
-              statusId: task.statusId,
-              resourceId: task.resourceId,
-              originalTask: task
-            }
-          })
-        });
-      }
-    });
-  }, [tasks]);
 
   const resetState = useCallback(() => {
     setIsFormOpen(false);
@@ -73,57 +48,30 @@ export const BacklogContainer = ({
     setError(null);
 
     try {
-      // Log détaillé de tous les types de données disponibles
-      console.log('Drop event data types:', e.dataTransfer.types);
-
-      // Essayer de récupérer les données de plusieurs façons
-      let taskData;
-
-      // Essayer JSON en premier
-      try {
         const jsonData = e.dataTransfer.getData('application/json');
-        console.log('JSON data:', jsonData);
-        taskData = JSON.parse(jsonData);
-      } catch (jsonError) {
-        // Essayer texte brut si JSON échoue
-        try {
-          const textData = e.dataTransfer.getData('text/plain');
-          console.log('Text data:', textData);
-          taskData = JSON.parse(textData);
-        } catch (textError) {
-          console.error('Impossible de parser les données:', textError);
-          throw new Error('Données de tâche invalides');
+        const taskData = JSON.parse(jsonData);
+        
+        const targetStatusId = parseInt(status, 10);
+
+        if (taskData.statusId === targetStatusId) {
+            return;
         }
-      }
 
-      console.log('Parsed task data:', taskData);
-
-      // Normaliser la récupération du statusId
-      const currentStatusId = taskData.statusId ||
-        taskData.status_id ||
-        taskData.status ||
-        taskData.statusId;
-      const targetStatusId = parseInt(status);
-
-      if (currentStatusId === targetStatusId) {
-        console.log('Pas de changement de statut nécessaire');
-        return;
-      }
-
-      if (isWipStatus) {
-        setSelectedTask({
-          ...taskData,
-          status_id: targetStatusId
-        });
-        setIsFormOpen(true);
-      } else {
-        await onStatusUpdate(taskData.id, targetStatusId);
-      }
+        if (isWipStatus) {
+            setSelectedTask({
+                ...taskData,
+                statusId: targetStatusId
+            });
+            setIsFormOpen(true);
+        } else {
+            await onStatusUpdate(taskData.id, targetStatusId);
+        }
     } catch (error) {
-      console.error('Erreur de drop:', error);
-      setError('Erreur lors du déplacement de la tâche');
+        console.error('Erreur de drop:', error);
+        setError('Erreur lors du déplacement de la tâche');
     }
-  }, [status, isWipStatus, onStatusUpdate]);
+}, [status, isWipStatus, onStatusUpdate]);
+
 
 
   const handleFormSubmit = useCallback(async (formData) => {

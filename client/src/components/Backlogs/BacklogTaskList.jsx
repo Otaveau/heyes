@@ -21,33 +21,33 @@ export const BacklogTaskList = ({
     ], []);
 
 
-    useEffect(() => {
-        const taskElements = document.querySelectorAll('.task-item');
-        taskElements.forEach(el => {
-            new Draggable(el, {
-                itemSelector: '.task-item',
-                eventData: (eventEl) => {
-                    const taskId = eventEl.getAttribute('data-task-id');
-                    const task = tasks.find(t => t.id === parseInt(taskId, 10));
-                    if (!task) return null;
+    // useEffect(() => {
+    //     const taskElements = document.querySelectorAll('.task-item');
+    //     taskElements.forEach(el => {
+    //         new Draggable(el, {
+    //             itemSelector: '.task-item',
+    //             eventData: (eventEl) => {
+    //                 const taskId = eventEl.getAttribute('data-task-id');
+    //                 const task = tasks.find(t => t.id === parseInt(taskId, 10));
+    //                 if (!task) return null;
 
-                    return {
-                        id: task.id,
-                        title: task.title,
-                        start: task.startDate || new Date(),
-                        end: task.endDate || new Date(new Date().setHours(new Date().getHours() + 1)),
-                        allDay: true,
-                        extendedProps: {
-                            description: task.description,
-                            statusId: task.statusId,
-                            resourceId: task.resourceId,
-                            originalTask: task
-                        }
-                    };
-                }
-            });
-        });
-    }, [tasks]);
+    //                 return {
+    //                     id: task.id,
+    //                     title: task.title,
+    //                     start: task.startDate || new Date(),
+    //                     end: task.endDate || new Date(new Date().setHours(new Date().getHours() + 1)),
+    //                     allDay: true,
+    //                     extendedProps: {
+    //                         description: task.description,
+    //                         statusId: task.statusId,
+    //                         resourceId: task.resourceId,
+    //                         originalTask: task
+    //                     }
+    //                 };
+    //             }
+    //         });
+    //     });
+    // }, [tasks]);
 
 
     const sortedStatuses = useMemo(() => {

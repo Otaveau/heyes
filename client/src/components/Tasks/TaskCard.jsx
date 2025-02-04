@@ -35,34 +35,32 @@ export const TaskCard = ({
 
   const handleDragStart = (e) => {
     if (disabled) {
-      e.preventDefault();
-      return;
+        e.preventDefault();
+        return;
     }
-
-    e.target.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', id.toString());
 
     const taskData = {
-      id,
-      title,
-      description,
-      start: start_date || start,
-      end: end_date || end,
-      resourceId: owner_id || resourceId,
-      statusId,
-      source: 'backlog'
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        startDate: start_date || start,
+        endDate: end_date || end,
+        resourceId: owner_id || resourceId,
+        statusId: statusId,
+        source: 'backlog'
     };
 
-    try {
-      console.log('Drag start task data:', taskData);
-      e.dataTransfer.setData('application/json', JSON.stringify(taskData));
-      e.dataTransfer.setData('text/plain', JSON.stringify(taskData));
-      e.dataTransfer.effectAllowed = "move";
-    } catch (error) {
-      console.error('Error setting drag data:', error);
-    }
-  };
+    // Ajouter une classe pour le style pendant le drag
+    e.target.classList.add('dragging');
+    
+    // Important : définir les données avant les effets visuels
+    e.dataTransfer.setData('application/json', JSON.stringify(taskData));
+};
 
+// Ajouter un handleDragEnd
+const handleDragEnd = (e) => {
+  e.target.classList.remove('dragging');
+};
 
   const handleClick = () => {
     if (!disabled && onTaskClick) {
@@ -87,6 +85,7 @@ export const TaskCard = ({
       tabIndex={disabled ? -1 : 0}
       draggable={!disabled}
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={handleClick}
       onKeyPress={handleKeyPress}
       className={`
