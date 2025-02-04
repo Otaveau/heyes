@@ -114,15 +114,15 @@ export const CalendarView = () => {
 
       setTasks(prevTasks => prevTasks.map(task =>
         task.id === taskId
-          ? {
-            ...task,
-            statusId: statusId,
-            ownerId: updatedTask.owner_id,
-            startDate: updatedTask.start_date,
-            endDate: updatedTask.end_date
-          }
-          : task
-      ));
+            ? {
+                ...task,
+                statusId: statusId,
+                ownerId: updatedTask.owner_id,
+                startDate: updatedTask.start_date,
+                endDate: updatedTask.end_date
+            }
+            : task
+    ));
 
       toast.success(
         `Statut ${existingTask ? `de "${existingTask.title}"` : ''} mis à jour`,

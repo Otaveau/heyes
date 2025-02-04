@@ -75,27 +75,41 @@ export const createCalendarOptions = ({
         eventResize: handleEventResize,
         eventAllow: () => !isProcessing,
         eventDragStart: (info) => {
+            console.log('Drag start:', info);
             info.el.style.opacity = '0.7';
         },
+
         eventDragStop: (info) => {
+            console.log('Drag stop:', info);
             info.el.style.opacity = '1';
         },
         eventReceive: (info) => {
-            console.log('Event Receive:', info);
-            if (handleEventReceive) {
-                handleEventReceive(info);
+            if (!handleEventReceive || !info.event) return;
+            console.log('Event receive:', info);
+            try {
+                const taskData = JSON.parse(info.draggedEl.dataset.event);
+                handleEventReceive({
+                    ...info,
+                    taskData
+                });
+            } catch (error) {
+                console.error('Error in eventReceive:', error);
             }
         },
-        eventDrop: (info) => {
-            console.log('Event Drop:', info);
-            if (!isProcessing && handleEventDrop) {
-                handleEventDrop(info, isProcessing, statuses, tasks, setTasks);
-            }
-        },
+
         drop: (info) => {
             console.log('Drop:', info);
-            if (handleDrop) {
-                handleDrop(info);
+            try {
+                const taskData = JSON.parse(info.draggedEl.dataset.event);
+                info.draggedEl.style.opacity = '1';
+                if (handleDrop) {
+                    handleDrop({
+                        ...info,
+                        taskData
+                    });
+                }
+            } catch (error) {
+                console.error('Error in drop handler:', error);
             }
             return false;
         },

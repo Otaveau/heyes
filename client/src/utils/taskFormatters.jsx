@@ -1,4 +1,5 @@
 import { STATUS_COLORS, STATUS_TYPES } from "../constants/constants";
+import { formatUTCDate } from "./dateUtils";
 
 export const formatEventForCalendar = (task) => {
     if (!task || !task.id) {
@@ -9,8 +10,8 @@ export const formatEventForCalendar = (task) => {
     return {
         id: task.id,
         title: task.title || 'Sans titre',
-        start: task.startDate,
-        end: task.endDate,
+        start: task.startDate ? formatUTCDate(task.startDate) : formatUTCDate(new Date()),
+        end: task.endDate ? formatUTCDate(task.endDate) : formatUTCDate(new Date()),
         resourceId: task.resourceId,
         backgroundColor: getEventColor(task.status),
         borderColor: getEventColor(task.status),

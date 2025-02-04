@@ -24,38 +24,32 @@ export const BacklogTaskList = ({
     useEffect(() => {
         const taskElements = document.querySelectorAll('.task-card');
         const draggables = [];
-
+    
+        // Nettoyer les anciens draggables d'abord
         taskElements.forEach(el => {
-            // Créer un Draggable FullCalendar tout en préservant le drag natif
+            if (el._dragInstance) {
+                el._dragInstance.destroy();
+                delete el._dragInstance;
+            }
+        });
+    
+        // Créer les nouveaux draggables
+        taskElements.forEach(el => {
             const draggable = new Draggable(el, {
-                itemSelector: '.task-card',
-                eventData: (eventEl) => {
-                    const taskId = eventEl.getAttribute('data-task-id');
-                    const task = tasks.find(t => t.id === parseInt(taskId, 10));
-                    
-                    if (!task) return null;
-
-                    return {
-                        id: task.id.toString(),
-                        title: task.title,
-                        start: task.start || task.startDate || new Date(),
-                        end: task.end || task.endDate || new Date(),
-                        resourceId: task.resourceId || task.owner_id,
-                        extendedProps: {
-                            description: task.description,
-                            statusId: task.statusId,
-                            source: 'backlog',
-                            originalTask: task
-                        }
-                    };
-                }
+                // ... options
             });
+            el._dragInstance = draggable;  // Garder une référence
             draggables.push(draggable);
         });
-
-        // Cleanup
+    
         return () => {
-            draggables.forEach(draggable => draggable.destroy());
+            draggables.forEach(draggable => {
+                try {
+                    draggable.destroy();
+                } catch (error) {
+                    console.warn('Error cleaning up draggable:', error);
+                }
+            });
         };
     }, [tasks]);
 

@@ -27,8 +27,7 @@
 /* Styles pour le drag and drop */
 .task-card {
   touch-action: none;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  will-change: transform, opacity;
+  transition: all 0.2s ease;
   cursor: move;
 }
 
@@ -38,6 +37,23 @@
 }
 
 /* Styles FullCalendar */
+.task-card-wrapper.fc-event {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.backlog-container.drag-active {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 2px dashed rgb(59, 130, 246);
+}
+
+.task-card-wrapper.fc-event.fc-dragging .task-card {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
 .fc-event.task-card {
   background-color: transparent;
   border: none;

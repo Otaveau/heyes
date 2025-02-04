@@ -67,17 +67,17 @@ const formatTasksWithCalendar = useCallback((tasksData, statusesData) => {
         const status = statusesData.find(s => s.status_id === task.statusId) || {};
 
         return {
-            id: task.id,
-            title: task.title || 'Sans titre',
-            start: new Date(task.startDate),
-            end: new Date(task.endDate),      
-            resourceId: task.ownerId,
-            statusId: task.statusId,
-            description: task.description,
-            extendedProps: {
-                userId: task.userId,
-                originalStatus: status.status_type
-            }
+          id: task.id,
+          title: task.title || 'Sans titre',
+          start: formatUTCDate(task.startDate),
+          end: formatUTCDate(task.endDate),      
+          resourceId: task.ownerId,
+          statusId: task.statusId,
+          description: task.description,
+          extendedProps: {
+              userId: task.userId,
+              originalStatus: status.status_type
+          }
         };
     });
 

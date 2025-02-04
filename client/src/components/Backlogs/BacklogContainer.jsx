@@ -48,33 +48,33 @@ export const BacklogContainer = ({
     setError(null);
 
     try {
-        const jsonData = e.dataTransfer.getData('application/json');
-        const taskData = JSON.parse(jsonData);
-        const targetStatusId = parseInt(status, 10);
+      const jsonData = e.dataTransfer.getData('application/json');
+      const taskData = JSON.parse(jsonData);
+      const targetStatusId = parseInt(status, 10);
 
-        if (taskData.statusId === targetStatusId) {
-            return;
-        }
+      if (taskData.statusId === targetStatusId) {
+        return;
+      }
 
-        if (isWipStatus) {
-            // Utiliser la même méthode que handleTaskClick
-            onTaskClick({
-                id: taskData.id,
-                title: taskData.title,
-                start: taskData.startDate,
-                end: taskData.endDate,
-                description: taskData.description,
-                resourceId: taskData.resourceId,
-                statusId: targetStatusId  // Utiliser le nouveau statut
-            });
-        } else {
-            await onStatusUpdate(taskData.id, targetStatusId);
-        }
+      if (isWipStatus) {
+        // Utiliser la même méthode que handleTaskClick
+        onTaskClick({
+          id: taskData.id,
+          title: taskData.title,
+          start: taskData.startDate,
+          end: taskData.endDate,
+          description: taskData.description,
+          resourceId: taskData.resourceId,
+          statusId: targetStatusId  // Utiliser le nouveau statut
+        });
+      } else {
+        await onStatusUpdate(taskData.id, targetStatusId);
+      }
     } catch (error) {
-        console.error('Erreur de drop:', error);
-        setError('Erreur lors du déplacement de la tâche');
+      console.error('Erreur de drop:', error);
+      setError('Erreur lors du déplacement de la tâche');
     }
-}, [status, isWipStatus, onStatusUpdate, onTaskClick]);
+  }, [status, isWipStatus, onStatusUpdate, onTaskClick]);
 
 
 
@@ -156,18 +156,12 @@ export const BacklogContainer = ({
           </div>
         ) : (
           tasks.map(task => (
-            <div 
+            <TaskCard
               key={task.id}
-              className="task-card fc-event"
-              data-task-id={task.id}
-            >
-              <TaskCard
-                task={task}
-                statusName={statusName}
-                onTaskClick={onTaskClick}
-              />
-            </div>
-          ))
+              task={task}
+              statusName={statusName}
+              onTaskClick={onTaskClick}
+            />))
         )}
       </div>
 

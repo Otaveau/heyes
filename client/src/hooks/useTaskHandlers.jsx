@@ -142,17 +142,13 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
     console.log('TaskHandlers - handleDrop début:', dropInfo);
     try {
       const draggedEl = dropInfo.draggedEl;
-      const taskInfo = draggedEl.dataset.taskInfo;
-      console.log('TaskHandlers - taskInfo trouvé:', taskInfo);
+      // Utiliser dataset.event au lieu de dataset.taskInfo
+      const taskData = JSON.parse(draggedEl.dataset.event || draggedEl.getAttribute('data-event'));
 
-      if (!taskInfo) {
-        console.warn('TaskHandlers - Pas de taskInfo dans draggedEl');
+      if (!taskData) {
+        console.warn('Pas de données de tâche trouvées');
         return;
       }
-
-      const taskData = JSON.parse(taskInfo);
-      console.log('TaskHandlers - taskData parsé:', taskData);
-
       const event = {
         id: taskData.id.toString(),
         title: taskData.title,
