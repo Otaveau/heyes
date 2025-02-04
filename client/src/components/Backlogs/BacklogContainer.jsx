@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { Draggable } from '@fullcalendar/interaction';
 import { AlertTriangle } from 'lucide-react';
 import { TaskCard } from '../Tasks/TaskCard';
 import { TaskForm } from '../Tasks/TaskForm';
@@ -19,6 +20,30 @@ export const BacklogContainer = ({
   const [error, setError] = useState(null);
 
   const isWipStatus = statusName.toLowerCase() === 'wip';
+
+  React.useEffect(() => {
+    tasks.forEach(task => {
+      const taskElement = document.querySelector(`[data-task-id="${task.id}"]`);
+      if (taskElement) {
+        new Draggable(taskElement, {
+          itemSelector: '.task-card',
+          eventData: () => ({
+            id: task.id,
+            title: task.title,
+            start: task.startDate || new Date(),
+            end: task.endDate || new Date(new Date().setHours(new Date().getHours() + 1)),
+            allDay: true,
+            extendedProps: {
+              description: task.description,
+              statusId: task.statusId,
+              resourceId: task.resourceId,
+              originalTask: task
+            }
+          })
+        });
+      }
+    });
+  }, [tasks]);
 
   const resetState = useCallback(() => {
     setIsFormOpen(false);
@@ -50,10 +75,10 @@ export const BacklogContainer = ({
     try {
       // Log détaillé de tous les types de données disponibles
       console.log('Drop event data types:', e.dataTransfer.types);
-      
+
       // Essayer de récupérer les données de plusieurs façons
       let taskData;
-      
+
       // Essayer JSON en premier
       try {
         const jsonData = e.dataTransfer.getData('application/json');
@@ -74,10 +99,10 @@ export const BacklogContainer = ({
       console.log('Parsed task data:', taskData);
 
       // Normaliser la récupération du statusId
-      const currentStatusId = taskData.statusId || 
-                               taskData.status_id || 
-                               taskData.status || 
-                               taskData.statusId;
+      const currentStatusId = taskData.statusId ||
+        taskData.status_id ||
+        taskData.status ||
+        taskData.statusId;
       const targetStatusId = parseInt(status);
 
       if (currentStatusId === targetStatusId) {
@@ -98,12 +123,12 @@ export const BacklogContainer = ({
       console.error('Erreur de drop:', error);
       setError('Erreur lors du déplacement de la tâche');
     }
-}, [status, isWipStatus, onStatusUpdate]);
+  }, [status, isWipStatus, onStatusUpdate]);
 
 
   const handleFormSubmit = useCallback(async (formData) => {
     setError(null);
-    
+
     try {
       if (isWipStatus) {
         const missingFields = [];
@@ -137,9 +162,6 @@ export const BacklogContainer = ({
     }
   }, [selectedTask, status, isWipStatus, onStatusUpdate, resetState]);
 
-  const handleCloseForm = useCallback(() => {
-    resetState();
-  }, [resetState]);
 
   return (
     <div
@@ -175,22 +197,24 @@ export const BacklogContainer = ({
         </div>
       )}
 
-      <div 
-        className="space-y-2 min-h-[100px]"
-        aria-live="polite"
-      >
+      <div className="space-y-2 min-h-[100px]" aria-live="polite">
         {tasks.length === 0 ? (
           <div className="text-gray-500 text-center py-4">
             Déposez une tâche ici
           </div>
         ) : (
           tasks.map(task => (
-            <TaskCard
+            <div 
               key={task.id}
-              task={task}
-              statusName={statusName}
-              onTaskClick={onTaskClick}
-            />
+              className="task-card"
+              data-task-id={task.id}
+            >
+              <TaskCard
+                task={task}
+                statusName={statusName}
+                onTaskClick={onTaskClick}
+              />
+            </div>
           ))
         )}
       </div>
@@ -198,7 +222,7 @@ export const BacklogContainer = ({
       {isFormOpen && (
         <TaskForm
           isOpen={isFormOpen}
-          onClose={handleCloseForm}
+          onClose={resetState}
           selectedTask={selectedTask}
           resources={resources}
           statuses={statuses}

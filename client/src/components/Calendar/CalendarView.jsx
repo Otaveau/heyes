@@ -3,16 +3,15 @@ import FullCalendar from '@fullcalendar/react';
 import { AlertCircle } from 'lucide-react';
 import { createCalendarOptions } from './CalendarConfig';
 import { useCalendarData } from '../../hooks/useCalendarData';
+import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { TaskForm } from '../Tasks/TaskForm';
 import { BacklogTaskList } from '../Backlogs/BacklogTaskList';
 import { updateTask, createTask, updateTaskStatus } from '../../services/api/taskService';
-import { getStatusId } from '../../utils/taskFormatters';
-import { formatUTCDate } from '../../utils/dateUtils';
-import { DEFAULT_TASK_DURATION, STATUS_TYPES, TOAST_CONFIG } from '../../constants/constants';
+import { DEFAULT_TASK_DURATION, TOAST_CONFIG } from '../../constants/constants';
 import { toast } from 'react-toastify';
 import '../../style/CalendarView.css';
 
-const CalendarView = () => {
+export const CalendarView = () => {
   const [calendarState, setCalendarState] = useState({
     showWeekends: true,
     isFormOpen: false,
@@ -23,88 +22,12 @@ const CalendarView = () => {
 
   const { tasks, setTasks, resources, holidays, statuses, error: dataError } = useCalendarData();
 
-
-  const formatTaskResponse = useCallback((task, statusId) => {
-    if (!task) return null;
-    
-    return {
-      id: task.id,
-      title: task.title || 'Sans titre',
-      start: task.start_date || task.startDate,
-      end: task.end_date || task.endDate,
-      description: task.description || '',
-      resourceId: task.owner_id || task.ownerId,
-      statusId: statusId || task.status_id,
-      status: task.status_type  // Ajoutez cette ligne si disponible
-    };
-  }, []);
-
-  const handleTaskClick = useCallback((task) => {
-    if (!task?.id) {
-      console.warn('Tentative de click sur une tâche invalide');
-      return;
-    }
-
-    setCalendarState(prev => ({
-      ...prev,
-      selectedTask: {
-        id: task.id,
-        title: task.title,
-        start: task.start,
-        end: task.end,
-        description: task.description,
-        resourceId: task.resourceId,
-        statusId: task.statusId
-      },
-      isFormOpen: true
-    }));
-  }, []);
-
-  const handleEventClick = useCallback((clickInfo) => {
-    const task = tasks.find(t => t.id === parseInt(clickInfo.event.id));
-    if (task) {
-      handleTaskClick(task);
-    } else {
-      console.warn('Tâche non trouvée:', clickInfo.event.id);
-    }
-  }, [tasks, handleTaskClick]);
-
-  const handleEventResize = useCallback(async (info) => {
-    if (calendarState.isProcessing) {
-      info.revert();
-      return;
-    }
-
-    try {
-      setCalendarState(prev => ({ ...prev, isProcessing: true }));
-
-      const { event } = info;
-      if (!event.start || !event.end) {
-        throw new Error('Dates invalides');
-      }
-
-      const updatedData = {
-        startDate: formatUTCDate(event.start),
-        endDate: formatUTCDate(event.end)
-      };
-
-      await updateTask(event.id, updatedData);
-
-      setTasks(prevTasks => prevTasks.map(task =>
-        task.id === event.id
-          ? { ...task, start: event.start, end: event.end }
-          : task
-      ));
-
-      toast.success(`Tâche "${event.title}" redimensionnée`, TOAST_CONFIG);
-    } catch (error) {
-      console.error('Erreur de redimensionnement:', error);
-      toast.error('Erreur lors du redimensionnement', TOAST_CONFIG);
-      info.revert();
-    } finally {
-      setCalendarState(prev => ({ ...prev, isProcessing: false }));
-    }
-  }, [setTasks, calendarState.isProcessing]);
+  const {
+    handleTaskClick,
+    handleEventClick,
+    handleEventResize,
+    handleEventDrop
+  } = useTaskHandlers(setTasks, setCalendarState, statuses);
 
   const handleDateSelect = useCallback((selectInfo) => {
     if (!selectInfo.start) return;
@@ -120,140 +43,6 @@ const CalendarView = () => {
     }));
   }, []);
 
-  const handleBacklogDrop = useCallback(async (event, resourceId) => {
-    if (!event?.title || !resourceId) {
-      throw new Error('Données de tâche invalides');
-    }
-
-    const wipStatusId = getStatusId(STATUS_TYPES.WIP);
-    const startDate = formatUTCDate(event.start.toISOString());
-    const endDate = event.end
-      ? formatUTCDate(event.end.toISOString())
-      : formatUTCDate(new Date(event.start.getTime() + DEFAULT_TASK_DURATION).toISOString());
-
-    const newTaskData = {
-      title: event.title,
-      startDate,
-      endDate,
-      description: event.extendedProps?.description || '',
-      ownerId: resourceId,
-      statusId: wipStatusId
-    };
-
-    const newTask = await createTask(newTaskData);
-    const formattedTask = formatTaskResponse(newTask, wipStatusId);
-    
-    if (formattedTask) {
-      setTasks(prevTasks => [...prevTasks, formattedTask]);
-      toast.success(`Tâche "${event.title}" créée`, TOAST_CONFIG);
-    }
-  }, [setTasks, formatTaskResponse]);
-
-  const handleCalendarDrop = useCallback(async (event, resourceId, statusId) => {
-    if (!event?.start) {
-      throw new Error('Date de début manquante');
-    }
-
-    const startDate = formatUTCDate(event.start.toISOString());
-    const endDate = event.end
-      ? formatUTCDate(event.end.toISOString())
-      : startDate;
-
-    const updatedData = {
-      startDate,
-      endDate,
-      description: event.extendedProps?.description || '',
-      ownerId: parseInt(resourceId, 10),
-      title: event.title,
-      statusId: parseInt(statusId, 10)
-    };
-
-    await updateTask(event.id, updatedData);
-    
-    setTasks(prevTasks => prevTasks.map(task =>
-      task.id === event.id
-        ? {
-          ...task,
-          start: startDate,
-          end: endDate,
-          description: updatedData.description,
-          resourceId: updatedData.ownerId,
-          statusId: updatedData.statusId
-        }
-        : task
-    ));
-  }, [setTasks]);
-
-
-  const handleEventDrop = useCallback(async (dropInfo) => {
-    try {
-      const { event } = dropInfo;
-      
-      if (!event?.start || !event?.end) {
-        throw new Error('Dates invalides');
-      }
-  
-      const resourceId = event.getResources()[0]?.id || 
-                        event.extendedProps?.originalTask?.resourceId;
-      
-      const originalTask = event.extendedProps?.originalTask || {};
-  
-      // Convertir les dates UTC en dates locales
-      const localStart = new Date(event.start);
-      const localEnd = new Date(event.end);
-      localStart.setDate(localStart.getDate() + 1);
-      localEnd.setDate(localEnd.getDate() + 1);
-  
-      // Formater en YYYY-MM-DD
-      const startDate = localStart.toISOString().split('T')[0];
-      const endDate = localEnd.toISOString().split('T')[0];
-  
-      const updatedData = {
-        title: event.title || originalTask.title,
-        startDate,
-        endDate,
-        description: event.extendedProps?.description || originalTask.description || '',
-        ownerId: parseInt(resourceId, 10),
-        statusId: parseInt(event.extendedProps?.statusId || originalTask.statusId, 10)
-      };
-  
-      if (!updatedData.title) {
-        throw new Error('Titre requis');
-      }
-  
-      // Mise à jour de la tâche
-      await updateTask(event.id, updatedData);
-      
-      // Mise à jour de l'état local
-      setTasks(prevTasks => prevTasks.map(task =>
-        task.id === parseInt(event.id, 10)
-          ? {
-            ...task,
-            start: startDate,
-            end: endDate,
-            title: updatedData.title,
-            description: updatedData.description,
-            resourceId: updatedData.ownerId,
-            statusId: updatedData.statusId
-          }
-          : task
-      ));
-  
-      toast.success(`Tâche "${updatedData.title}" déplacée`, TOAST_CONFIG);
-    } catch (error) {
-      console.error('Erreur de déplacement:', error);
-      toast.error(`Erreur lors du déplacement: ${error.message}`, TOAST_CONFIG);
-      if (dropInfo.revert) {
-        try {
-          dropInfo.revert();
-        } catch (revertError) {
-          console.error('Erreur lors de la réversion:', revertError);
-        }
-      }
-    }
-  }, [setTasks]);
-
-
   const handleSubmit = useCallback(async (formData, taskId) => {
     if (!formData?.title) {
       toast.error('Le titre est requis', TOAST_CONFIG);
@@ -268,32 +57,28 @@ const CalendarView = () => {
         description: (formData.description || '').trim(),
         startDate: formData.startDate,
         endDate: formData.endDate,
-        ownerId: formData.resourceId,
-        statusId: formData.statusId,
+        ownerId: formData.resourceId ? parseInt(formData.resourceId, 10) : null,
+        statusId: formData.statusId ? parseInt(formData.statusId, 10) : null,
       };
 
       const result = taskId
-        ? await updateTask(sanitizedFormData, taskId)
+        ? await updateTask(taskId, sanitizedFormData)
         : await createTask(sanitizedFormData);
 
-      const formattedTask = formatTaskResponse(result, result.status_id);
+        const formattedTask = {
+          id: result.id || taskId,
+          title: result.title || sanitizedFormData.title,
+          start: new Date(result.start_date || result.startDate),
+          end: new Date(result.end_date || result.endDate),
+          description: result.description || sanitizedFormData.description,
+          resourceId: result.owner_id || result.ownerId || sanitizedFormData.ownerId,
+          statusId: result.status_id || result.statusId || sanitizedFormData.statusId
+        };
 
       setTasks(prevTasks => {
         const otherTasks = taskId
           ? prevTasks.filter(task => task.id !== taskId)
           : prevTasks;
-
-        if (result.status_id === 2 && result.owner_id) {
-          return [
-            ...otherTasks,
-            formattedTask,
-            {
-              ...formattedTask,
-              source: 'calendar',
-              resourceId: result.owner_id
-            }
-          ];
-        }
 
         return [...otherTasks, formattedTask];
       });
@@ -310,14 +95,11 @@ const CalendarView = () => {
       );
     } catch (error) {
       console.error('Erreur de sauvegarde:', error);
-      toast.error(
-        'Erreur lors de la sauvegarde',
-        TOAST_CONFIG
-      );
+      toast.error('Erreur lors de la sauvegarde', TOAST_CONFIG);
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [formatTaskResponse, setTasks]);
+  }, [setTasks]);
 
   const handleStatusUpdate = useCallback(async (taskId, statusId) => {
     if (!taskId || !statusId) return;
@@ -362,13 +144,15 @@ const CalendarView = () => {
     })),
     holidays,
     handleDateSelect,
-    handleEventResize,
-    handleEventClick,
-    handleEventDrop,
+    handleEventResize: (info) => handleEventResize(info, calendarState.isProcessing),
+    handleEventClick: (clickInfo) => handleEventClick(clickInfo, tasks),
+    handleEventDrop: (dropInfo) => handleEventDrop(dropInfo, calendarState.isProcessing, statuses, tasks, setTasks),
     isProcessing: calendarState.isProcessing
   }), [
     resources,
     tasks,
+    setTasks,
+    statuses,
     calendarState.showWeekends,
     calendarState.isProcessing,
     holidays,
@@ -415,10 +199,9 @@ const CalendarView = () => {
           onStatusUpdate={handleStatusUpdate}
           resources={resources}
           onTaskClick={handleTaskClick}
+          className="mt-4"
         />
       </div>
     </div>
   );
 };
-
-export default CalendarView;

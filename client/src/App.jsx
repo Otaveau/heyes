@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import CalendarView from './components/Calendar/CalendarView';
+import { CalendarView } from './components/Calendar/CalendarView';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import OwnerManagement from './components/Management/OwnerManagement';

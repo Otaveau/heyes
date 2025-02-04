@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import { Draggable } from '@fullcalendar/interaction';
 import { AlertCircle } from 'lucide-react';
 import { BacklogContainer } from './BacklogContainer';
 import { STATUS_TYPES } from '../../constants/constants';
@@ -11,31 +12,57 @@ export const BacklogTaskList = ({
     onTaskClick,
     className = ''
 }) => {
-    // Définir l'ordre des statuts de manière statique
+
     const statusOrder = useMemo(() => [
         STATUS_TYPES.ENTRANT,
         STATUS_TYPES.WIP,
         STATUS_TYPES.EN_ATTENTE,
         STATUS_TYPES.DONE,
-    ], []); // L'ordre ne change jamais, donc pas besoin de dépendances
+    ], []);
 
-    // Mémoriser les statuts triés
+
+    useEffect(() => {
+        const taskElements = document.querySelectorAll('.task-item');
+        taskElements.forEach(el => {
+            new Draggable(el, {
+                itemSelector: '.task-item',
+                eventData: (eventEl) => {
+                    const taskId = eventEl.getAttribute('data-task-id');
+                    const task = tasks.find(t => t.id === parseInt(taskId, 10));
+                    if (!task) return null;
+
+                    return {
+                        id: task.id,
+                        title: task.title,
+                        start: task.startDate || new Date(),
+                        end: task.endDate || new Date(new Date().setHours(new Date().getHours() + 1)),
+                        allDay: true,
+                        extendedProps: {
+                            description: task.description,
+                            statusId: task.statusId,
+                            resourceId: task.resourceId,
+                            originalTask: task
+                        }
+                    };
+                }
+            });
+        });
+    }, [tasks]);
+
+
     const sortedStatuses = useMemo(() => {
         if (!Array.isArray(statuses) || statuses.length === 0) return [];
-
         return [...statuses].sort((a, b) => {
             const orderA = statusOrder.indexOf(a.statusType.toLowerCase());
             const orderB = statusOrder.indexOf(b.statusType.toLowerCase());
-            // Si le statut n'est pas dans l'ordre prédéfini, le mettre à la fin
             return (orderA === -1 ? Infinity : orderA) - (orderB === -1 ? Infinity : orderB);
         });
     }, [statuses, statusOrder]);
 
-    // Mémoriser le filtrage des tâches par statut
+
     const getFilteredTasks = useMemo(() => {
         return (statusId) => {
             if (!Array.isArray(tasks)) return [];
-            
             return tasks.filter(task => {
                 if (!task?.statusId) return false;
                 const taskStatusId = task.statusId;
@@ -45,7 +72,7 @@ export const BacklogTaskList = ({
         };
     }, [tasks]);
 
-    // Vérifier s'il y a des données valides
+
     if (!Array.isArray(statuses) || statuses.length === 0) {
         return (
             <div className="p-4 bg-yellow-50 text-yellow-700 rounded-lg flex items-center gap-2">
@@ -55,7 +82,7 @@ export const BacklogTaskList = ({
         );
     }
 
-    // Calculer des statistiques générales
+    
     const totalTasks = tasks.length;
     const doneStatusId = sortedStatuses.find(s => 
         s.statusType.toLowerCase() === STATUS_TYPES.DONE

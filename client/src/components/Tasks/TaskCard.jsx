@@ -11,12 +11,12 @@ const formatDate = (dateString) => {
   }
 };
 
-export const TaskCard = ({ 
-  task, 
-  statusName = '', 
+export const TaskCard = ({
+  task,
+  statusName = '',
   onTaskClick,
   className = '',
-  disabled = false 
+  disabled = false
 }) => {
   if (!task) return null;
 
@@ -38,7 +38,10 @@ export const TaskCard = ({
       e.preventDefault();
       return;
     }
-  
+
+    e.target.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', id.toString());
+
     const taskData = {
       id,
       title,
@@ -49,7 +52,7 @@ export const TaskCard = ({
       statusId,
       source: 'backlog'
     };
-  
+
     try {
       console.log('Drag start task data:', taskData);
       e.dataTransfer.setData('application/json', JSON.stringify(taskData));
@@ -59,6 +62,8 @@ export const TaskCard = ({
       console.error('Error setting drag data:', error);
     }
   };
+
+
   const handleClick = () => {
     if (!disabled && onTaskClick) {
       onTaskClick(task);
@@ -85,25 +90,26 @@ export const TaskCard = ({
       onClick={handleClick}
       onKeyPress={handleKeyPress}
       className={`
-        task-card 
-        bg-white 
-        p-4 
-        rounded-lg 
-        shadow-sm 
-        border 
-        ${statusName?.toLowerCase() === 'wip' ? 'border-blue-400' : 'border-gray-200'}
-        ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-move hover:bg-gray-50'} 
-        transition-all 
-        duration-200
-        focus:outline-none 
-        focus:ring-2 
-        focus:ring-blue-400
-        ${className}
-      `}
+    task-card 
+    bg-white 
+    p-4 
+    rounded-lg 
+    shadow-sm 
+    border 
+    ${statusName?.toLowerCase() === 'wip' ? 'border-blue-400' : 'border-gray-200'}
+    ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-move hover:bg-gray-50'} 
+    transition-all 
+    duration-200
+    focus:outline-none 
+    focus:ring-2 
+    focus:ring-blue-400
+    ${className}
+  `}
+      data-task-id={id}
       aria-disabled={disabled}
     >
       <h4 className="font-medium text-gray-900 break-words">{title}</h4>
-      
+
       {description && (
         <p className="text-sm text-gray-600 mt-2 break-words line-clamp-2">
           {description}
