@@ -1,34 +1,40 @@
-import {getStatusId} from './taskFormatters';
-import { STATUS_TYPES } from '../constants/constants';
+import { getStatusId } from './taskFormatters';
+import { STATUS_TYPES, ERROR_MESSAGES } from '../constants/constants';
 
 export const syncTaskWithBacklog = (task, sourceType, statusList) => {
     if (!task || !sourceType) {
-      console.error('Paramètres invalides pour syncTaskWithBacklog:', { task, sourceType });
-      return null;
+        console.error(ERROR_MESSAGES.INVALID_PARAMS, { task, sourceType });
+        return null;
     }
-  
+
+    const {
+        id,
+        title = 'Sans titre',
+        description = '',
+        start,
+        startDate,
+        end,
+        endDate,
+        resourceId,
+        status
+    } = task;
+
     const baseTask = {
-      id: task.id,
-      title: task.title || 'Sans titre',
-      description: task.description || '',
-      startDate: task.start || task.startDate,
-      endDate: task.end || task.endDate,
-      resourceId: task.resourceId,
-      status: task.status
+        id,
+        title,
+        description,
+        startDate: start || startDate,
+        endDate: end || endDate,
+        resourceId,
+        status
     };
-  
+
     const wipStatusId = getStatusId(statusList, STATUS_TYPES.WIP);
-  
-    if (sourceType === 'calendar') {
-      return {
-        ...baseTask,
-        status: wipStatusId
-      };
-    }
-  
+
+    // Synchronisation de la tâche en fonction du type de source
     return {
-      ...baseTask,
-      resourceId: task.resourceId,
-      status: wipStatusId
+        ...baseTask,
+        status: wipStatusId,
+        ...(sourceType === 'calendar' ? {} : { resourceId }) // Ajoute resourceId uniquement si ce n'est pas 'calendar'
     };
-  };
+};

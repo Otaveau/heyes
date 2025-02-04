@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { TaskCard } from '../Tasks/TaskCard';
 import { TaskForm } from '../Tasks/TaskForm';
+import { ERROR_MESSAGES } from '../../constants/constants';
+
 
 export const BacklogContainer = ({
   status,
@@ -57,7 +59,6 @@ export const BacklogContainer = ({
       }
 
       if (isWipStatus) {
-        // Utiliser la même méthode que handleTaskClick
         onTaskClick({
           id: taskData.id,
           title: taskData.title,
@@ -65,18 +66,16 @@ export const BacklogContainer = ({
           end: taskData.endDate,
           description: taskData.description,
           resourceId: taskData.resourceId,
-          statusId: targetStatusId  // Utiliser le nouveau statut
+          statusId: targetStatusId,
         });
       } else {
         await onStatusUpdate(taskData.id, targetStatusId);
       }
     } catch (error) {
       console.error('Erreur de drop:', error);
-      setError('Erreur lors du déplacement de la tâche');
+      setError(ERROR_MESSAGES.DROP_ERROR);
     }
   }, [status, isWipStatus, onStatusUpdate, onTaskClick]);
-
-
 
   const handleFormSubmit = useCallback(async (formData) => {
     setError(null);
@@ -89,14 +88,11 @@ export const BacklogContainer = ({
         if (!formData.endDate) missingFields.push('une date de fin');
 
         if (missingFields.length > 0) {
-          throw new Error(
-            `Pour le statut WIP, vous devez sélectionner ${missingFields.join(', ')}`
-          );
+          throw new Error(ERROR_MESSAGES.WIP_VALIDATION.replace('{fields}', missingFields.join(', ')));
         }
 
-        // Vérifier que la date de fin est après la date de début
         if (new Date(formData.startDate) > new Date(formData.endDate)) {
-          throw new Error('La date de fin doit être postérieure à la date de début');
+          throw new Error(ERROR_MESSAGES.END_DATE_VALIDATION);
         }
       }
 
@@ -113,7 +109,6 @@ export const BacklogContainer = ({
       setError(error.message);
     }
   }, [selectedTask, status, isWipStatus, onStatusUpdate, resetState]);
-
 
   return (
     <div
@@ -161,7 +156,8 @@ export const BacklogContainer = ({
               task={task}
               statusName={statusName}
               onTaskClick={onTaskClick}
-            />))
+            />
+          ))
         )}
       </div>
 

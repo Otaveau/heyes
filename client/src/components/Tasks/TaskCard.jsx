@@ -1,12 +1,13 @@
 import React from 'react';
 import { Calendar, User } from 'lucide-react';
+import { ERROR_MESSAGES } from '../../constants/constants';
 
 const formatDate = (dateString) => {
   if (!dateString) return null;
   try {
     return new Date(dateString).toLocaleDateString();
   } catch (error) {
-    console.error('Error formatting date:', error);
+    console.error(ERROR_MESSAGES.DATE_FORMAT, error);
     return null;
   }
 };
@@ -38,21 +39,21 @@ export const TaskCard = ({
       e.preventDefault();
       return;
     }
-  
+
     const taskData = {
-      id: task.id,
-      title: task.title,
-      description: task.description,
+      id,
+      title,
+      description,
       startDate: start_date || start,
       endDate: end_date || end,
       resourceId: owner_id || resourceId,
-      statusId: statusId,
+      statusId,
       source: 'backlog'
     };
-  
+
     // Pour le drag and drop natif
     e.dataTransfer.setData('application/json', JSON.stringify(taskData));
-    
+
     // Pour FullCalendar
     e.target.setAttribute('data-event', JSON.stringify({
       id: taskData.id,
@@ -66,7 +67,7 @@ export const TaskCard = ({
         source: 'backlog'
       }
     }));
-  
+
     e.target.classList.add('dragging');
   };
 
@@ -91,7 +92,6 @@ export const TaskCard = ({
   const endDateFormatted = formatDate(end_date || end);
   const assignedTo = owner_id || resourceId;
 
-  // On enveloppe le composant dans un div pour FullCalendar
   return (
     <div className="fc-event task-card-wrapper" data-task-id={id}>
       <div

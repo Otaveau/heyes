@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import { updateTask } from '../services/api/taskService';
+import { updateTask, updateTaskStatus, createTask } from '../services/api/taskService';
 import { getStatusId } from '../utils/taskFormatters';
 import { formatUTCDate } from '../utils/dateUtils';
-import { TOAST_CONFIG } from '../constants/constants';
+import { TOAST_CONFIG, ERROR_MESSAGES } from '../constants/constants';
 import { toast } from 'react-toastify';
 
 
@@ -10,11 +10,11 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
 
   const handleTaskClick = useCallback((task) => {
     if (!task?.id) {
-      console.warn('Tentative de click sur une tâche invalide');
+      console.warn(ERROR_MESSAGES.INVALID_TASK);
       return;
     }
 
-    setCalendarState(prev => ({
+    setCalendarState((prev) => ({
       ...prev,
       selectedTask: {
         id: task.id,
@@ -23,20 +23,20 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
         end: task.end,
         description: task.description,
         resourceId: task.resourceId,
-        statusId: task.statusId
+        statusId: task.statusId,
       },
-      isFormOpen: true
+      isFormOpen: true,
     }));
   }, [setCalendarState]);
 
-  const handleEventClick = useCallback((clickInfo, tasks) => {
-    const task = tasks.find(t => t.id === parseInt(clickInfo.event.id));
+  const handleEventClick = useCallback((clickInfo) => {
+    const task = tasks.find((t) => t.id === parseInt(clickInfo.event.id));
     if (task) {
       handleTaskClick(task);
     } else {
       console.warn('Tâche non trouvée:', clickInfo.event.id);
     }
-  }, [handleTaskClick]);
+  }, [handleTaskClick, tasks]);
 
   const handleEventResize = useCallback(async (info, isProcessing) => {
     if (isProcessing) {
@@ -45,7 +45,7 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
     }
 
     try {
-      setCalendarState(prev => ({ ...prev, isProcessing: true }));
+      setCalendarState((prev) => ({ ...prev, isProcessing: true }));
 
       const { event } = info;
       if (!event.start || !event.end) {
@@ -54,12 +54,12 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
 
       const updatedData = {
         startDate: formatUTCDate(event.start),
-        endDate: formatUTCDate(event.end)
+        endDate: formatUTCDate(event.end),
       };
 
       await updateTask(event.id, updatedData);
 
-      setTasks(prevTasks => prevTasks.map(task =>
+      setTasks((prevTasks) => prevTasks.map((task) =>
         task.id === event.id
           ? { ...task, start: event.start, end: event.end }
           : task
@@ -68,24 +68,21 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
       toast.success(`Tâche "${event.title}" redimensionnée`, TOAST_CONFIG);
     } catch (error) {
       console.error('Erreur de redimensionnement:', error);
-      toast.error('Erreur lors du redimensionnement', TOAST_CONFIG);
+      toast.error(ERROR_MESSAGES.RESIZE_ERROR, TOAST_CONFIG);
       info.revert();
     } finally {
-      setCalendarState(prev => ({ ...prev, isProcessing: false }));
+      setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
   }, [setCalendarState, setTasks]);
 
-  const handleEventDrop = useCallback(async (dropInfo, isProcessing, statuses, tasks, setTasks) => {
-
+  const handleEventDrop = useCallback(async (dropInfo, isProcessing) => {
     const { event } = dropInfo;
-
-    console.log('event :', event);
 
     if (!event?.start || !event?.end || isProcessing) return;
 
     try {
       event.setExtendedProp('isProcessing', true);
-      setCalendarState(prev => ({ ...prev, isProcessing: true }));
+      setCalendarState((prev) => ({ ...prev, isProcessing: true }));
 
       const resourceId = event.getResources()[0]?.id;
       const isFromBacklog = event.extendedProps?.source === 'backlog';
@@ -93,8 +90,7 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
         ? getStatusId('WIP', statuses)
         : event.extendedProps?.statusId;
 
-      // Vérifier si la tâche existe déjà dans le calendrier
-      const existingTask = tasks.find(t => t.id === parseInt(event.id, 10));
+      const existingTask = tasks.find((t) => t.id === parseInt(event.id, 10));
 
       const updatedData = {
         title: event.title,
@@ -102,7 +98,7 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
         endDate: formatUTCDate(event.end),
         description: event.extendedProps?.description || existingTask?.description || '',
         ownerId: resourceId ? parseInt(resourceId, 10) : null,
-        statusId: statusId
+        statusId: statusId,
       };
 
       const taskId = parseInt(event.id, 10);
@@ -118,37 +114,36 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
         statusId: result.status_id || result.statusId,
         extendedProps: {
           ...event.extendedProps,
-          source: null // Réinitialiser la source après le drop
-        }
+          source: null, // Réinitialiser la source après le drop
+        },
       };
 
-      setTasks(prevTasks =>
-        prevTasks.map(task => task.id === taskId ? updatedTask : task)
+      setTasks((prevTasks) =>
+        prevTasks.map((task) => (task.id === taskId ? updatedTask : task))
       );
 
       const actionType = isFromBacklog ? 'planifiée' : 'mise à jour';
       toast.success(`Tâche "${result.title}" ${actionType}`, TOAST_CONFIG);
     } catch (error) {
       console.error('Erreur de déplacement:', error);
-      toast.error('Erreur lors du déplacement', TOAST_CONFIG);
+      toast.error(ERROR_MESSAGES.DROP_ERROR, TOAST_CONFIG);
       dropInfo.revert?.();
     } finally {
       event.setExtendedProp('isProcessing', false);
-      setCalendarState(prev => ({ ...prev, isProcessing: false }));
+      setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState]);
+  }, [setCalendarState, setTasks, statuses, tasks]);
 
   const handleDrop = useCallback((dropInfo) => {
-    console.log('TaskHandlers - handleDrop début:', dropInfo);
     try {
       const draggedEl = dropInfo.draggedEl;
-      // Utiliser dataset.event au lieu de dataset.taskInfo
       const taskData = JSON.parse(draggedEl.dataset.event || draggedEl.getAttribute('data-event'));
 
       if (!taskData) {
         console.warn('Pas de données de tâche trouvées');
         return;
       }
+
       const event = {
         id: taskData.id.toString(),
         title: taskData.title,
@@ -159,23 +154,20 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
           description: taskData.description,
           source: 'backlog',
           statusId: taskData.statusId,
-          originalTask: taskData
-        }
+          originalTask: taskData,
+        },
       };
 
-      console.log('TaskHandlers - Création event:', event);
       dropInfo.view.calendar.addEvent(event);
       return false;
     } catch (error) {
-      console.error('TaskHandlers - Erreur dans handleDrop:', error);
+      console.error('Erreur dans handleDrop:', error);
       return false;
     }
   }, []);
 
   const handleEventReceive = useCallback((info) => {
-    console.log('TaskHandlers - handleEventReceive début:', info);
     if (!info.event || info.event.extendedProps?.isProcessing) {
-      console.log('TaskHandlers - Event déjà en cours de traitement ou invalide');
       return;
     }
 
@@ -183,21 +175,109 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
       event: info.event,
       oldResource: null,
       newResource: info.event.getResources()[0],
-      oldEvent: null
+      oldEvent: null,
     };
 
-    console.log('TaskHandlers - Appel handleEventDrop avec:', dropInfo);
-    handleEventDrop(dropInfo, false, statuses, tasks, setTasks);
-  }, [handleEventDrop, statuses, tasks, setTasks]);
+    handleEventDrop(dropInfo, false);
+  }, [handleEventDrop]);
+
+
+  const handleSubmit = useCallback(async (formData, taskId) => {
+    if (!formData?.title) {
+      toast.error(ERROR_MESSAGES.TITLE_REQUIRED, TOAST_CONFIG);
+      return;
+    }
+
+    try {
+      setCalendarState((prev) => ({ ...prev, isProcessing: true }));
+
+      const sanitizedFormData = {
+        title: formData.title.trim(),
+        description: (formData.description || '').trim(),
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        ownerId: formData.resourceId ? parseInt(formData.resourceId, 10) : null,
+        statusId: formData.statusId ? parseInt(formData.statusId, 10) : null,
+      };
+
+      const result = taskId
+        ? await updateTask(taskId, sanitizedFormData)
+        : await createTask(sanitizedFormData);
+
+      const formattedTask = {
+        id: result.id || taskId,
+        title: result.title || sanitizedFormData.title,
+        start: new Date(result.start_date || result.startDate),
+        end: new Date(result.end_date || result.endDate),
+        description: result.description || sanitizedFormData.description,
+        resourceId: result.owner_id || result.ownerId || sanitizedFormData.ownerId,
+        statusId: result.status_id || result.statusId || sanitizedFormData.statusId,
+      };
+
+      setTasks((prevTasks) => {
+        const otherTasks = taskId ? prevTasks.filter((task) => task.id !== taskId) : prevTasks;
+        return [...otherTasks, formattedTask];
+      });
+
+      setCalendarState((prev) => ({
+        ...prev,
+        isFormOpen: false,
+        selectedTask: null,
+      }));
+
+      toast.success(taskId ? 'Tâche mise à jour' : 'Tâche créée', TOAST_CONFIG);
+    } catch (error) {
+      console.error('Erreur de sauvegarde:', error);
+      toast.error(ERROR_MESSAGES.SAVE_ERROR, TOAST_CONFIG);
+    } finally {
+      setCalendarState((prev) => ({ ...prev, isProcessing: false }));
+    }
+  }, [setCalendarState, setTasks]);
+
+  const handleStatusUpdate = useCallback(async (taskId, statusId) => {
+    if (!taskId || !statusId) return;
+
+    try {
+      setCalendarState((prev) => ({ ...prev, isProcessing: true }));
+
+      const existingTask = tasks.find((t) => t.id === taskId);
+      const updatedTask = await updateTaskStatus(taskId, statusId);
+
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                statusId: statusId,
+                ownerId: updatedTask.owner_id,
+                startDate: updatedTask.start_date,
+                endDate: updatedTask.end_date,
+              }
+            : task
+        )
+      );
+
+      toast.success(`Statut ${existingTask ? `de "${existingTask.title}"` : ''} mis à jour`, TOAST_CONFIG);
+    } catch (error) {
+      console.error('Erreur de mise à jour du statut:', error);
+      toast.error(ERROR_MESSAGES.STATUS_UPDATE_ERROR, TOAST_CONFIG);
+    } finally {
+      setCalendarState((prev) => ({ ...prev, isProcessing: false }));
+    }
+  }, [setCalendarState, setTasks, tasks]);
+
+
 
 
 
   return {
+    handleSubmit,
+    handleStatusUpdate,
     handleTaskClick,
     handleEventClick,
     handleEventResize,
     handleEventDrop,
     handleDrop,
-    handleEventReceive
+    handleEventReceive,
   };
 };

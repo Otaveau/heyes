@@ -2,22 +2,36 @@ import { formatUTCDate } from "../../utils/dateUtils";
 import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
-
+import { ERROR_MESSAGES } from "../../constants/constants";
 
 // Validateurs de données
 const validateTaskData = (taskData) => {
-    if (!taskData) throw new Error('Données de tâche requises');
-    if (!taskData.title?.trim()) throw new Error('Titre requis');
-    if (!taskData.startDate) throw new Error('Date de début requise');
-    if (!taskData.endDate) throw new Error('Date de fin requise');
+    if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
+    if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
+    if (!taskData.startDate) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
+    if (!taskData.endDate) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
 
     const start = new Date(taskData.startDate);
     const end = new Date(taskData.endDate);
 
-    if (isNaN(start.getTime())) throw new Error('Date de début invalide');
-    if (isNaN(end.getTime())) throw new Error('Date de fin invalide');
-    if (end < start) throw new Error('La date de fin doit être après la date de début');
+    if (isNaN(start.getTime())) throw new Error(ERROR_MESSAGES.INVALID_START_DATE);
+    if (isNaN(end.getTime())) throw new Error(ERROR_MESSAGES.INVALID_END_DATE);
+    if (end < start) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
 };
+
+const handleFetchError = (error, action) => {
+    console.error(`Erreur lors de ${action}:`, error);
+    throw error;
+};
+
+const formatTaskData = (taskData) => ({
+    title: taskData.title.trim(),
+    startDate: formatUTCDate(taskData.startDate),
+    endDate: formatUTCDate(taskData.endDate),
+    description: taskData.description?.trim() || '',
+    ownerId: taskData.ownerId,
+    statusId: taskData.statusId
+});
 
 
 export const fetchTasks = async () => {
@@ -27,7 +41,6 @@ export const fetchTasks = async () => {
         });
 
         const tasks = await handleResponse(response);
-
         console.log('taskService :', tasks);
 
         return tasks.map(task => ({
@@ -41,24 +54,14 @@ export const fetchTasks = async () => {
             userId: task.user_id
         }));
     } catch (error) {
-        console.error('Erreur lors de la récupération des tâches:', error);
-        throw error;
+        handleFetchError(error, 'la récupération des tâches');
     }
 };
-
 
 export const createTask = async (taskData) => {
     try {
         validateTaskData(taskData);
-
-        const formattedData = {
-            title: taskData.title.trim(),
-            startDate: formatUTCDate(taskData.startDate),
-            endDate: formatUTCDate(taskData.endDate),
-            description: taskData.description?.trim() || '',
-            ownerId: taskData.ownerId,
-            statusId: taskData.statusId
-        };
+        const formattedData = formatTaskData(taskData);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks`, {
             method: 'POST',
@@ -68,28 +71,17 @@ export const createTask = async (taskData) => {
 
         return handleResponse(response);
     } catch (error) {
-        console.error('Erreur lors de la création de la tâche:', error);
-        throw error;
+        handleFetchError(error, 'la création de la tâche');
     }
 };
 
 export const updateTask = async (id, taskData) => {
     try {
         validateTaskData(taskData);
-
-        console.log('taskData :', taskData);
-
         const taskId = parseInt(id);
-        if (isNaN(taskId)) throw new Error('ID de tâche invalide');
+        if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
 
-        const formattedData = {
-            title: taskData.title.trim(),
-            startDate: formatUTCDate(taskData.startDate),
-            endDate: formatUTCDate(taskData.endDate),
-            description: taskData.description?.trim() || '',
-            ownerId: taskData.ownerId,
-            statusId: taskData.statusId
-        };
+        const formattedData = formatTaskData(taskData);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',
@@ -99,34 +91,30 @@ export const updateTask = async (id, taskData) => {
 
         return handleResponse(response);
     } catch (error) {
-        console.error('Erreur lors de la mise à jour de la tâche:', error);
-        throw error;
+        handleFetchError(error, 'la mise à jour de la tâche');
     }
 };
 
 export const updateTaskStatus = async (taskId, statusId) => {
     try {
-        if (!taskId) throw new Error('ID de tâche requis');
-        if (!statusId) throw new Error('ID de statut requis');
+        if (!taskId) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
+        if (!statusId) throw new Error(ERROR_MESSAGES.STATUS_ID_REQUIRED);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}/status`, {
             method: 'PATCH',
             headers: getAuthHeaders(),
-            body: JSON.stringify({
-                statusId: parseInt(statusId)
-            })
+            body: JSON.stringify({ statusId: parseInt(statusId) })
         });
 
         return handleResponse(response);
     } catch (error) {
-        console.error('Erreur lors de la mise à jour du statut:', error);
-        throw error;
+        handleFetchError(error, 'la mise à jour du statut');
     }
 };
 
 export const deleteTask = async (id) => {
     try {
-        if (!id) throw new Error('ID de tâche requis');
+        if (!id) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/${id}`, {
             method: 'DELETE',
@@ -135,14 +123,13 @@ export const deleteTask = async (id) => {
 
         return handleResponse(response);
     } catch (error) {
-        console.error('Erreur lors de la suppression de la tâche:', error);
-        throw error;
+        handleFetchError(error, 'la suppression de la tâche');
     }
 };
 
 export const getTasksByStatus = async (statusId) => {
     try {
-        if (!statusId) throw new Error('ID de statut requis');
+        if (!statusId) throw new Error(ERROR_MESSAGES.STATUS_ID_REQUIRED);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/status/${statusId}`, {
             headers: getAuthHeaders()
@@ -150,7 +137,6 @@ export const getTasksByStatus = async (statusId) => {
 
         return handleResponse(response);
     } catch (error) {
-        console.error('Erreur lors de la récupération des tâches par statut:', error);
-        throw error;
+        handleFetchError(error, 'la récupération des tâches par statut');
     }
 };

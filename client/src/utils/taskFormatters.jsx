@@ -1,9 +1,9 @@
-import { STATUS_COLORS, STATUS_TYPES } from "../constants/constants";
+import { STATUS_COLORS, STATUS_TYPES, ERROR_MESSAGES } from "../constants/constants";
 import { formatUTCDate } from "./dateUtils";
 
 export const formatEventForCalendar = (task) => {
     if (!task || !task.id) {
-        console.warn('Task invalide:', task);
+        console.warn(ERROR_MESSAGES.INVALID_TASK, task);
         return null;
     }
 
@@ -30,9 +30,9 @@ export const getEventColor = (status) => {
 };
 
 export const getStatusId = (statusList, statusType) => {
-
     console.error('Liste de statuts :', statusList);
-    console.error('statut type :',statusType);
+    console.error('statut type :', statusType);
+
     // Validation des paramètres
     if (!statusList || !Array.isArray(statusList)) {
         return null;
@@ -46,7 +46,7 @@ export const getStatusId = (statusList, statusType) => {
         if (defaultStatus) {
             return defaultStatus.statusId;
         }
-        console.warn('Statut entrant non trouvé');
+        console.warn(ERROR_MESSAGES.STATUS_NOT_FOUND);
         return null;
     }
 
@@ -76,45 +76,45 @@ export const getStatusId = (statusList, statusType) => {
 };
 
 export const formatTasksUtil = (tasksData, statusesData) => {
-  // Validation des entrées
-  if (!Array.isArray(tasksData) || !Array.isArray(statusesData)) {
-    console.error('Données invalides:', { tasksData, statusesData });
-    return [];
-  }
-
-  return tasksData.map(task => {
-    // Validation des champs requis
-    if (!task.id) {
-      console.warn('Tâche sans ID détectée:', task);
-      return null;
+    // Validation des entrées
+    if (!Array.isArray(tasksData) || !Array.isArray(statusesData)) {
+        console.error(ERROR_MESSAGES.INVALID_DATA, { tasksData, statusesData });
+        return [];
     }
 
-    // Trouver le statusId correct
-    let taskStatusId = task.status_id;
-    
-    // Si pas de statusId, essayer de le trouver via le type de statut
-    if (!taskStatusId && task.status_type) {
-      const matchingStatus = statusesData.find(s => 
-        s.status_type.toLowerCase().trim() === task.status_type.toLowerCase().trim()
-      );
-      taskStatusId = matchingStatus?.status_id || statusesData[0]?.status_id || 0;
-    }
+    return tasksData.map(task => {
+        // Validation des champs requis
+        if (!task.id) {
+            console.warn(ERROR_MESSAGES.TASK_WITHOUT_ID, task);
+            return null;
+        }
 
-    return {
-      id: task.id,
-      title: task.title || 'Sans titre',
-      start: task.start_date,
-      end: task.end_date,
-      resourceId: task.owner_id,
-      statusId: taskStatusId,
-      status: task.status_type,
-      extendedProps: {
-        description: task.description || '',
-        userId: task.user_id,
-        ownerName: task.owner_name,
-        teamName: task.team_name
-      }
-    };
-  })
-  .filter(Boolean);
+        // Trouver le statusId correct
+        let taskStatusId = task.status_id;
+
+        // Si pas de statusId, essayer de le trouver via le type de statut
+        if (!taskStatusId && task.status_type) {
+            const matchingStatus = statusesData.find(s => 
+                s.status_type.toLowerCase().trim() === task.status_type.toLowerCase().trim()
+            );
+            taskStatusId = matchingStatus?.status_id || statusesData[0]?.status_id || 0;
+        }
+
+        return {
+            id: task.id,
+            title: task.title || 'Sans titre',
+            start: task.start_date,
+            end: task.end_date,
+            resourceId: task.owner_id,
+            statusId: taskStatusId,
+            status: task.status_type,
+            extendedProps: {
+                description: task.description || '',
+                userId: task.user_id,
+                ownerName: task.owner_name,
+                teamName: task.team_name
+            }
+        };
+    })
+    .filter(Boolean);
 };

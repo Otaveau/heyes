@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { formatUTCDate } from '../../utils/dateUtils';
+import { ERROR_MESSAGES } from '../../constants/constants';
 
 export const TaskForm = ({
     isOpen,
@@ -9,7 +10,6 @@ export const TaskForm = ({
     selectedTask,
     resources = [],
     statuses = [],
-    backlogs = [],
     onSubmit
 }) => {
     const defaultStartDate = new Date().toISOString().split('T')[0];
@@ -30,24 +30,24 @@ export const TaskForm = ({
         const newErrors = {};
         
         if (!formData.title.trim()) {
-            newErrors.title = 'Le titre est requis';
+            newErrors.title = ERROR_MESSAGES.TITLE_REQUIRED;
         }
         
         if (!formData.startDate) {
-            newErrors.startDate = 'La date de début est requise';
+            newErrors.startDate = ERROR_MESSAGES.START_DATE_REQUIRED;
         }
         
         if (!formData.endDate) {
-            newErrors.endDate = 'La date de fin est requise';
+            newErrors.endDate = ERROR_MESSAGES.END_DATE_REQUIRED;
         }
         
         if (formData.startDate && formData.endDate && 
             new Date(formData.startDate) > new Date(formData.endDate)) {
-            newErrors.endDate = 'La date de fin doit être postérieure à la date de début';
+            newErrors.endDate = ERROR_MESSAGES.END_DATE_VALIDATION;
         }
 
         if (!formData.statusId) {
-            newErrors.statusId = 'Le statut est requis';
+            newErrors.statusId = ERROR_MESSAGES.STATUS_REQUIRED;
         }
 
         setErrors(newErrors);
@@ -90,7 +90,7 @@ export const TaskForm = ({
             console.error('Error submitting form:', error);
             setErrors(prev => ({
                 ...prev,
-                submit: 'Une erreur est survenue lors de la soumission du formulaire'
+                submit: ERROR_MESSAGES.SUBMIT_ERROR
             }));
         } finally {
             setIsSubmitting(false);

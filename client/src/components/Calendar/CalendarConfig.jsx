@@ -4,7 +4,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { isHoliday, isHolidayOrWeekend } from '../../utils/dateUtils';
-
+import { ERROR_MESSAGES } from '../../constants/constants';
 
 export const createCalendarOptions = ({
     resources,
@@ -23,6 +23,39 @@ export const createCalendarOptions = ({
     isProcessing
 }) => {
 
+    // Fonction utilitaire pour gérer la réception d'événements
+    const handleEventReceiveWrapper = (info) => {
+        if (!handleEventReceive || !info.event) return;
+        console.log('Event receive:', info);
+        try {
+            const taskData = JSON.parse(info.draggedEl.dataset.event);
+            handleEventReceive({
+                ...info,
+                taskData
+            });
+        } catch (error) {
+            console.error(ERROR_MESSAGES.EVENT_RECEIVE, error);
+        }
+    };
+
+    // Fonction utilitaire pour gérer le drop d'événements
+    const handleDropWrapper = (info) => {
+        console.log('Drop:', info);
+        try {
+            const taskData = JSON.parse(info.draggedEl.dataset.event);
+            info.draggedEl.style.opacity = '1';
+            if (handleDrop) {
+                handleDrop({
+                    ...info,
+                    taskData
+                });
+            }
+        } catch (error) {
+            console.error(ERROR_MESSAGES.DROP_HANDLER, error);
+        }
+        return false;
+    };
+
     return {
         locale: frLocale,
         schedulerLicenseKey: "GPL-My-Project-Is-Open-Source",
@@ -34,9 +67,7 @@ export const createCalendarOptions = ({
             timeGridPlugin
         ],
         initialView: 'resourceTimelineYear',
-        // Params d'édition
         editable: !isProcessing,
-        //droppable: !isProcessing,
         droppable: true,
         eventStartEditable: !isProcessing,
         eventDurationEditable: !isProcessing,
@@ -83,36 +114,9 @@ export const createCalendarOptions = ({
             console.log('Drag stop:', info);
             info.el.style.opacity = '1';
         },
-        eventReceive: (info) => {
-            if (!handleEventReceive || !info.event) return;
-            console.log('Event receive:', info);
-            try {
-                const taskData = JSON.parse(info.draggedEl.dataset.event);
-                handleEventReceive({
-                    ...info,
-                    taskData
-                });
-            } catch (error) {
-                console.error('Error in eventReceive:', error);
-            }
-        },
+        eventReceive: handleEventReceiveWrapper,
 
-        drop: (info) => {
-            console.log('Drop:', info);
-            try {
-                const taskData = JSON.parse(info.draggedEl.dataset.event);
-                info.draggedEl.style.opacity = '1';
-                if (handleDrop) {
-                    handleDrop({
-                        ...info,
-                        taskData
-                    });
-                }
-            } catch (error) {
-                console.error('Error in drop handler:', error);
-            }
-            return false;
-        },
+        drop: handleDropWrapper,
         headerToolbar: {
             left: 'toggleWeekends',
             center: 'title',
