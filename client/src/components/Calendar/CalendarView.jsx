@@ -26,8 +26,10 @@ export const CalendarView = () => {
     handleTaskClick,
     handleEventClick,
     handleEventResize,
-    handleEventDrop
-  } = useTaskHandlers(setTasks, setCalendarState, statuses);
+    handleEventDrop,
+    handleDrop, 
+    handleEventReceive
+  } = useTaskHandlers(setTasks, setCalendarState, statuses, tasks);
 
   const handleDateSelect = useCallback((selectInfo) => {
     if (!selectInfo.start) return;
@@ -65,15 +67,15 @@ export const CalendarView = () => {
         ? await updateTask(taskId, sanitizedFormData)
         : await createTask(sanitizedFormData);
 
-        const formattedTask = {
-          id: result.id || taskId,
-          title: result.title || sanitizedFormData.title,
-          start: new Date(result.start_date || result.startDate),
-          end: new Date(result.end_date || result.endDate),
-          description: result.description || sanitizedFormData.description,
-          resourceId: result.owner_id || result.ownerId || sanitizedFormData.ownerId,
-          statusId: result.status_id || result.statusId || sanitizedFormData.statusId
-        };
+      const formattedTask = {
+        id: result.id || taskId,
+        title: result.title || sanitizedFormData.title,
+        start: new Date(result.start_date || result.startDate),
+        end: new Date(result.end_date || result.endDate),
+        description: result.description || sanitizedFormData.description,
+        resourceId: result.owner_id || result.ownerId || sanitizedFormData.ownerId,
+        statusId: result.status_id || result.statusId || sanitizedFormData.statusId
+      };
 
       setTasks(prevTasks => {
         const otherTasks = taskId
@@ -83,10 +85,10 @@ export const CalendarView = () => {
         return [...otherTasks, formattedTask];
       });
 
-      setCalendarState(prev => ({ 
-        ...prev, 
-        isFormOpen: false, 
-        selectedTask: null 
+      setCalendarState(prev => ({
+        ...prev,
+        isFormOpen: false,
+        selectedTask: null
       }));
 
       toast.success(
@@ -137,16 +139,20 @@ export const CalendarView = () => {
   const calendarOptions = useMemo(() => createCalendarOptions({
     resources,
     tasks,
+    setTasks,
+    statuses,
     showWeekends: calendarState.showWeekends,
-    setShowWeekends: (value) => setCalendarState(prev => ({ 
-      ...prev, 
-      showWeekends: value 
+    setShowWeekends: (value) => setCalendarState(prev => ({
+      ...prev,
+      showWeekends: value
     })),
     holidays,
     handleDateSelect,
     handleEventResize: (info) => handleEventResize(info, calendarState.isProcessing),
-    handleEventClick: (clickInfo) => handleEventClick(clickInfo, tasks),
+    handleEventClick: (clickInfo) => handleEventClick(clickInfo),
     handleEventDrop: (dropInfo) => handleEventDrop(dropInfo, calendarState.isProcessing, statuses, tasks, setTasks),
+    handleDrop,
+    handleEventReceive,
     isProcessing: calendarState.isProcessing
   }), [
     resources,
@@ -159,7 +165,10 @@ export const CalendarView = () => {
     handleDateSelect,
     handleEventResize,
     handleEventClick,
-    handleEventDrop
+    handleEventDrop,
+    handleDrop,
+    handleEventReceive,
+    
   ]);
 
   if (dataError) {

@@ -23,3 +23,45 @@
 .fc .weekend-column .fc-timeline-slot-cushion {
   color: #666;
 }
+
+/* Styles pour le drag and drop */
+.task-card {
+  touch-action: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  will-change: transform, opacity;
+  cursor: move;
+}
+
+.task-card.dragging {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+/* Styles FullCalendar */
+.fc-event.task-card {
+  background-color: transparent;
+  border: none;
+}
+
+.fc-event.task-card.fc-dragging {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+/* Styles pour le feedback de drop sur le calendar */
+.fc-highlight {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border: 2px dashed rgb(59, 130, 246) !important;
+}
+
+/* Désactiver le drag and drop pendant le traitement */
+.processing .task-card {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Améliorer la visibilité de la zone de drop */
+.fc-view-harness.fc-drop-active {
+  outline: 2px dashed rgb(59, 130, 246);
+  outline-offset: -2px;
+}

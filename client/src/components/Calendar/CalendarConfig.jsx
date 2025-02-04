@@ -9,6 +9,8 @@ import { isHoliday, isHolidayOrWeekend } from '../../utils/dateUtils';
 export const createCalendarOptions = ({
     resources,
     tasks,
+    setTasks,
+    statuses,
     showWeekends,
     setShowWeekends,
     holidays,
@@ -16,6 +18,8 @@ export const createCalendarOptions = ({
     handleEventResize,
     handleEventClick,
     handleEventDrop,
+    handleDrop,
+    handleEventReceive,
     isProcessing
 }) => {
 
@@ -24,21 +28,30 @@ export const createCalendarOptions = ({
         schedulerLicenseKey: "GPL-My-Project-Is-Open-Source",
         height: "auto",
         plugins: [
-            resourceTimelinePlugin, 
-            interactionPlugin, 
-            dayGridPlugin, 
+            resourceTimelinePlugin,
+            interactionPlugin,
+            dayGridPlugin,
             timeGridPlugin
         ],
         initialView: 'resourceTimelineYear',
-    eventStartEditable: !isProcessing,
-    eventDurationEditable: !isProcessing,
-    eventResizableFromStart: !isProcessing,
-    editable: !isProcessing,
-    droppable: !isProcessing,
-    dropAccept: '.task-card',
-    selectable: !isProcessing,
-    selectMirror: true,
-    select: handleDateSelect,
+        // Params d'édition
+        editable: !isProcessing,
+        //droppable: !isProcessing,
+        droppable: true,
+        eventStartEditable: !isProcessing,
+        eventDurationEditable: !isProcessing,
+        eventResourceEditable: !isProcessing,
+        eventResizableFromStart: !isProcessing,
+        selectable: !isProcessing,
+
+        dropAccept: '.task-card',
+        selectMirror: true,
+        dropOverflow: true,
+        eventOverlap: true,
+        dragRevertDuration: 0,
+
+        select: handleDateSelect,
+
         resourceAreaWidth: '20%',
         resources,
         events: tasks.map(task => ({
@@ -49,104 +62,42 @@ export const createCalendarOptions = ({
             resourceId: task.resourceId || task.owner_id || null,
             allDay: true, // Forcer les événements à être sur toute la journée
             extendedProps: {
-              description: task.description || '',
-              status: task.status,
-              statusId: task.statusId,
-              originalTask: { ...task }
+                description: task.description || '',
+                status: task.status,
+                statusId: task.statusId,
+                originalTask: { ...task }
             }
-          })),
+        })),
         slotDuration: { days: 1 },
         defaultAllDay: true,
         forceEventDuration: true,
         eventClick: handleEventClick,
         eventResize: handleEventResize,
-        eventDrop: handleEventDrop,
-    dragRevertDuration: 0,
-    eventOverlap: true,
-    eventAllow: () => !isProcessing,
+        eventAllow: () => !isProcessing,
         eventDragStart: (info) => {
             info.el.style.opacity = '0.7';
         },
-        
         eventDragStop: (info) => {
             info.el.style.opacity = '1';
         },
-        drop: (dropInfo) => {
-            try {
-                const taskId = dropInfo.draggedEl.getAttribute('data-task-id');
-                if (!taskId) {
-                    console.warn('Aucun ID de tâche trouvé');
-                    return;
-                }
-        
-                const taskData = tasks.find(t => t.id.toString() === taskId);
-                if (!taskData) {
-                    console.warn('Tâche non trouvée:', taskId);
-                    return;
-                }
-        
-                const event = {
-                    id: taskId,
-                    title: taskData.title,
-                    start: dropInfo.date,
-                    end: dropInfo.date,
-                    resourceId: dropInfo.resource?.id,
-                    extendedProps: {
-                        description: taskData.description,
-                        source: 'backlog',
-                        statusId: taskData.statusId,
-                        originalTask: taskData
-                    }
-                };
-        
-                const calendarApi = dropInfo.view.calendar;
-                calendarApi.addEvent(event);
-                return false;
-            } catch (error) {
-                console.error('Erreur de gestion du drop:', error);
+        eventReceive: (info) => {
+            console.log('Event Receive:', info);
+            if (handleEventReceive) {
+                handleEventReceive(info);
             }
         },
-        eventReceive: (info) => {
-            try {
-                const taskId = info.draggedEl.getAttribute('data-task-id');
-                if (!taskId || info.event.extendedProps?.isProcessing) {
-                    return;
-                }
-        
-                const taskData = tasks.find(t => t.id.toString() === taskId);
-                if (!taskData) {
-                    console.warn('Tâche non trouvée:', taskId);
-                    return;
-                }
-        
-                // Supprimer tous les événements existants avec le même ID
-                const calendarApi = info.view.calendar;
-                const existingEvents = calendarApi.getEvents();
-                existingEvents.forEach(event => {
-                    if (event.id === taskId && event !== info.event) {
-                        event.remove();
-                    }
-                });
-        
-                // Marquer l'événement comme en cours de traitement
-                info.event.setExtendedProp('isProcessing', true);
-        
-                // Mettre à jour l'événement avec toutes les données nécessaires
-                info.event.setExtendedProp('source', 'backlog');
-                info.event.setExtendedProp('statusId', taskData.statusId);
-                info.event.setExtendedProp('description', taskData.description);
-                info.event.setExtendedProp('originalTask', taskData);
-        
-                handleEventDrop({
-                    event: info.event,
-                    draggedEl: info.draggedEl
-                });
-            } catch (error) {
-                console.error('Erreur dans eventReceive:', error);
-                if (info.event) {
-                    info.revert();
-                }
+        eventDrop: (info) => {
+            console.log('Event Drop:', info);
+            if (!isProcessing && handleEventDrop) {
+                handleEventDrop(info, isProcessing, statuses, tasks, setTasks);
             }
+        },
+        drop: (info) => {
+            console.log('Drop:', info);
+            if (handleDrop) {
+                handleDrop(info);
+            }
+            return false;
         },
         headerToolbar: {
             left: 'toggleWeekends',
@@ -174,8 +125,8 @@ export const createCalendarOptions = ({
         slotLaneClassNames: (arg) => {
             if (!arg?.date) return '';
             return isHolidayOrWeekend(arg.date, holidays)
-                ? isHoliday(arg.date, holidays) 
-                    ? 'holiday-column' 
+                ? isHoliday(arg.date, holidays)
+                    ? 'holiday-column'
                     : 'weekend-column'
                 : '';
         }

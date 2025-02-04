@@ -6,8 +6,8 @@ import { TOAST_CONFIG } from '../constants/constants';
 import { toast } from 'react-toastify';
 
 
-export const useTaskHandlers = (setTasks, setCalendarState, statuses) => {
-  
+export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => {
+
   const handleTaskClick = useCallback((task) => {
     if (!task?.id) {
       console.warn('Tentative de click sur une tâche invalide');
@@ -76,50 +76,58 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses) => {
   }, [setCalendarState, setTasks]);
 
   const handleEventDrop = useCallback(async (dropInfo, isProcessing, statuses, tasks, setTasks) => {
+
     const { event } = dropInfo;
-    if (!event?.start || !event?.end || event.extendedProps?.isProcessing) return;
+
+    console.log('event :', event);
+
+    if (!event?.start || !event?.end || isProcessing) return;
 
     try {
       event.setExtendedProp('isProcessing', true);
       setCalendarState(prev => ({ ...prev, isProcessing: true }));
 
       const resourceId = event.getResources()[0]?.id;
-      const statusType = event.extendedProps?.source === 'backlog' ? 'WIP' : event.extendedProps?.status;
-      const statusId = event.extendedProps?.source === 'backlog' ? 
-          getStatusId(statusType, statuses) : 
-          event.extendedProps?.statusId;
+      const isFromBacklog = event.extendedProps?.source === 'backlog';
+      const statusId = isFromBacklog
+        ? getStatusId('WIP', statuses)
+        : event.extendedProps?.statusId;
+
+      // Vérifier si la tâche existe déjà dans le calendrier
+      const existingTask = tasks.find(t => t.id === parseInt(event.id, 10));
 
       const updatedData = {
         title: event.title,
         startDate: formatUTCDate(event.start),
         endDate: formatUTCDate(event.end),
-        description: event.extendedProps?.description || '',
-        ownerId: parseInt(resourceId, 10),
+        description: event.extendedProps?.description || existingTask?.description || '',
+        ownerId: resourceId ? parseInt(resourceId, 10) : null,
         statusId: statusId
       };
 
       const taskId = parseInt(event.id, 10);
-      await updateTask(taskId, updatedData);
+      const result = await updateTask(taskId, updatedData);
 
-      setTasks(prevTasks => {
-        const taskExists = prevTasks.some(task => task.id === taskId);
-        const updatedTask = {
-          id: taskId,
-          start: updatedData.startDate,
-          end: updatedData.endDate,
-          title: updatedData.title,
-          description: updatedData.description,
-          resourceId: updatedData.ownerId,
-          statusId: updatedData.statusId,
-          source: event.extendedProps?.source
-        };
+      const updatedTask = {
+        id: taskId,
+        title: result.title,
+        description: result.description,
+        start: new Date(result.start_date || result.startDate),
+        end: new Date(result.end_date || result.endDate),
+        resourceId: result.owner_id || result.ownerId,
+        statusId: result.status_id || result.statusId,
+        extendedProps: {
+          ...event.extendedProps,
+          source: null // Réinitialiser la source après le drop
+        }
+      };
 
-        return taskExists
-          ? prevTasks.map(task => task.id === taskId ? updatedTask : task)
-          : [...prevTasks, updatedTask];
-      });
+      setTasks(prevTasks =>
+        prevTasks.map(task => task.id === taskId ? updatedTask : task)
+      );
 
-      toast.success(`Tâche "${updatedData.title}" mise à jour`, TOAST_CONFIG);
+      const actionType = isFromBacklog ? 'planifiée' : 'mise à jour';
+      toast.success(`Tâche "${result.title}" ${actionType}`, TOAST_CONFIG);
     } catch (error) {
       console.error('Erreur de déplacement:', error);
       toast.error('Erreur lors du déplacement', TOAST_CONFIG);
@@ -130,10 +138,70 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses) => {
     }
   }, [setCalendarState]);
 
+  const handleDrop = useCallback((dropInfo) => {
+    console.log('TaskHandlers - handleDrop début:', dropInfo);
+    try {
+      const draggedEl = dropInfo.draggedEl;
+      const taskInfo = draggedEl.dataset.taskInfo;
+      console.log('TaskHandlers - taskInfo trouvé:', taskInfo);
+
+      if (!taskInfo) {
+        console.warn('TaskHandlers - Pas de taskInfo dans draggedEl');
+        return;
+      }
+
+      const taskData = JSON.parse(taskInfo);
+      console.log('TaskHandlers - taskData parsé:', taskData);
+
+      const event = {
+        id: taskData.id.toString(),
+        title: taskData.title,
+        start: dropInfo.date,
+        end: dropInfo.date,
+        resourceId: dropInfo.resource?.id,
+        extendedProps: {
+          description: taskData.description,
+          source: 'backlog',
+          statusId: taskData.statusId,
+          originalTask: taskData
+        }
+      };
+
+      console.log('TaskHandlers - Création event:', event);
+      dropInfo.view.calendar.addEvent(event);
+      return false;
+    } catch (error) {
+      console.error('TaskHandlers - Erreur dans handleDrop:', error);
+      return false;
+    }
+  }, []);
+
+  const handleEventReceive = useCallback((info) => {
+    console.log('TaskHandlers - handleEventReceive début:', info);
+    if (!info.event || info.event.extendedProps?.isProcessing) {
+      console.log('TaskHandlers - Event déjà en cours de traitement ou invalide');
+      return;
+    }
+
+    const dropInfo = {
+      event: info.event,
+      oldResource: null,
+      newResource: info.event.getResources()[0],
+      oldEvent: null
+    };
+
+    console.log('TaskHandlers - Appel handleEventDrop avec:', dropInfo);
+    handleEventDrop(dropInfo, false, statuses, tasks, setTasks);
+  }, [handleEventDrop, statuses, tasks, setTasks]);
+
+
+
   return {
     handleTaskClick,
     handleEventClick,
     handleEventResize,
-    handleEventDrop
+    handleEventDrop,
+    handleDrop,
+    handleEventReceive
   };
 };

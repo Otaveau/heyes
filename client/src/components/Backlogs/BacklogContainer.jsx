@@ -158,7 +158,7 @@ export const BacklogContainer = ({
           tasks.map(task => (
             <div 
               key={task.id}
-              className="task-card"
+              className="task-card fc-event"
               data-task-id={task.id}
             >
               <TaskCard

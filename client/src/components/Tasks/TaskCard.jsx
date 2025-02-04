@@ -50,16 +50,14 @@ export const TaskCard = ({
         source: 'backlog'
     };
 
-    // Ajouter une classe pour le style pendant le drag
-    e.target.classList.add('dragging');
-    
-    // Important : définir les données avant les effets visuels
+    // Pour les backlogs - drag natif
     e.dataTransfer.setData('application/json', JSON.stringify(taskData));
+    // Effet visuel
+    e.target.classList.add('dragging');
 };
 
-// Ajouter un handleDragEnd
 const handleDragEnd = (e) => {
-  e.target.classList.remove('dragging');
+    e.target.classList.remove('dragging');
 };
 
   const handleClick = () => {
@@ -89,23 +87,23 @@ const handleDragEnd = (e) => {
       onClick={handleClick}
       onKeyPress={handleKeyPress}
       className={`
-    task-card 
-    bg-white 
-    p-4 
-    rounded-lg 
-    shadow-sm 
-    border 
-    ${statusName?.toLowerCase() === 'wip' ? 'border-blue-400' : 'border-gray-200'}
-    ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-move hover:bg-gray-50'} 
-    transition-all 
-    duration-200
-    focus:outline-none 
-    focus:ring-2 
-    focus:ring-blue-400
-    ${className}
-  `}
+        task-card 
+        fc-event
+        bg-white 
+        p-4 
+        rounded-lg 
+        shadow-sm 
+        border 
+        ${statusName?.toLowerCase() === 'wip' ? 'border-blue-400' : 'border-gray-200'}
+        ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-move hover:bg-gray-50'} 
+        transition-all 
+        duration-200
+        focus:outline-none 
+        focus:ring-2 
+        focus:ring-blue-400
+        ${className}
+      `}
       data-task-id={id}
-      aria-disabled={disabled}
     >
       <h4 className="font-medium text-gray-900 break-words">{title}</h4>
 
