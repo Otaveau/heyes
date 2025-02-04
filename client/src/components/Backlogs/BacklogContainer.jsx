@@ -50,7 +50,6 @@ export const BacklogContainer = ({
     try {
         const jsonData = e.dataTransfer.getData('application/json');
         const taskData = JSON.parse(jsonData);
-        
         const targetStatusId = parseInt(status, 10);
 
         if (taskData.statusId === targetStatusId) {
@@ -58,11 +57,16 @@ export const BacklogContainer = ({
         }
 
         if (isWipStatus) {
-            setSelectedTask({
-                ...taskData,
-                statusId: targetStatusId
+            // Utiliser la même méthode que handleTaskClick
+            onTaskClick({
+                id: taskData.id,
+                title: taskData.title,
+                start: taskData.startDate,
+                end: taskData.endDate,
+                description: taskData.description,
+                resourceId: taskData.resourceId,
+                statusId: targetStatusId  // Utiliser le nouveau statut
             });
-            setIsFormOpen(true);
         } else {
             await onStatusUpdate(taskData.id, targetStatusId);
         }
@@ -70,7 +74,7 @@ export const BacklogContainer = ({
         console.error('Erreur de drop:', error);
         setError('Erreur lors du déplacement de la tâche');
     }
-}, [status, isWipStatus, onStatusUpdate]);
+}, [status, isWipStatus, onStatusUpdate, onTaskClick]);
 
 
 

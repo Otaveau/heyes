@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 
 
 export const useTaskHandlers = (setTasks, setCalendarState, statuses) => {
+  
   const handleTaskClick = useCallback((task) => {
     if (!task?.id) {
       console.warn('Tentative de click sur une tâche invalide');
