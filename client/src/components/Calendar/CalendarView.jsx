@@ -1,123 +1,73 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
-import { AlertCircle } from 'lucide-react';
-import { createCalendarOptions } from './CalendarConfig';
-import { useCalendarData } from '../../hooks/useCalendarData';
-import { useTaskHandlers } from '../../hooks/useTaskHandlers';
-import { TaskForm } from '../Tasks/TaskForm';
-import { BacklogTaskList } from '../Backlogs/BacklogTaskList';
-import { DEFAULT_TASK_DURATION } from '../../constants/constants';
-import '../../style/CalendarView.css';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 
 export const CalendarView = () => {
-  const [calendarState, setCalendarState] = useState({
-    showWeekends: true,
-    isFormOpen: false,
-    selectedDates: null,
-    selectedTask: null,
-    isProcessing: false,
-  });
+  const [events, setEvents] = useState([
+    { id: '1', title: 'Événement existant', start: '2024-02-05' }
+  ]);
+  const externalEventsRef = useRef(null);
 
-  const { tasks, setTasks, resources, holidays, statuses, error: dataError } = useCalendarData();
-
-  const {
-    handleSubmit,
-    handleStatusUpdate,
-    handleTaskClick,
-    handleEventClick,
-    handleEventResize,
-    handleEventDrop,
-    handleDrop,
-    handleEventReceive,
-  } = useTaskHandlers(setTasks, setCalendarState, statuses, tasks);
-
-  const handleDateSelect = useCallback((selectInfo) => {
-    if (!selectInfo.start) return;
-
-    setCalendarState((prev) => ({
-      ...prev,
-      selectedDates: {
-        start: selectInfo.start,
-        end: selectInfo.end || new Date(selectInfo.start.getTime() + DEFAULT_TASK_DURATION),
-        resourceId: selectInfo.resource?.id,
-      },
-      isFormOpen: true,
-    }));
+  useEffect(() => {
+    // Initialiser Draggable sur le conteneur d'événements externes
+    new Draggable(externalEventsRef.current, {
+      itemSelector: '.fc-event',
+      eventData: function(eventEl) {
+        return {
+          title: eventEl.innerText
+        };
+      }
+    });
   }, []);
 
+  const handleEventDrop = (dropInfo) => {
+    const { event } = dropInfo;
+    setEvents(prevEvents => prevEvents.map(ev => 
+      ev.id === event.id ? { ...ev, start: event.start, end: event.end } : ev
+    ));
+  };
 
-  const calendarOptions = useMemo(() => createCalendarOptions({
-    resources,
-    tasks,
-    setTasks,
-    statuses,
-    showWeekends: calendarState.showWeekends,
-    setShowWeekends: (value) => setCalendarState((prev) => ({
-      ...prev,
-      showWeekends: value,
-    })),
-    holidays,
-    handleDateSelect,
-    handleEventResize: (info) => handleEventResize(info, calendarState.isProcessing),
-    handleEventClick: (clickInfo) => handleEventClick(clickInfo),
-    handleEventDrop: (dropInfo) => handleEventDrop(dropInfo, calendarState.isProcessing, statuses, tasks, setTasks),
-    handleDrop,
-    handleEventReceive,
-    isProcessing: calendarState.isProcessing,
-  }), [
-    resources,
-    tasks,
-    setTasks,
-    statuses,
-    calendarState.showWeekends,
-    calendarState.isProcessing,
-    holidays,
-    handleDateSelect,
-    handleEventResize,
-    handleEventClick,
-    handleEventDrop,
-    handleDrop,
-    handleEventReceive,
-  ]);
-
-  if (dataError) {
-    return (
-      <div className="p-4 bg-red-50 text-red-700 rounded-lg flex items-center gap-2">
-        <AlertCircle size={20} />
-        <span>Erreur de chargement des données: {dataError.message}</span>
-      </div>
-    );
-  }
+  const handleExternalDrop = (info) => {
+    if (info.draggedEl.parentNode === externalEventsRef.current) {
+      setEvents(prev => [...prev, {
+        id: `new-${Date.now()}`,
+        title: info.draggedEl.innerText,
+        start: info.dateStr,
+        allDay: info.allDay
+      }]);
+      // Supprimer l'élément DOM pour éviter la duplication
+      info.draggedEl.parentNode.removeChild(info.draggedEl);
+    }
+  };
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="flex flex-col">
-        <div className="flex-1 p-4">
-          <FullCalendar {...calendarOptions} />
-        </div>
+    <div className="flex">
+      <div 
+        ref={externalEventsRef}
+        className="w-48 p-4 bg-gray-100"
+      >
+        <h3 className="mb-4 font-bold">Événements disponibles</h3>
+        <div className="fc-event p-2 mb-2 bg-white border rounded">Réunion</div>
+        <div className="fc-event p-2 mb-2 bg-white border rounded">Formation</div>
+        <div className="fc-event p-2 mb-2 bg-white border rounded">Pause déjeuner</div>
+      </div>
 
-        <TaskForm
-          isOpen={calendarState.isFormOpen}
-          onClose={() => setCalendarState((prev) => ({
-            ...prev,
-            isFormOpen: false,
-            selectedTask: null,
-          }))}
-          selectedDates={calendarState.selectedDates}
-          selectedTask={calendarState.selectedTask}
-          resources={resources}
-          statuses={statuses}
-          onSubmit={handleSubmit}
-          isProcessing={calendarState.isProcessing}
-        />
-
-        <BacklogTaskList
-          statuses={statuses}
-          tasks={tasks}
-          onStatusUpdate={handleStatusUpdate}
-          resources={resources}
-          onTaskClick={handleTaskClick}
-          className="mt-4"
+      <div className="flex-1 p-4">
+        <FullCalendar
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          headerToolbar={{
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+          }}
+          editable={true}
+          droppable={true}
+          events={events}
+          eventDrop={handleEventDrop}
+          drop={handleExternalDrop}
         />
       </div>
     </div>
