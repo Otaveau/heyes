@@ -64,9 +64,11 @@ export const CalendarView = () => {
         <div className="fc-event p-2 mb-2 bg-white border rounded">Pause déjeuner</div>
       </div>
 
-      <div className="flex-1 p-4">
+      <div className="flex-1 p-4" style={{ width: '2000px' }}>
         <FullCalendar
           plugins={[resourceTimelinePlugin, interactionPlugin]}
+          height='auto'
+          schedulerLicenseKey= 'GPL-My-Project-Is-Open-Source'
           initialView="resourceTimelineYear"
           headerToolbar={{
             left: 'prev,next today',
