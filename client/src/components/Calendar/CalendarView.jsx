@@ -1,22 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
+import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 
 export const CalendarView = () => {
   const [events, setEvents] = useState([
-    { id: '1', title: 'Événement existant', start: '2024-02-05' }
+    { id: '1', title: 'Événement existant', start: '2024-02-05', resourceId: 'resource1' }
   ]);
+
+  const [resources] = useState([
+    { id: 'resource1', title: 'Resource 1' },
+    { id: 'resource2', title: 'Resource 2' },
+  ]);
+
   const externalEventsRef = useRef(null);
 
   useEffect(() => {
-    // Initialiser Draggable sur le conteneur d'événements externes
     new Draggable(externalEventsRef.current, {
       itemSelector: '.fc-event',
       eventData: function(eventEl) {
         return {
-          title: eventEl.innerText
+          title: eventEl.innerText,
+          resourceId: 'resource1' // resource par défaut
         };
       }
     });
@@ -25,7 +30,12 @@ export const CalendarView = () => {
   const handleEventDrop = (dropInfo) => {
     const { event } = dropInfo;
     setEvents(prevEvents => prevEvents.map(ev => 
-      ev.id === event.id ? { ...ev, start: event.start, end: event.end } : ev
+      ev.id === event.id ? { 
+        ...ev, 
+        start: event.start, 
+        end: event.end,
+        resourceId: event.getResources()[0]?.id || 'resource1'
+      } : ev
     ));
   };
 
@@ -35,9 +45,9 @@ export const CalendarView = () => {
         id: `new-${Date.now()}`,
         title: info.draggedEl.innerText,
         start: info.dateStr,
-        allDay: info.allDay
+        allDay: info.allDay,
+        resourceId: info.resource?.id || 'resource1'
       }]);
-      // Supprimer l'élément DOM pour éviter la duplication
       info.draggedEl.parentNode.removeChild(info.draggedEl);
     }
   };
@@ -56,16 +66,19 @@ export const CalendarView = () => {
 
       <div className="flex-1 p-4">
         <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
+          plugins={[resourceTimelinePlugin, interactionPlugin]}
+          initialView="resourceTimelineYear"
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            right: 'resourceTimelineYear,resourceTimelineMonth,resourceTimelineWeek'
           }}
           editable={true}
           droppable={true}
           events={events}
+          resources={resources}
+          resourceAreaWidth="15%"
+          slotDuration={{ days: 1 }}
           eventDrop={handleEventDrop}
           drop={handleExternalDrop}
         />
@@ -73,3 +86,4 @@ export const CalendarView = () => {
     </div>
   );
 };
+
