@@ -8,18 +8,16 @@ import { STATUS_TYPES } from '../../constants/constants';
 export const CalendarView = () => {
 
   const { tasks, updateTask, resources }  = useCalendarData();
-  const [events, setEvents] = useState([]);
   const [externalTasks, setExternalTasks] = useState([]);
   const externalEventsRef = useRef(null);
 
   // Séparer les tasks avec et sans ressource
   useEffect(() => {
-    const tasksWithResource = tasks.filter(task => task.resourceId);
+    if (!tasks) return;
     const tasksWithoutResource = tasks.filter(task => !task.resourceId);
-    
-    setEvents(tasksWithResource);
     setExternalTasks(tasksWithoutResource);
   }, [tasks]);
+
 
   useEffect(() => {
     if (!externalEventsRef.current) return;
@@ -27,17 +25,17 @@ export const CalendarView = () => {
     const draggable = new Draggable(externalEventsRef.current, {
       itemSelector: '.fc-event',
       eventData: function(eventEl) {
-        // Récupérer l'ID de la task depuis le data-task-id
+
         const taskId = eventEl.getAttribute('data-task-id');
         const task = externalTasks.find(t => t.id === taskId);
-        
+
         return {
-          id: taskId,
-          title: task?.title || eventEl.innerText,
-          resourceId: 'resource1',
-          allDay: task?.allDay || true,
-          // Ajouter d'autres propriétés de la task si nécessaire
-          extendedProps: task
+          id: task?.id?.toString() || `new-${Date.now()}`,
+          title: task?.title || eventEl.innerText || 'Nouvelle tâche',
+          start: new Date(), // Date par défaut
+          allDay: true,
+          duration: { days: 1 }, // Durée par défaut
+          extendedProps: task ? { ...task } : {}
         };
       }
     });
@@ -46,58 +44,68 @@ export const CalendarView = () => {
   }, [externalTasks]);
 
 
-  useEffect(() => {
-    setEvents(tasks);
-  }, [tasks]);
-
-
   const handleEventDrop = async (dropInfo) => {
     const { event } = dropInfo;
+    const taskId = event.id;
+
+    // Trouver la tâche existante
+    const existingTask = tasks.find(t => t.id === taskId);
+    if (!existingTask) {
+      console.error(`Task with id ${taskId} not found`);
+      dropInfo.revert();
+      return;
+    }
+
     try {
+      console.log('Updating task with ID:', taskId);
       const updates = {
+        ...existingTask,
         start: event.start,
         end: event.end,
-        resourceId: event.getResources()[0]?.id || 'resource1',
-        //statusId: STATUS_TYPES.WIP,
+        resourceId: event.getResources()[0]?.id,
+        statusId: STATUS_TYPES.WIP,
         source: 'calendar',
         isCalendarTask: true
       };
 
-      await updateTask(event.id, updates);
+      await updateTask(taskId, updates);
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la tâche:', error);
       dropInfo.revert();
     }
   };
 
+
   const handleExternalDrop = async (info) => {
     if (!info.draggedEl.parentNode) return;
 
     try {
       const taskId = info.draggedEl.getAttribute('data-task-id');
-      const existingTask = externalTasks.find(t => t.id === taskId);
+      // S'assurer que l'ID est un nombre si nécessaire
+      const numericId = parseInt(taskId, 10);
+      const existingTask = externalTasks.find(t => t.id.toString() === taskId);
       
-      if (existingTask) {
-        // Mettre à jour une task existante
-        const updates = {
-          ...existingTask,
-          start: info.dateStr,
-          resourceId: info.resource?.id || 'resource1',
-          statusId: STATUS_TYPES.WIP,
-          source: 'calendar',
-          isCalendarTask: true
-        };
-        await updateTask(taskId, updates);
+      if (!existingTask) {
+        console.error(`Task with id ${taskId} not found in externalTasks`);
+        return;
       }
 
-      // Optionnel : supprimer l'élément du DOM si c'est désiré
-      if (info.draggedEl.parentNode === externalEventsRef.current) {
-        info.draggedEl.parentNode.removeChild(info.draggedEl);
-      }
+      const updates = {
+        ...existingTask,
+        start: info.dateStr,
+        resourceId: info.resource?.id || 'resource1',
+        statusId: STATUS_TYPES.WIP,
+        source: 'calendar',
+        isCalendarTask: true
+      };
+
+      await updateTask(numericId, updates);
+
     } catch (error) {
-      console.error('Erreur lors de la création/mise à jour de la tâche:', error);
+      console.error('Erreur lors de la mise à jour de la tâche:', error);
     }
   };
+
 
   return (
     <div className="flex">
@@ -109,11 +117,12 @@ export const CalendarView = () => {
         {externalTasks.map(task => (
           <div 
             key={task.id}
-            data-task-id={task.id}
+            data-task-id={task.id.toString()}
             className="fc-event p-2 mb-2 bg-white border rounded cursor-move hover:bg-gray-50"
             style={{ backgroundColor: task.color }}
           >
-            {task.title}
+            {task.title || 'Sans titre'}
+            <div className="text-xs text-gray-500">ID: {task.id}</div>
           </div>
         ))}
       </div>
@@ -131,7 +140,7 @@ export const CalendarView = () => {
           }}
           editable={true}
           droppable={true}
-          events={events}
+          events={tasks}
           resources={resources}
           resourceAreaWidth="15%"
           slotDuration={{ days: 1 }}
