@@ -6,13 +6,14 @@ import { ERROR_MESSAGES } from "../../constants/constants";
 
 // Validateurs de données
 const validateTaskData = (taskData) => {
+    console.log('validateTaskData taskData :', taskData);
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
-    if (!taskData.startDate) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
-    if (!taskData.endDate) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
+    if (!taskData.start) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
+    if (!taskData.end) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
 
-    const start = new Date(taskData.startDate);
-    const end = new Date(taskData.endDate);
+    const start = new Date(taskData.start);
+    const end = new Date(taskData.end);
 
     if (isNaN(start.getTime())) throw new Error(ERROR_MESSAGES.INVALID_START_DATE);
     if (isNaN(end.getTime())) throw new Error(ERROR_MESSAGES.INVALID_END_DATE);
@@ -41,7 +42,6 @@ export const fetchTasks = async () => {
         });
 
         const tasks = await handleResponse(response);
-        console.log('taskService :', tasks);
 
         return tasks.map(task => ({
             id: task.id,
@@ -81,7 +81,11 @@ export const updateTask = async (id, taskData) => {
         const taskId = parseInt(id);
         if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
 
+        console.log('FE taskService updateTask taskData :', taskData);
+
         const formattedData = formatTaskData(taskData);
+
+        console.log('FE taskService updateTask formattedData :', formattedData);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',

@@ -10,8 +10,6 @@ export const fetchOwners = async () => {
 
         const owners = await handleResponse(response);
 
-        console.log('ownerService :', owners);
-
         return owners.map(owner => ({
             id: owner.id,
             ownerId: owner.owner_id,

@@ -11,8 +11,6 @@ export const fetchStatuses = async () => {
 
         const statuses = await handleResponse(response);
 
-        console.log('statusService :', statuses);
-
         return statuses.map(status => ({
             id: status.id,
             statusId: status.status_id,

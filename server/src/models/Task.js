@@ -33,16 +33,19 @@ class Task {
     return result.rows[0];
   }
 
-  static async update(id, data, userId) {
+  static async update(id, data, user_id) {
     // Si seul le statut est fourni, utiliser updateStatus
     if (data.status_id && Object.keys(data).length === 1) {
-      return this.updateStatus(id, data.status_id, userId);
+      return this.updateStatus(id, data.status_id, user_id);
     }
 
     const { title, start_date, end_date, owner_id, status_id, description } = data;
+
+    console.log('BE Task Model update data :', data);
+
     const result = await pool.query(
       'UPDATE tasks SET title = $1, start_date = $2, end_date = $3, owner_id = $4, status_id = $5, description = $6 WHERE id = $7 AND user_id = $8 RETURNING *',
-      [title, start_date, end_date, owner_id, status_id, description, id, userId]
+      [title, start_date, end_date, owner_id, status_id, description, id, user_id]
     );
     return result.rows[0];
   }

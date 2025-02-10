@@ -7,6 +7,7 @@ import { fetchOwners } from '../services/api/ownerService';
 import { fetchHolidays } from '../services/api/holidayService';
 import { fetchStatuses } from '../services/api/statusService';
 import { ERROR_MESSAGES } from '../constants/constants';
+import { updateTask as updateTaskService } from '../services/api/taskService';
 
 export const useCalendarData = () => {
   const [tasks, setTasks] = useState([]);
@@ -103,29 +104,22 @@ export const useCalendarData = () => {
   }, [formatHolidays, formatResources, formatTasksWithCalendar]);
 
   const updateTask = useCallback(async (taskId, updates) => {
-    if (!taskId) {
-      throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
-    }
+
+    console.log('FE useCalendarData updateTask taskId :', taskId);
+    console.log('FE useCalendarData updateTask  updates:', updates); 
+
+    const previousTasks = tasks;
 
     setTasks(currentTasks => {
-      const taskToUpdate = currentTasks.find(task => task.id === taskId);
-      if (!taskToUpdate) {
-        console.warn(ERROR_MESSAGES.TASK_NOT_FOUND.replace('{id}', taskId));
-        return currentTasks;
-      }
+      const updatedTasks = currentTasks.map(task => 
+        task.id === taskId 
+          ? { ...task, ...updates }
+          : task
+      );
 
-      const updatedTask = {
-        ...taskToUpdate,
-        ...updates,
-        lastUpdated: new Date().toISOString(),
-      };
-
-      const updatedTasks = currentTasks.filter(task => task.id !== taskId);
-      updatedTasks.push(updatedTask);
-
-      if (updatedTask.statusId === STATUS_TYPES.WIP && updatedTask.resourceId) {
+      if (updates.statusId === STATUS_TYPES.WIP && updates.resourceId) {
         updatedTasks.push({
-          ...updatedTask,
+          ...updatedTasks.find(t => t.id === taskId),
           source: 'calendar',
           isCalendarTask: true,
         });
@@ -133,34 +127,25 @@ export const useCalendarData = () => {
 
       return updatedTasks;
     });
-  }, []);
 
-  const addTask = useCallback((newTask) => {
-    if (!newTask) {
-      throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
+    try {
+      // Appel API
+      const updatedTask = await updateTaskService(taskId, updates);
+      
+      // Mise à jour avec les données du serveur
+      setTasks(currentTasks => 
+        currentTasks.map(task => 
+          task.id === updatedTask.id ? updatedTask : task
+        )
+      );
+
+      return updatedTask;
+    } catch (error) {
+      // Rollback en cas d'erreur
+      setTasks(previousTasks);
+      throw error;
     }
-
-    setTasks(currentTasks => {
-      const taskToAdd = {
-        ...newTask,
-        id: newTask.id || `task-${Date.now()}`,
-        statusId: getStatusId(statuses, STATUS_TYPES.ENTRANT),
-        createdAt: new Date().toISOString(),
-      };
-
-      const updatedTasks = [...currentTasks, taskToAdd];
-
-      if (taskToAdd.statusId === STATUS_TYPES.WIP && taskToAdd.resourceId) {
-        updatedTasks.push({
-          ...taskToAdd,
-          source: 'calendar',
-          isCalendarTask: true,
-        });
-      }
-
-      return updatedTasks;
-    });
-  }, [statuses]);
+  }, [tasks]);
 
   useEffect(() => {
     loadData();
@@ -175,7 +160,6 @@ export const useCalendarData = () => {
     error,
     refreshData: loadData,
     updateTask,
-    addTask,
     setTasks,
   };
 };

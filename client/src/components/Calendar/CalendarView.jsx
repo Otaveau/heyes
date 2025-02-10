@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
+import { formatUTCDate } from '../../utils/dateUtils';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { STATUS_TYPES } from '../../constants/constants';
 
@@ -46,28 +47,35 @@ export const CalendarView = () => {
 
   const handleEventDrop = async (dropInfo) => {
     const { event } = dropInfo;
-    const taskId = event.id;
+    const taskId = parseInt(event.id);
 
     // Trouver la tâche existante
     const existingTask = tasks.find(t => t.id === taskId);
-    if (!existingTask) {
-      console.error(`Task with id ${taskId} not found`);
-      dropInfo.revert();
-      return;
-    }
+
+    const endDate = event._def.extendedProps.end || event._instance.range.end;
+
+    console.log('endDate : ', endDate);
 
     try {
-      console.log('Updating task with ID:', taskId);
+
+      // let endDate = event.end;
+      
+
+      // console.log('endDate: ', endDate);
+
+
       const updates = {
         ...existingTask,
-        start: event.start,
-        end: event.end,
+        start: formatUTCDate(event.start),
+        end: formatUTCDate(endDate),
         resourceId: event.getResources()[0]?.id,
         statusId: STATUS_TYPES.WIP,
         source: 'calendar',
         isCalendarTask: true
       };
 
+
+      console.log('handleEventDrop updates:', updates);
       await updateTask(taskId, updates);
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la tâche:', error);
@@ -92,7 +100,8 @@ export const CalendarView = () => {
 
       const updates = {
         ...existingTask,
-        start: info.dateStr,
+        start: formatUTCDate(info.start),
+        end: formatUTCDate(info.end),
         resourceId: info.resource?.id || 'resource1',
         statusId: STATUS_TYPES.WIP,
         source: 'calendar',

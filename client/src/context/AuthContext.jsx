@@ -11,7 +11,6 @@ const initialState = {
 };
 
 const authReducer = (state, action) => {
-  console.log('AuthReducer action:', action.type, 'Current state:', state);
   
   switch (action.type) {
     case 'LOGIN':
@@ -60,27 +59,21 @@ const authReducer = (state, action) => {
 };
 
 export const AuthProvider = ({ children }) => {
-  console.log('AuthProvider initializing');
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
     const checkTokenValidity = async () => {
-      console.log('Checking token validity...');
       const token = localStorage.getItem('token');
-      console.log('Token from localStorage:', token);
       
       dispatch({ type: 'SET_LOADING', payload: true });
 
       if (!token) {
-        console.log('No token found, invalidating...');
         dispatch({ type: 'INVALIDATE_TOKEN' });
         return;
       }
 
       try {
-        console.log('Validating token with API...');
         const userData = await validateToken(token);
-        console.log('Token validation response:', userData);
         
         if (userData) {
           dispatch({ 
@@ -103,7 +96,6 @@ export const AuthProvider = ({ children }) => {
     checkTokenValidity();
   }, []);
 
-  console.log('Current auth state:', state);
 
   const contextValue = {
     state,
@@ -120,7 +112,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   if (state.loading) {
-    console.log('Auth state is loading...');
     return null;
   }
 
