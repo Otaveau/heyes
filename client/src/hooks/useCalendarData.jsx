@@ -102,8 +102,6 @@ export const useCalendarData = () => {
 
   const updateTask = useCallback(async (taskId, updates) => {
 
-    console.log('useCalendarData updateTask  updates:', updates); 
-
     const previousTasks = tasks;
 
     setTasks(currentTasks => {
@@ -129,16 +127,28 @@ export const useCalendarData = () => {
       const updatedTask = await updateTaskService(taskId, updates);
       
       // Mise à jour avec les données du serveur
-      setTasks(currentTasks => 
-        currentTasks.map(task => 
-          task.id === updatedTask.id ? updatedTask : task
-        )
-      );
+      setTasks(currentTasks => {
+        const newTasks = currentTasks.filter(task => task.id !== taskId);
+        
+        // Formater la tâche mise à jour pour le calendrier
+        const formattedTask = {
+          id: updatedTask.id,
+          title: updatedTask.title || 'Sans titre',
+          start: updates.start, // Utiliser les dates du update
+          end: updates.end,
+          resourceId: updates.resourceId,
+          statusId: updates.statusId,
+          description: updatedTask.description,
+          extendedProps: {
+            userId: updatedTask.userId,
+          },
+        };
+
+        return [...newTasks, formattedTask];
+      });
 
       return updatedTask;
     } catch (error) {
-      // Rollback en cas d'erreur
-      setTasks(previousTasks);
       throw error;
     }
   }, [tasks]);

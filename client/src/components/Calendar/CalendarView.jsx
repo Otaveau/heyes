@@ -53,16 +53,11 @@ export const CalendarView = () => {
 
     const existingTask = tasks.find(t => t.id === taskId);
 
-    // Création de nouvelles dates avec ajustement du fuseau horaire
     const startDate = new Date(event.start);
-    
     const endDate = event._def.extendedProps.end || event._instance.range.end;
     const endDateObj = new Date(endDate);
     const resourceId = parseInt(event._def.resourceIds[0] || null, 10);
 
-    // Log pour debug
-    console.log('StartDate avant formatage:', startDate);
-    console.log('EndDate avant formatage:', endDateObj);
 
     try {
         const updates = {
@@ -75,7 +70,6 @@ export const CalendarView = () => {
             isCalendarTask: true
         };
 
-        console.log('Updates à envoyer:', updates);
         await updateTask(taskId, updates);
         
         // Mettre à jour l'état local des tâches
@@ -92,43 +86,88 @@ export const CalendarView = () => {
 };
 
 
-  const handleExternalDrop = async (info) => {
-    if (!info.draggedEl.parentNode) return;
+const handleExternalDrop = async (info) => {
+  if (!info.draggedEl.parentNode) return;
 
-    try {
-
+  try {
       console.log('CalendarView handleExternalDrop info : ', info);
       const taskId = info.draggedEl.getAttribute('data-task-id');
-      const endDate = info._def.extendedProps.end || info._instance.range.end;
-      const resourceId = parseInt(info.resource?._resource?.id || null, 10);
-
-      const numericId = parseInt(taskId, 10);
+      
       const existingTask = externalTasks.find(t => t.id.toString() === taskId);
-
-      console.log('CalendarView handleExternalDrop existingTasks : ', existingTask);
+      console.log('Tâche existante trouvée:', existingTask);
 
       if (!existingTask) {
-        console.error(`Task with id ${taskId} not found in externalTasks`);
-        return;
+          console.error(`Task with id ${taskId} not found in externalTasks`);
+          return;
       }
 
-      const updates = {
-        ...existingTask,
-        start: formatUTCDate(info.date),
-        end: formatUTCDate(endDate),
-        resourceId: resourceId,
-        statusId: STATUS_IDS.WIP,
-        source: 'calendar',
-        isCalendarTask: true
-      };
+      // Log des dates pour debug
+      console.log('Date de début existante:', existingTask.start);
+      console.log('Date de fin existante:', existingTask.end);
+      console.log('Nouvelle date de drop:', info.date);
 
-      await updateTask(numericId, updates);
+      // S'assurer que les dates sont valides
+      const newStartDate = new Date(info.date);
+      if (isNaN(newStartDate.getTime())) {
+          throw new Error('Date de début invalide');
+      }
 
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de la tâche:', error);
-    }
-  };
+      // Si la tâche existante a une durée fixe
+      if (existingTask.start && existingTask.end) {
+          const existingStartDate = new Date(existingTask.start);
+          const existingEndDate = new Date(existingTask.end);
+          const duration = existingEndDate - existingStartDate;
+          
+          const newEndDate = new Date(newStartDate.getTime() + duration);
+          
+          console.log('Nouvelle date de début calculée:', newStartDate);
+          console.log('Nouvelle date de fin calculée:', newEndDate);
 
+          // Vérifier que les dates sont valides
+          if (isNaN(newEndDate.getTime())) {
+              throw new Error('Date de fin invalide après calcul');
+          }
+
+          const updates = {
+              ...existingTask,
+              start: formatUTCDate(newStartDate),
+              end: formatUTCDate(newEndDate),
+              resourceId: info.resource ? parseInt(info.resource.id, 10) : null,
+              statusId: STATUS_IDS.WIP,
+              source: 'calendar',
+              isCalendarTask: true
+          };
+
+          console.log('Updates à envoyer:', updates);
+
+          const numericId = parseInt(taskId, 10);
+          await updateTask(numericId, updates);
+      } else {
+          // Si pas de durée existante, utiliser une durée par défaut (par exemple 1 jour)
+          const newEndDate = new Date(newStartDate);
+          newEndDate.setDate(newEndDate.getDate() + 1);
+
+          const updates = {
+              ...existingTask,
+              start: formatUTCDate(newStartDate),
+              end: formatUTCDate(newEndDate),
+              resourceId: info.resource ? parseInt(info.resource.id, 10) : null,
+              statusId: STATUS_IDS.WIP,
+              source: 'calendar',
+              isCalendarTask: true
+          };
+
+          console.log('Updates à envoyer (durée par défaut):', updates);
+
+          const numericId = parseInt(taskId, 10);
+          await updateTask(numericId, updates);
+      }
+
+  } catch (error) {
+      console.error('Erreur détaillée:', error);
+      console.error('Stack trace:', error.stack);
+  }
+};
 
   return (
     <div className="flex">
