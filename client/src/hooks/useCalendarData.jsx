@@ -54,16 +54,16 @@ export const useCalendarData = () => {
     }));
   }, []);
 
-  const formatTasksWithCalendar = useCallback((tasksData) => {
+  const formatTasksForCalendar = useCallback((tasksData) => {
 
-    console.log('formatTasksWithCalendar tasksData :', tasksData);
+    console.log('formatTasksForCalendar tasksData :', tasksData);
 
     return tasksData.map(task => {
       return {
         id: task.id,
         title: task.title || 'Sans titre',
-        start: formatUTCDate(task.startDate),
-        end: formatUTCDate(task.endDate),
+        start: task.startDate,
+        end: task.endDate,
         resourceId: task.ownerId,
         statusId: task.statusId,
         description: task.description,
@@ -90,15 +90,15 @@ export const useCalendarData = () => {
       setHolidays(formatHolidays(holidayDates));
       setResources(formatResources(ownersData));
       setStatuses(statusesData);
-      setTasks(formatTasksWithCalendar(tasksData, statusesData));
+      setTasks(formatTasksForCalendar(tasksData, statusesData));
     } catch (err) {
       console.error('Detailed Error in loadData:', err);
       setError(err);
     } finally {
       setIsLoading(false);
     }
-  }, [formatHolidays, formatResources, formatTasksWithCalendar]);
-  
+  }, [formatHolidays, formatResources, formatTasksForCalendar]);
+
 
   const updateTask = useCallback(async (taskId, updates) => {
 

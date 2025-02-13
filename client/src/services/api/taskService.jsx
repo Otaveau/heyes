@@ -48,8 +48,8 @@ export const fetchTasks = async () => {
         return tasks.map(task => ({
             id: task.id,
             title: task.title,
-            startDate: new Date(task.start_date).toISOString(), // Conversion explicite
-            endDate: new Date(task.end_date).toISOString(),
+            startDate: task.start_date,
+            endDate: task.end_date,  
             description: task.description || '',
             ownerId: task.owner_id,
             statusId: task.status_id,

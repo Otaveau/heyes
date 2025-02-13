@@ -51,17 +51,13 @@ export const CalendarView = () => {
     const { event } = dropInfo;
     const taskId = parseInt(event.id);
 
-    // Trouver la tâche existante
     const existingTask = tasks.find(t => t.id === taskId);
 
     // Création de nouvelles dates avec ajustement du fuseau horaire
     const startDate = new Date(event.start);
-    startDate.setHours(12); // Fixer l'heure à midi pour éviter les problèmes de fuseau horaire
     
     const endDate = event._def.extendedProps.end || event._instance.range.end;
     const endDateObj = new Date(endDate);
-    endDateObj.setHours(12);
-
     const resourceId = parseInt(event._def.resourceIds[0] || null, 10);
 
     // Log pour debug
