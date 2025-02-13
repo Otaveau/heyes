@@ -101,57 +101,39 @@ export const useCalendarData = () => {
 
 
   const updateTask = useCallback(async (taskId, updates) => {
-
-    const previousTasks = tasks;
-
-    setTasks(currentTasks => {
-      const updatedTasks = currentTasks.map(task => 
-        task.id === taskId 
-          ? { ...task, ...updates }
-          : task
-      );
-
-      if (updates.statusId === STATUS_TYPES.WIP && updates.resourceId) {
-        updatedTasks.push({
-          ...updatedTasks.find(t => t.id === taskId),
-          source: 'calendar',
-          isCalendarTask: true,
-        });
-      }
-
-      return updatedTasks;
-    });
-
     try {
-      // Appel API
-      const updatedTask = await updateTaskService(taskId, updates);
-      
-      // Mise à jour avec les données du serveur
-      setTasks(currentTasks => {
-        const newTasks = currentTasks.filter(task => task.id !== taskId);
+        // Appel API
+        const updatedTask = await updateTaskService(taskId, updates);
         
-        // Formater la tâche mise à jour pour le calendrier
-        const formattedTask = {
-          id: updatedTask.id,
-          title: updatedTask.title || 'Sans titre',
-          start: updates.start, // Utiliser les dates du update
-          end: updates.end,
-          resourceId: updates.resourceId,
-          statusId: updates.statusId,
-          description: updatedTask.description,
-          extendedProps: {
-            userId: updatedTask.userId,
-          },
-        };
+        // Mise à jour de l'état local
+        setTasks(currentTasks => {
+            const newTasks = currentTasks.filter(task => task.id !== taskId);
+            
+            const formattedTask = {
+                id: updatedTask.id,
+                title: updatedTask.title || 'Sans titre',
+                start: updates.start,
+                end: updates.end,
+                resourceId: updates.resourceId,
+                statusId: updates.statusId,
+                description: updatedTask.description,
+                extendedProps: {
+                    userId: updatedTask.userId,
+                },
+                ...(updates.statusId === STATUS_TYPES.WIP && updates.resourceId && {
+                    source: 'calendar',
+                    isCalendarTask: true
+                })
+            };
 
-        return [...newTasks, formattedTask];
-      });
+            return [...newTasks, formattedTask];
+        });
 
-      return updatedTask;
+        return updatedTask;
     } catch (error) {
-      throw error;
+        throw error;
     }
-  }, [tasks]);
+}, []);
 
   useEffect(() => {
     loadData();
