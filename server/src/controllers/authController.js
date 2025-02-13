@@ -4,7 +4,6 @@ const pool = require('../config/database');
 
 const register = async (req, res) => {
   const { name, email, password } = req.body;
-  console.log('Registration attempt:', { name, email });
 
   try {
     // Vérifications avant l'insertion
@@ -21,8 +20,6 @@ const register = async (req, res) => {
       'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING user_id, name, email',
       [name, email, hashedPassword]
     );
-    
-    console.log('User registered:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Registration error:', error);

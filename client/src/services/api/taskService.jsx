@@ -2,7 +2,7 @@ import { formatUTCDate } from "../../utils/dateUtils";
 import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
-import { ERROR_MESSAGES } from "../../constants/constants";
+import { ERROR_MESSAGES, STATUS_TYPE_TO_ID, STATUS_ID_TO_TYPE } from "../../constants/constants";
 
 // Validateurs de données
 const validateTaskData = (taskData) => {
@@ -27,10 +27,10 @@ const handleFetchError = (error, action) => {
 
 const formatTaskData = (taskData) => ({
     title: taskData.title.trim(),
-    startDate: formatUTCDate(taskData.startDate),
-    endDate: formatUTCDate(taskData.endDate),
+    startDate: formatUTCDate(taskData.start),
+    endDate: formatUTCDate(taskData.end),
     description: taskData.description?.trim() || '',
-    ownerId: taskData.ownerId,
+    ownerId: taskData.resourceId,
     statusId: taskData.statusId
 });
 
@@ -43,11 +43,13 @@ export const fetchTasks = async () => {
 
         const tasks = await handleResponse(response);
 
+        console.log('tasksService fetchTasks tasks :', tasks);
+
         return tasks.map(task => ({
             id: task.id,
             title: task.title,
-            startDate: task.start_date,
-            endDate: task.end_date,
+            startDate: new Date(task.start_date).toISOString(), // Conversion explicite
+            endDate: new Date(task.end_date).toISOString(),
             description: task.description || '',
             ownerId: task.owner_id,
             statusId: task.status_id,
@@ -81,11 +83,11 @@ export const updateTask = async (id, taskData) => {
         const taskId = parseInt(id);
         if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
 
-        console.log('FE taskService updateTask taskData :', taskData);
+        console.log('taskService updateTask taskData :', taskData);
 
         const formattedData = formatTaskData(taskData);
 
-        console.log('FE taskService updateTask formattedData :', formattedData);
+        console.log('taskService updateTask formattedData :', formattedData);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',
@@ -96,23 +98,6 @@ export const updateTask = async (id, taskData) => {
         return handleResponse(response);
     } catch (error) {
         handleFetchError(error, 'la mise à jour de la tâche');
-    }
-};
-
-export const updateTaskStatus = async (taskId, statusId) => {
-    try {
-        if (!taskId) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
-        if (!statusId) throw new Error(ERROR_MESSAGES.STATUS_ID_REQUIRED);
-
-        const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}/status`, {
-            method: 'PATCH',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ statusId: parseInt(statusId) })
-        });
-
-        return handleResponse(response);
-    } catch (error) {
-        handleFetchError(error, 'la mise à jour du statut');
     }
 };
 
@@ -143,4 +128,14 @@ export const getTasksByStatus = async (statusId) => {
     } catch (error) {
         handleFetchError(error, 'la récupération des tâches par statut');
     }
+};
+
+export const getStatusIdFromType = (statusType) => {
+    const normalizedType = statusType?.toLowerCase().trim();
+    return STATUS_TYPE_TO_ID[normalizedType] || null;
+};
+
+export const getStatusTypeFromId = (statusId) => {
+    const numericId = Number(statusId);
+    return STATUS_ID_TO_TYPE[numericId] || null;
 };

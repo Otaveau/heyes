@@ -54,14 +54,11 @@ export const useCalendarData = () => {
     }));
   }, []);
 
-  const formatTasksWithCalendar = useCallback((tasksData, statusesData) => {
-    if (!Array.isArray(tasksData) || !Array.isArray(statusesData)) {
-      console.error('Invalid data:', { tasksData, statusesData });
-      return [];
-    }
+  const formatTasksWithCalendar = useCallback((tasksData) => {
+
+    console.log('formatTasksWithCalendar tasksData :', tasksData);
 
     return tasksData.map(task => {
-      const status = statusesData.find(s => s.status_id === task.statusId) || {};
       return {
         id: task.id,
         title: task.title || 'Sans titre',
@@ -72,7 +69,6 @@ export const useCalendarData = () => {
         description: task.description,
         extendedProps: {
           userId: task.userId,
-          originalStatus: status.status_type,
         },
       };
     });
@@ -102,11 +98,11 @@ export const useCalendarData = () => {
       setIsLoading(false);
     }
   }, [formatHolidays, formatResources, formatTasksWithCalendar]);
+  
 
   const updateTask = useCallback(async (taskId, updates) => {
 
-    console.log('FE useCalendarData updateTask taskId :', taskId);
-    console.log('FE useCalendarData updateTask  updates:', updates); 
+    console.log('useCalendarData updateTask  updates:', updates); 
 
     const previousTasks = tasks;
 

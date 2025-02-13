@@ -22,7 +22,6 @@ const getTaskById = async (req, res) => {
 };
 
 const createTask = async (req, res) => {
-  console.log('Create task request:', req.body);
   const { title, startDate, endDate, description, ownerId, statusId } = req.body;
   const data = {
     title,
@@ -32,9 +31,6 @@ const createTask = async (req, res) => {
     owner_id: ownerId || null,
     status_id: statusId || null
   };
-
-  console.log('Data after formatting:', data);
-  
   try {
     const task = await Task.create(data, req.user.id);
     res.status(201).json(task);
@@ -47,8 +43,9 @@ const createTask = async (req, res) => {
 const updateTask = async (req, res) => {
   const { id } = req.params;
   const { title, startDate, endDate, description, ownerId, statusId } = req.body;
+
   
-  // Transformation en snake_case pour le modèle
+  
   const data = {
     title,
     start_date: startDate,
@@ -57,6 +54,8 @@ const updateTask = async (req, res) => {
     owner_id: ownerId,
     status_id: statusId
   };
+
+  console.log('BE taskController updateTask :', data);
 
   try {
     const task = await Task.update(id, data, req.user.id);

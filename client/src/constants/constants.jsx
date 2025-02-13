@@ -9,6 +9,30 @@ export const STATUS_TYPES = {
   DONE: 'done'
 };
 
+// IDs des statuts (number)
+export const STATUS_IDS = {
+  ENTRANT: 1,
+  WIP: 2,
+  EN_ATTENTE: 3,
+  DONE: 4
+};
+
+// Mapping type vers ID
+export const STATUS_TYPE_TO_ID = {
+  [STATUS_TYPES.ENTRANT]: STATUS_IDS.ENTRANT,
+  [STATUS_TYPES.WIP]: STATUS_IDS.WIP,
+  [STATUS_TYPES.EN_ATTENTE]: STATUS_IDS.EN_ATTENTE,
+  [STATUS_TYPES.DONE]: STATUS_IDS.DONE
+};
+
+// Mapping ID vers type
+export const STATUS_ID_TO_TYPE = {
+  [STATUS_IDS.ENTRANT]: STATUS_TYPES.ENTRANT,
+  [STATUS_IDS.WIP]: STATUS_TYPES.WIP,
+  [STATUS_IDS.EN_ATTENTE]: STATUS_TYPES.EN_ATTENTE,
+  [STATUS_IDS.DONE]: STATUS_TYPES.DONE
+};
+
 export const STATUS_COLORS = {
   entrant: '#60A5FA',
   wip: '#34D399',

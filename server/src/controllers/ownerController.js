@@ -4,7 +4,6 @@ const getOwners = async (req, res) => {
   console.log('Getting owners for user:', req.user.id);
   try {
     const owners = await Owner.findAll(req.user.id);
-    console.log('Found owners:', owners);
     res.json(owners);
   } catch (error) {
     console.error('Error:', error);

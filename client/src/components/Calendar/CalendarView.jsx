@@ -4,28 +4,30 @@ import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { formatUTCDate } from '../../utils/dateUtils';
 import { useCalendarData } from '../../hooks/useCalendarData';
-import { STATUS_TYPES } from '../../constants/constants';
+import { STATUS_IDS } from '../../constants/constants';
 
 export const CalendarView = () => {
 
-  const { tasks, updateTask, resources }  = useCalendarData();
+  const { tasks, updateTask, setTasks, resources } = useCalendarData();
   const [externalTasks, setExternalTasks] = useState([]);
   const externalEventsRef = useRef(null);
 
   // Séparer les tasks avec et sans ressource
   useEffect(() => {
     if (!tasks) return;
+    console.log('CalendarView useEffect tasks :', tasks);
     const tasksWithoutResource = tasks.filter(task => !task.resourceId);
+    console.log('CalendarView useEffect tasksWithoutResource :', tasksWithoutResource);
     setExternalTasks(tasksWithoutResource);
   }, [tasks]);
 
 
   useEffect(() => {
     if (!externalEventsRef.current) return;
-    
+
     const draggable = new Draggable(externalEventsRef.current, {
       itemSelector: '.fc-event',
-      eventData: function(eventEl) {
+      eventData: function (eventEl) {
 
         const taskId = eventEl.getAttribute('data-task-id');
         const task = externalTasks.find(t => t.id === taskId);
@@ -52,47 +54,63 @@ export const CalendarView = () => {
     // Trouver la tâche existante
     const existingTask = tasks.find(t => t.id === taskId);
 
+    // Création de nouvelles dates avec ajustement du fuseau horaire
+    const startDate = new Date(event.start);
+    startDate.setHours(12); // Fixer l'heure à midi pour éviter les problèmes de fuseau horaire
+    
     const endDate = event._def.extendedProps.end || event._instance.range.end;
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(12);
 
-    console.log('endDate : ', endDate);
+    const resourceId = parseInt(event._def.resourceIds[0] || null, 10);
+
+    // Log pour debug
+    console.log('StartDate avant formatage:', startDate);
+    console.log('EndDate avant formatage:', endDateObj);
 
     try {
+        const updates = {
+            ...existingTask,
+            start: formatUTCDate(startDate),
+            end: formatUTCDate(endDateObj),
+            resourceId: resourceId,
+            statusId: STATUS_IDS.WIP,
+            source: 'calendar',
+            isCalendarTask: true
+        };
 
-      // let endDate = event.end;
-      
+        console.log('Updates à envoyer:', updates);
+        await updateTask(taskId, updates);
+        
+        // Mettre à jour l'état local des tâches
+        setTasks(prevTasks => 
+            prevTasks.map(task => 
+                task.id === taskId ? { ...task, ...updates } : task
+            )
+        );
 
-      // console.log('endDate: ', endDate);
-
-
-      const updates = {
-        ...existingTask,
-        start: formatUTCDate(event.start),
-        end: formatUTCDate(endDate),
-        resourceId: event.getResources()[0]?.id,
-        statusId: STATUS_TYPES.WIP,
-        source: 'calendar',
-        isCalendarTask: true
-      };
-
-
-      console.log('handleEventDrop updates:', updates);
-      await updateTask(taskId, updates);
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de la tâche:', error);
-      dropInfo.revert();
+        console.error('Erreur lors de la mise à jour de la tâche:', error);
+        dropInfo.revert();
     }
-  };
+};
 
 
   const handleExternalDrop = async (info) => {
     if (!info.draggedEl.parentNode) return;
 
     try {
+
+      console.log('CalendarView handleExternalDrop info : ', info);
       const taskId = info.draggedEl.getAttribute('data-task-id');
-      // S'assurer que l'ID est un nombre si nécessaire
+      const endDate = info._def.extendedProps.end || info._instance.range.end;
+      const resourceId = parseInt(info.resource?._resource?.id || null, 10);
+
       const numericId = parseInt(taskId, 10);
       const existingTask = externalTasks.find(t => t.id.toString() === taskId);
-      
+
+      console.log('CalendarView handleExternalDrop existingTasks : ', existingTask);
+
       if (!existingTask) {
         console.error(`Task with id ${taskId} not found in externalTasks`);
         return;
@@ -100,10 +118,10 @@ export const CalendarView = () => {
 
       const updates = {
         ...existingTask,
-        start: formatUTCDate(info.start),
-        end: formatUTCDate(info.end),
-        resourceId: info.resource?.id || 'resource1',
-        statusId: STATUS_TYPES.WIP,
+        start: formatUTCDate(info.date),
+        end: formatUTCDate(endDate),
+        resourceId: resourceId,
+        statusId: STATUS_IDS.WIP,
         source: 'calendar',
         isCalendarTask: true
       };
@@ -118,13 +136,13 @@ export const CalendarView = () => {
 
   return (
     <div className="flex">
-      <div 
+      <div
         ref={externalEventsRef}
         className="w-48 p-4 bg-gray-100"
       >
         <h3 className="mb-4 font-bold">Tâches non assignées</h3>
         {externalTasks.map(task => (
-          <div 
+          <div
             key={task.id}
             data-task-id={task.id.toString()}
             className="fc-event p-2 mb-2 bg-white border rounded cursor-move hover:bg-gray-50"
@@ -140,7 +158,7 @@ export const CalendarView = () => {
         <FullCalendar
           plugins={[resourceTimelinePlugin, interactionPlugin]}
           height='auto'
-          schedulerLicenseKey= 'GPL-My-Project-Is-Open-Source'
+          schedulerLicenseKey='GPL-My-Project-Is-Open-Source'
           initialView="resourceTimelineYear"
           headerToolbar={{
             left: 'prev,next today',
