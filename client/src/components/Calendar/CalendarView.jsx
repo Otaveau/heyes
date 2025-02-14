@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
-import { formatUTCDate } from '../../utils/dateUtils';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { TaskForm } from '../Tasks/TaskForm';
-import { STATUS_IDS, DEFAULT_TASK_DURATION } from '../../constants/constants';
 
 
 export const CalendarView = () => {
@@ -18,7 +16,7 @@ export const CalendarView = () => {
     isProcessing: false,
   });
 
-  const { tasks, updateTask, setTasks, resources, statuses } = useCalendarData();
+  const { tasks, setTasks, resources, statuses } = useCalendarData();
 
   const {
     handleTaskSubmit,
@@ -26,39 +24,14 @@ export const CalendarView = () => {
     // handleStatusUpdate,
     // handleTaskClick,
     handleCalendarEventClick,
-    // handleEventResize,
-    //handleEventDrop,
+    handleEventDrop,
+    handleExternalDrop,
+    handleEventResize,
     // handleDrop,
     // handleEventReceive,
   } = useTaskHandlers(setTasks, setCalendarState, statuses, tasks);
   const [externalTasks, setExternalTasks] = useState([]);
   const externalEventsRef = useRef(null);
-
-  // const handleDateSelect = useCallback((selectInfo) => {
-
-  //   console.log('handleDateSelect called', selectInfo);
-  //   console.log('Current calendar state:', calendarState);
-
-  //   const startDate = new Date(selectInfo.start);
-  //   const endDate = selectInfo.end ? new Date(selectInfo.end) : new Date(startDate.getTime() + DEFAULT_TASK_DURATION);
-    
-  //   setCalendarState((prev) => {
-  //     const newState = {
-  //       ...prev,
-  //       selectedDates: {
-  //         start: startDate,
-  //         end: endDate,
-  //         resourceId: selectInfo.resource?.id,
-  //       },
-  //       isFormOpen: true,
-  //     };
-  //     console.log('New calendar state:', newState);
-  //     return newState;
-  //   });
-    
-  //   selectInfo.view.calendar.unselect();
-  // }, [calendarState]);
-
 
   // Séparer les tasks avec et sans ressource
   useEffect(() => {
@@ -97,105 +70,44 @@ export const CalendarView = () => {
 
 
 
-  const handleEventDrop = async (dropInfo) => {
-    const { event } = dropInfo;
-    const taskId = parseInt(event.id);
+  // const handleEventDrop = async (dropInfo) => {
+  //   const { event } = dropInfo;
+  //   const taskId = parseInt(event.id);
 
-    const existingTask = tasks.find(t => t.id === taskId);
+  //   const existingTask = tasks.find(t => t.id === taskId);
 
-    const startDate = new Date(event.start);
-    const endDate = event._def.extendedProps.end || event._instance.range.end;
-    const endDateObj = new Date(endDate);
-    const resourceId = parseInt(event._def.resourceIds[0] || null, 10);
-
-
-    try {
-      const updates = {
-        ...existingTask,
-        start: formatUTCDate(startDate),
-        end: formatUTCDate(endDateObj),
-        resourceId: resourceId,
-        statusId: STATUS_IDS.WIP,
-        source: 'calendar',
-        isCalendarTask: true
-      };
-
-      await updateTask(taskId, updates);
-
-      // Mettre à jour l'état local des tâches
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
-          task.id === taskId ? { ...task, ...updates } : task
-        )
-      );
-
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de la tâche:', error);
-      dropInfo.revert();
-    }
-  };
+  //   const startDate = new Date(event.start);
+  //   const endDate = event._def.extendedProps.end || event._instance.range.end;
+  //   const endDateObj = new Date(endDate);
+  //   const resourceId = parseInt(event._def.resourceIds[0] || null, 10);
 
 
-  const handleExternalDrop = async (info) => {
-    if (!info.draggedEl.parentNode) return;
+  //   try {
+  //     const updates = {
+  //       ...existingTask,
+  //       start: formatUTCDate(startDate),
+  //       end: formatUTCDate(endDateObj),
+  //       resourceId: resourceId,
+  //       statusId: STATUS_IDS.WIP,
+  //       source: 'calendar',
+  //       isCalendarTask: true
+  //     };
 
-    try {
-      console.log('CalendarView handleExternalDrop info : ', info);
-      const taskId = info.draggedEl.getAttribute('data-task-id');
+  //     await updateTask(taskId, updates);
 
-      const existingTask = externalTasks.find(t => t.id.toString() === taskId);
-      console.log('Tâche existante trouvée:', existingTask);
+  //     // Mettre à jour l'état local des tâches
+  //     setTasks(prevTasks =>
+  //       prevTasks.map(task =>
+  //         task.id === taskId ? { ...task, ...updates } : task
+  //       )
+  //     );
 
-      if (!existingTask) {
-        console.error(`Task with id ${taskId} not found in externalTasks`);
-        return;
-      }
+  //   } catch (error) {
+  //     console.error('Erreur lors de la mise à jour de la tâche:', error);
+  //     dropInfo.revert();
+  //   }
+  // };
 
-      const newStartDate = new Date(info.date);
-
-      if (existingTask.start && existingTask.end) {
-        const existingStartDate = new Date(existingTask.start);
-        const existingEndDate = new Date(existingTask.end);
-        const duration = existingEndDate - existingStartDate;
-
-        const newEndDate = new Date(newStartDate.getTime() + duration);
-
-        const updates = {
-          ...existingTask,
-          start: formatUTCDate(newStartDate),
-          end: formatUTCDate(newEndDate),
-          resourceId: info.resource ? parseInt(info.resource.id, 10) : null,
-          statusId: STATUS_IDS.WIP,
-          source: 'calendar',
-          isCalendarTask: true
-        };
-
-        const numericId = parseInt(taskId, 10);
-        await updateTask(numericId, updates);
-      } else {
-        // Si pas de durée existante, durée par défaut (1 jour)
-        const newEndDate = new Date(newStartDate);
-        newEndDate.setDate(newEndDate.getDate() + 1);
-
-        const updates = {
-          ...existingTask,
-          start: formatUTCDate(newStartDate),
-          end: formatUTCDate(newEndDate),
-          resourceId: info.resource ? parseInt(info.resource.id, 10) : null,
-          statusId: STATUS_IDS.WIP,
-          source: 'calendar',
-          isCalendarTask: true
-        };
-
-        const numericId = parseInt(taskId, 10);
-        await updateTask(numericId, updates);
-      }
-
-    } catch (error) {
-      console.error('Erreur détaillée:', error);
-      console.error('Stack trace:', error.stack);
-    }
-  };
 
   return (
     <div className="flex">
@@ -244,6 +156,7 @@ export const CalendarView = () => {
           drop={handleExternalDrop}
           select={handleDateSelect}
           eventClick={handleCalendarEventClick}
+          eventResize={handleEventResize}
         />
       </div>
 
