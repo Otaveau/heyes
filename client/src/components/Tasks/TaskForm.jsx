@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { formatUTCDate } from '../../utils/dateUtils';
 import { ERROR_MESSAGES } from '../../constants/constants';
 
+
 export const TaskForm = ({
     isOpen,
     onClose,
@@ -12,16 +13,21 @@ export const TaskForm = ({
     statuses = [],
     onSubmit: handleTaskSubmit
 }) => {
-    const defaultStartDate = new Date().toISOString().split('T')[0];
+    const defaultStartDate = React.useMemo(() => 
+        new Date().toISOString().split('T')[0],
+        []
+    );
 
-    const [formData, setFormData] = useState({
+    const initialFormState = React.useMemo(() => ({
         title: '',
         description: '',
         startDate: formatUTCDate(selectedDates?.start) || defaultStartDate,
         endDate: formatUTCDate(selectedDates?.end) || defaultStartDate,
         resourceId: selectedDates?.resourceId || '',
         statusId: selectedDates?.resourceId ? '2' : ''
-    });
+    }), [defaultStartDate, selectedDates]);
+
+    const [formData, setFormData] = useState({initialFormState});
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,24 +62,29 @@ export const TaskForm = ({
 
     useEffect(() => {
         if (selectedTask) {
-            setFormData({
-                title: selectedTask.title || '',
-                description: selectedTask.description || '',
-                startDate: formatUTCDate(selectedTask.start) || defaultStartDate,
-                endDate: formatUTCDate(selectedTask.end) || defaultStartDate,
-                resourceId: selectedTask.resourceId || '',
-                statusId: selectedTask.resourceId ? '2' : (selectedTask.statusId || '')
-            });
+          // Cas de modification : on remplit avec les données de la tâche
+          setFormData({
+            title: selectedTask.title || '',
+            description: selectedTask.description || '',
+            startDate: formatUTCDate(selectedTask.start) || defaultStartDate,
+            endDate: formatUTCDate(selectedTask.end) || defaultStartDate,
+            resourceId: selectedTask.resourceId || '',
+            statusId: selectedTask.resourceId ? '2' : (selectedTask.statusId || '')
+          });
         } else if (selectedDates) {
-            setFormData(prev => ({
-                ...prev,
-                startDate: formatUTCDate(selectedDates.start) || defaultStartDate,
-                endDate: formatUTCDate(selectedDates.end) || defaultStartDate,
-                resourceId: selectedDates.resourceId || '',
-                statusId: selectedDates.resourceId ? '2' : prev.statusId
-            }));
+          // Cas de création : on réinitialise le formulaire avec les dates sélectionnées
+          setFormData({
+            ...initialFormState,
+            startDate: formatUTCDate(selectedDates.start) || defaultStartDate,
+            endDate: formatUTCDate(selectedDates.end) || defaultStartDate,
+            resourceId: selectedDates.resourceId || '',
+            statusId: selectedDates.resourceId ? '2' : ''
+          });
+        } else {
+          // Réinitialisation complète si ni tâche ni dates sélectionnées
+          setFormData(initialFormState);
         }
-    }, [selectedTask, selectedDates, defaultStartDate]);
+      }, [selectedTask, selectedDates, defaultStartDate, isOpen, initialFormState]); 
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
