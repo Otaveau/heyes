@@ -36,12 +36,21 @@ export const CalendarView = () => {
     // handleStatusUpdate,
     // handleTaskClick,
     handleCalendarEventClick,
+    handleEventDragStop,
     handleEventDrop,
     handleExternalDrop,
     handleEventResize,
     // handleDrop,
     // handleEventReceive,
-  } = useTaskHandlers(setTasks, setCalendarState, statuses, tasks, externalTasks);
+  } = useTaskHandlers(
+    setTasks, 
+    setCalendarState, 
+    statuses, 
+    tasks,
+    externalTasks,
+    dropZoneRefs,
+    dropZones
+  );
 
   // Séparer les tasks avec et sans ressource
   useEffect(() => {
@@ -115,34 +124,6 @@ export const CalendarView = () => {
     });
   }, []);
 
-  const handleEventRemove = useCallback(async (info, targetStatusId) => {
-    const taskId = parseInt(info.event.id);
-    const task = tasks.find(t => t.id === taskId);
-
-    if (!task) return;
-
-    try {
-      const updatedTask = {
-        ...task,
-        resourceId: null,
-        statusId: targetStatusId,
-      };
-
-      await updateTask(taskId, updatedTask);
-      setTasks(prevTasks => 
-        prevTasks.map(t => 
-          t.id === taskId ? updatedTask : t
-        )
-      );
-
-      toast.success(`Tâche déplacée vers ${dropZones.find(zone => zone.statusId === targetStatusId)?.title}`);
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de la tâche:', error);
-      info.revert();
-      toast.error('Erreur lors de la mise à jour de la tâche');
-    }
-  }, [tasks, updateTask, setTasks, dropZones]);
-
 
   return (
     <div className="flex">
@@ -199,25 +180,7 @@ export const CalendarView = () => {
           select={handleDateSelect}
           eventClick={handleCalendarEventClick}
           eventResize={handleEventResize}
-          eventDragStop={(info) => {
-            const eventRect = info.jsEvent.target.getBoundingClientRect();
-            
-            // Vérifier chaque zone de drop
-            dropZoneRefs.current.forEach((ref, index) => {
-              const dropZoneEl = ref.current;
-              const dropZoneRect = dropZoneEl.getBoundingClientRect();
-
-              // Si l'événement est déplacé dans cette zone
-              if (
-                eventRect.left >= dropZoneRect.left &&
-                eventRect.right <= dropZoneRect.right &&
-                eventRect.top >= dropZoneRect.top &&
-                eventRect.bottom <= dropZoneRect.bottom
-              ) {
-                handleEventRemove(info, dropZones[index].statusId);
-              }
-            });
-          }}
+          eventDragStop={handleEventDragStop}
           eventReceive={(info) => {
             // Gérer la réception d'un événement dans le calendrier
             const taskId = parseInt(info.event.id);
