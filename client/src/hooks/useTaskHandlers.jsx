@@ -1,9 +1,8 @@
 import { useCallback } from 'react';
 import { updateTask, createTask } from '../services/api/taskService';
 import { formatUTCDate } from '../utils/dateUtils';
-import { TOAST_CONFIG, ERROR_MESSAGES } from '../constants/constants';
+import { TOAST_CONFIG, ERROR_MESSAGES, DEFAULT_TASK_DURATION } from '../constants/constants';
 import { toast } from 'react-toastify';
-
 
 export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => {
 
@@ -180,6 +179,29 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
   //   handleEventDrop(dropInfo, false);
   // }, [handleEventDrop]);
 
+  const handleDateSelect = useCallback((selectInfo) => {
+
+  
+      const startDate = new Date(selectInfo.start);
+      const endDate = selectInfo.end ? new Date(selectInfo.end) : new Date(startDate.getTime() + DEFAULT_TASK_DURATION);
+      
+      setCalendarState((prev) => {
+        const newState = {
+          ...prev,
+          selectedDates: {
+            start: startDate,
+            end: endDate,
+            resourceId: selectInfo.resource?.id,
+          },
+          isFormOpen: true,
+        };
+        console.log('New calendar state:', newState);
+        return newState;
+      });
+      
+      selectInfo.view.calendar.unselect();
+    }, [setCalendarState]);
+
 
   const handleTaskSubmit = useCallback(async (formData, taskId) => {
     if (!formData?.title) {
@@ -270,8 +292,8 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
 
 
   return {
+    handleDateSelect,
     handleTaskSubmit,
-    handleTaskClick,
     handleEventClick,
     handleEventResize,
     // handleDrop,

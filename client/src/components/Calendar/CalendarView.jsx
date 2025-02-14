@@ -22,9 +22,10 @@ export const CalendarView = () => {
 
   const {
     handleTaskSubmit,
+    handleDateSelect,
     // handleStatusUpdate,
     // handleTaskClick,
-    // handleEventClick,
+    handleEventClick,
     // handleEventResize,
     //handleEventDrop,
     // handleDrop,
@@ -33,30 +34,30 @@ export const CalendarView = () => {
   const [externalTasks, setExternalTasks] = useState([]);
   const externalEventsRef = useRef(null);
 
-  const handleDateSelect = useCallback((selectInfo) => {
+  // const handleDateSelect = useCallback((selectInfo) => {
 
-    console.log('handleDateSelect called', selectInfo);
-    console.log('Current calendar state:', calendarState);
+  //   console.log('handleDateSelect called', selectInfo);
+  //   console.log('Current calendar state:', calendarState);
 
-    const startDate = new Date(selectInfo.start);
-    const endDate = selectInfo.end ? new Date(selectInfo.end) : new Date(startDate.getTime() + DEFAULT_TASK_DURATION);
+  //   const startDate = new Date(selectInfo.start);
+  //   const endDate = selectInfo.end ? new Date(selectInfo.end) : new Date(startDate.getTime() + DEFAULT_TASK_DURATION);
     
-    setCalendarState((prev) => {
-      const newState = {
-        ...prev,
-        selectedDates: {
-          start: startDate,
-          end: endDate,
-          resourceId: selectInfo.resource?.id,
-        },
-        isFormOpen: true,
-      };
-      console.log('New calendar state:', newState);
-      return newState;
-    });
+  //   setCalendarState((prev) => {
+  //     const newState = {
+  //       ...prev,
+  //       selectedDates: {
+  //         start: startDate,
+  //         end: endDate,
+  //         resourceId: selectInfo.resource?.id,
+  //       },
+  //       isFormOpen: true,
+  //     };
+  //     console.log('New calendar state:', newState);
+  //     return newState;
+  //   });
     
-    selectInfo.view.calendar.unselect();
-  }, [calendarState]);
+  //   selectInfo.view.calendar.unselect();
+  // }, [calendarState]);
 
 
   // Séparer les tasks avec et sans ressource
@@ -242,6 +243,7 @@ export const CalendarView = () => {
           eventDrop={handleEventDrop}
           drop={handleExternalDrop}
           select={handleDateSelect}
+          eventClick={handleEventClick}
         />
       </div>
 
