@@ -1,16 +1,63 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { formatUTCDate } from '../../utils/dateUtils';
 import { useCalendarData } from '../../hooks/useCalendarData';
-import { STATUS_IDS } from '../../constants/constants';
+import { useTaskHandlers } from '../../hooks/useTaskHandlers';
+import { TaskForm } from '../Tasks/TaskForm';
+import { STATUS_IDS, DEFAULT_TASK_DURATION } from '../../constants/constants';
+
 
 export const CalendarView = () => {
+  const [calendarState, setCalendarState] = useState({
+    showWeekends: true,
+    isFormOpen: false,
+    selectedDates: null,
+    selectedTask: null,
+    isProcessing: false,
+  });
 
-  const { tasks, updateTask, setTasks, resources } = useCalendarData();
+  const { tasks, updateTask, setTasks, resources, statuses } = useCalendarData();
+
+  const {
+    handleTaskSubmit,
+    // handleStatusUpdate,
+    // handleTaskClick,
+    // handleEventClick,
+    // handleEventResize,
+    //handleEventDrop,
+    // handleDrop,
+    // handleEventReceive,
+  } = useTaskHandlers(setTasks, setCalendarState, statuses, tasks);
   const [externalTasks, setExternalTasks] = useState([]);
   const externalEventsRef = useRef(null);
+
+  const handleDateSelect = useCallback((selectInfo) => {
+
+    console.log('handleDateSelect called', selectInfo);
+    console.log('Current calendar state:', calendarState);
+
+    const startDate = new Date(selectInfo.start);
+    const endDate = selectInfo.end ? new Date(selectInfo.end) : new Date(startDate.getTime() + DEFAULT_TASK_DURATION);
+    
+    setCalendarState((prev) => {
+      const newState = {
+        ...prev,
+        selectedDates: {
+          start: startDate,
+          end: endDate,
+          resourceId: selectInfo.resource?.id,
+        },
+        isFormOpen: true,
+      };
+      console.log('New calendar state:', newState);
+      return newState;
+    });
+    
+    selectInfo.view.calendar.unselect();
+  }, [calendarState]);
+
 
   // Séparer les tasks avec et sans ressource
   useEffect(() => {
@@ -47,6 +94,8 @@ export const CalendarView = () => {
   }, [externalTasks]);
 
 
+
+
   const handleEventDrop = async (dropInfo) => {
     const { event } = dropInfo;
     const taskId = parseInt(event.id);
@@ -60,114 +109,92 @@ export const CalendarView = () => {
 
 
     try {
-        const updates = {
-            ...existingTask,
-            start: formatUTCDate(startDate),
-            end: formatUTCDate(endDateObj),
-            resourceId: resourceId,
-            statusId: STATUS_IDS.WIP,
-            source: 'calendar',
-            isCalendarTask: true
-        };
+      const updates = {
+        ...existingTask,
+        start: formatUTCDate(startDate),
+        end: formatUTCDate(endDateObj),
+        resourceId: resourceId,
+        statusId: STATUS_IDS.WIP,
+        source: 'calendar',
+        isCalendarTask: true
+      };
 
-        await updateTask(taskId, updates);
-        
-        // Mettre à jour l'état local des tâches
-        setTasks(prevTasks => 
-            prevTasks.map(task => 
-                task.id === taskId ? { ...task, ...updates } : task
-            )
-        );
+      await updateTask(taskId, updates);
+
+      // Mettre à jour l'état local des tâches
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === taskId ? { ...task, ...updates } : task
+        )
+      );
 
     } catch (error) {
-        console.error('Erreur lors de la mise à jour de la tâche:', error);
-        dropInfo.revert();
+      console.error('Erreur lors de la mise à jour de la tâche:', error);
+      dropInfo.revert();
     }
-};
+  };
 
 
-const handleExternalDrop = async (info) => {
-  if (!info.draggedEl.parentNode) return;
+  const handleExternalDrop = async (info) => {
+    if (!info.draggedEl.parentNode) return;
 
-  try {
+    try {
       console.log('CalendarView handleExternalDrop info : ', info);
       const taskId = info.draggedEl.getAttribute('data-task-id');
-      
+
       const existingTask = externalTasks.find(t => t.id.toString() === taskId);
       console.log('Tâche existante trouvée:', existingTask);
 
       if (!existingTask) {
-          console.error(`Task with id ${taskId} not found in externalTasks`);
-          return;
+        console.error(`Task with id ${taskId} not found in externalTasks`);
+        return;
       }
 
-      // Log des dates pour debug
-      console.log('Date de début existante:', existingTask.start);
-      console.log('Date de fin existante:', existingTask.end);
-      console.log('Nouvelle date de drop:', info.date);
-
-      // S'assurer que les dates sont valides
       const newStartDate = new Date(info.date);
-      if (isNaN(newStartDate.getTime())) {
-          throw new Error('Date de début invalide');
-      }
 
-      // Si la tâche existante a une durée fixe
       if (existingTask.start && existingTask.end) {
-          const existingStartDate = new Date(existingTask.start);
-          const existingEndDate = new Date(existingTask.end);
-          const duration = existingEndDate - existingStartDate;
-          
-          const newEndDate = new Date(newStartDate.getTime() + duration);
-          
-          console.log('Nouvelle date de début calculée:', newStartDate);
-          console.log('Nouvelle date de fin calculée:', newEndDate);
+        const existingStartDate = new Date(existingTask.start);
+        const existingEndDate = new Date(existingTask.end);
+        const duration = existingEndDate - existingStartDate;
 
-          // Vérifier que les dates sont valides
-          if (isNaN(newEndDate.getTime())) {
-              throw new Error('Date de fin invalide après calcul');
-          }
+        const newEndDate = new Date(newStartDate.getTime() + duration);
 
-          const updates = {
-              ...existingTask,
-              start: formatUTCDate(newStartDate),
-              end: formatUTCDate(newEndDate),
-              resourceId: info.resource ? parseInt(info.resource.id, 10) : null,
-              statusId: STATUS_IDS.WIP,
-              source: 'calendar',
-              isCalendarTask: true
-          };
+        const updates = {
+          ...existingTask,
+          start: formatUTCDate(newStartDate),
+          end: formatUTCDate(newEndDate),
+          resourceId: info.resource ? parseInt(info.resource.id, 10) : null,
+          statusId: STATUS_IDS.WIP,
+          source: 'calendar',
+          isCalendarTask: true
+        };
 
-          console.log('Updates à envoyer:', updates);
-
-          const numericId = parseInt(taskId, 10);
-          await updateTask(numericId, updates);
+        const numericId = parseInt(taskId, 10);
+        await updateTask(numericId, updates);
       } else {
-          // Si pas de durée existante, utiliser une durée par défaut (par exemple 1 jour)
-          const newEndDate = new Date(newStartDate);
-          newEndDate.setDate(newEndDate.getDate() + 1);
+        // Si pas de durée existante, durée par défaut (1 jour)
+        const newEndDate = new Date(newStartDate);
+        newEndDate.setDate(newEndDate.getDate() + 1);
 
-          const updates = {
-              ...existingTask,
-              start: formatUTCDate(newStartDate),
-              end: formatUTCDate(newEndDate),
-              resourceId: info.resource ? parseInt(info.resource.id, 10) : null,
-              statusId: STATUS_IDS.WIP,
-              source: 'calendar',
-              isCalendarTask: true
-          };
+        const updates = {
+          ...existingTask,
+          start: formatUTCDate(newStartDate),
+          end: formatUTCDate(newEndDate),
+          resourceId: info.resource ? parseInt(info.resource.id, 10) : null,
+          statusId: STATUS_IDS.WIP,
+          source: 'calendar',
+          isCalendarTask: true
+        };
 
-          console.log('Updates à envoyer (durée par défaut):', updates);
-
-          const numericId = parseInt(taskId, 10);
-          await updateTask(numericId, updates);
+        const numericId = parseInt(taskId, 10);
+        await updateTask(numericId, updates);
       }
 
-  } catch (error) {
+    } catch (error) {
       console.error('Erreur détaillée:', error);
       console.error('Stack trace:', error.stack);
-  }
-};
+    }
+  };
 
   return (
     <div className="flex">
@@ -201,15 +228,38 @@ const handleExternalDrop = async (info) => {
             right: 'resourceTimelineYear,resourceTimelineMonth,resourceTimelineWeek'
           }}
           editable={true}
+          selectable={true}
+          selectMirror={true} // Optionnel : affiche un aperçu de la sélection
           droppable={true}
           events={tasks}
           resources={resources}
           resourceAreaWidth="15%"
           slotDuration={{ days: 1 }}
+          selectConstraint={{
+            start: '00:00',
+            end: '24:00'
+          }}
           eventDrop={handleEventDrop}
           drop={handleExternalDrop}
+          select={handleDateSelect}
         />
       </div>
+
+      <TaskForm
+        isOpen={calendarState.isFormOpen}
+        onClose={() => setCalendarState((prev) => ({
+          ...prev,
+          isFormOpen: false,
+          selectedTask: null,
+          selectedDates: null,
+        }))}
+        selectedDates={calendarState.selectedDates}
+        selectedTask={calendarState.selectedTask}
+        resources={resources}
+        statuses={statuses}
+        onSubmit={handleTaskSubmit}
+        isProcessing={calendarState.isProcessing}
+      />
     </div>
   );
 };

@@ -10,7 +10,7 @@ export const TaskForm = ({
     selectedTask,
     resources = [],
     statuses = [],
-    onSubmit
+    onSubmit: handleTaskSubmit
 }) => {
     const defaultStartDate = new Date().toISOString().split('T')[0];
 
@@ -75,7 +75,7 @@ export const TaskForm = ({
         }
     }, [selectedTask, selectedDates, defaultStartDate]);
 
-    const handleSubmit = async (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
         
         if (!validateForm()) {
@@ -84,7 +84,7 @@ export const TaskForm = ({
 
         setIsSubmitting(true);
         try {
-            await onSubmit(formData, selectedTask?.id);
+            await handleTaskSubmit(formData, selectedTask?.id);
             onClose();
         } catch (error) {
             console.error('Error submitting form:', error);
@@ -182,7 +182,7 @@ export const TaskForm = ({
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleFormSubmit} className="space-y-4">
                     <FormField label="Titre" name="title" error={errors.title}>
                         <input
                             id="title"
