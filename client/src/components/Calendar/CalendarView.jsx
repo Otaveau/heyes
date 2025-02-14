@@ -25,7 +25,7 @@ export const CalendarView = () => {
     handleDateSelect,
     // handleStatusUpdate,
     // handleTaskClick,
-    handleEventClick,
+    handleCalendarEventClick,
     // handleEventResize,
     //handleEventDrop,
     // handleDrop,
@@ -243,7 +243,7 @@ export const CalendarView = () => {
           eventDrop={handleEventDrop}
           drop={handleExternalDrop}
           select={handleDateSelect}
-          eventClick={handleEventClick}
+          eventClick={handleCalendarEventClick}
         />
       </div>
 

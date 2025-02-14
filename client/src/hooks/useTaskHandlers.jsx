@@ -6,35 +6,41 @@ import { toast } from 'react-toastify';
 
 export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => {
 
-  const handleTaskClick = useCallback((task) => {
-    if (!task?.id) {
-      console.warn(ERROR_MESSAGES.INVALID_TASK);
-      return;
-    }
+  // Gestionnaire de sélection de tâche (logique métier)
+const handleTaskSelection = useCallback((taskData) => {
+  if (!taskData?.id) {
+    console.warn(ERROR_MESSAGES.INVALID_TASK);
+    return;
+  }
 
-    setCalendarState((prev) => ({
-      ...prev,
-      selectedTask: {
-        id: task.id,
-        title: task.title,
-        start: task.start,
-        end: task.end,
-        description: task.description,
-        resourceId: task.resourceId,
-        statusId: task.statusId,
-      },
-      isFormOpen: true,
-    }));
-  }, [setCalendarState]);
+  const selectedTask = {
+    id: taskData.id,
+    title: taskData.title,
+    start: taskData.start,
+    end: taskData.end,
+    description: taskData.description,
+    resourceId: taskData.resourceId,
+    statusId: taskData.statusId,
+  };
 
-  const handleEventClick = useCallback((clickInfo) => {
-    const task = tasks.find((t) => t.id === parseInt(clickInfo.event.id));
-    if (task) {
-      handleTaskClick(task);
-    } else {
-      console.warn('Tâche non trouvée:', clickInfo.event.id);
-    }
-  }, [handleTaskClick, tasks]);
+  setCalendarState((prev) => ({
+    ...prev,
+    selectedTask,
+    isFormOpen: true,
+  }));
+}, [setCalendarState]);
+
+// Gestionnaire de clic sur l'événement du calendrier (logique UI)
+const handleCalendarEventClick = useCallback((clickInfo) => {
+  const task = tasks.find((t) => t.id === parseInt(clickInfo.event.id));
+  
+  if (!task) {
+    console.warn('Tâche non trouvée:', clickInfo.event.id);
+    return;
+  }
+  
+  handleTaskSelection(task);
+}, [handleTaskSelection, tasks]);
 
   const handleEventResize = useCallback(async (info, isProcessing) => {
     if (isProcessing) {
@@ -294,7 +300,7 @@ export const useTaskHandlers = (setTasks, setCalendarState, statuses, tasks) => 
   return {
     handleDateSelect,
     handleTaskSubmit,
-    handleEventClick,
+    handleCalendarEventClick,
     handleEventResize,
     // handleDrop,
     // handleEventReceive,
