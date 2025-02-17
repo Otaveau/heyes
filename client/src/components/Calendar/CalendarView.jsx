@@ -23,12 +23,12 @@ export const CalendarView = () => {
     { id: 'inProgress', statusId: '2', title: 'En cours' },
     { id: 'blocked', statusId: '3', title: 'Bloqué' },
     { id: 'done', statusId: '4', title: 'Terminé' }
-  ], []); 
+  ], []);
 
   const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
-
   const { tasks, setTasks, updateTask, resources, statuses } = useCalendarData();
   const [externalTasks, setExternalTasks] = useState([]);
+  const draggablesRef = useRef([]);
 
   const {
     handleTaskSubmit,
@@ -43,79 +43,118 @@ export const CalendarView = () => {
     // handleDrop,
     // handleEventReceive,
   } = useTaskHandlers(
-    setTasks, 
-    setCalendarState, 
-    statuses, 
+    setTasks,
+    setCalendarState,
+    statuses,
     tasks,
     externalTasks,
     dropZoneRefs,
     dropZones
   );
 
-  // Séparer les tasks avec et sans ressource
+  // Gestionnaire des tâches externes unique
   useEffect(() => {
-    if (!tasks) return;
-    console.log('CalendarView useEffect tasks :', tasks);
-    const tasksWithoutResource = tasks.filter(task => !task.resourceId);
-    console.log('CalendarView useEffect tasksWithoutResource :', tasksWithoutResource);
-    setExternalTasks(tasksWithoutResource);
+    console.log('Tasks reçus:', tasks);
+
+    if (!tasks || !Array.isArray(tasks)) {
+      console.log('Pas de tâches disponibles');
+      return;
+    }
+
+    // Filtrer les tâches sans ressource
+    const tasksWithoutResource = tasks.filter(task => {
+      const hasNoResource = !task.resourceId || task.resourceId === null || task.resourceId === undefined;
+      return hasNoResource;
+    });
+
+    console.log('Tâches sans ressource trouvées:', tasksWithoutResource);
+
+    // Formatter les tâches
+    const formattedTasks = tasksWithoutResource.map(task => ({
+      ...task,
+      id: task.id.toString(),
+      statusId: task.statusId || '1',
+      title: task.title || 'Sans titre'
+    }));
+
+    console.log('Tâches formatées:', formattedTasks);
+    setExternalTasks(formattedTasks);
   }, [tasks]);
 
-
+  // Gestionnaire unique des draggables
   useEffect(() => {
-    // Créer des draggables pour chaque zone de drop
-    const draggables = dropZoneRefs.current.map(ref => {
-      if (!ref.current) return null;
+    console.log('Mise à jour des draggables avec', externalTasks.length, 'tâches externes');
 
-      return new Draggable(ref.current, {
+    // Nettoyer les anciens draggables
+    draggablesRef.current.forEach(draggable => {
+      if (draggable) draggable.destroy();
+    });
+    draggablesRef.current = [];
+
+    // Créer les nouveaux draggables
+    dropZoneRefs.current.forEach((ref, index) => {
+      if (!ref.current) return;
+
+      const draggable = new Draggable(ref.current, {
         itemSelector: '.fc-event',
-        eventData: function(eventEl) {
+        eventData: function (eventEl) {
           const taskId = eventEl.getAttribute('data-task-id');
-          const task = externalTasks.find(t => t.id.toString() === taskId);
+          console.log('Recherche de la tâche avec ID:', taskId);
+          const task = externalTasks.find(t => t.id === taskId);
 
-          if (!task) return null;
+          if (!task) {
+            console.log('Tâche non trouvée pour ID:', taskId);
+            return null;
+          }
 
+          console.log('Tâche trouvée:', task);
           return {
-            id: task.id.toString(),
+            id: task.id,
             title: task.title,
             start: task.start || new Date(),
-            end: task.end,
+            end: task.end || new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
             allDay: true,
             extendedProps: { ...task }
           };
         }
       });
+
+      draggablesRef.current[index] = draggable;
     });
 
-    // Cleanup function
     return () => {
-      draggables.forEach(draggable => {
+      draggablesRef.current.forEach(draggable => {
         if (draggable) draggable.destroy();
       });
+      draggablesRef.current = [];
     };
   }, [externalTasks, dropZones]);
 
+
+  // Gestionnaire des événements de drag
   useEffect(() => {
     dropZoneRefs.current.forEach(ref => {
+      if (!ref.current) return;
+
       const element = ref.current;
-      
+
       const handleDragOver = (e) => {
         e.preventDefault();
         element.classList.add('drag-over');
       };
-  
+
       const handleDragLeave = () => {
         element.classList.remove('drag-over');
       };
-  
+
       const handleDrop = () => {
         element.classList.remove('drag-over');
       };
-  
+
       element.addEventListener('dragover', handleDragOver);
       element.addEventListener('dragleave', handleDragLeave);
       element.addEventListener('drop', handleDrop);
-  
+
       return () => {
         element.removeEventListener('dragover', handleDragOver);
         element.removeEventListener('dragleave', handleDragLeave);
@@ -128,28 +167,37 @@ export const CalendarView = () => {
   return (
     <div className="flex">
       <div className="w-48 space-y-4">
-        {dropZones.map((zone, index) => (
-          <div
-            key={zone.id}
-            ref={dropZoneRefs.current[index]}
-            className="p-4 bg-gray-100 rounded droppable-zone"
-            data-status-id={zone.statusId}
-          >
-            <h3 className="mb-4 font-bold">{zone.title}</h3>
-            {externalTasks
-              .filter(task => task.statusId === zone.statusId)
-              .map(task => (
+        
+        {dropZones.map((zone, index) => {
+          // Convertir les deux valeurs en nombres pour la comparaison
+          const zoneStatusId = Number(zone.statusId);
+
+          const zoneTasks = externalTasks.filter(task => 
+            Number(task.statusId) === zoneStatusId
+          );
+          
+          
+          return (
+            <div
+              key={zone.id}
+              ref={dropZoneRefs.current[index]}
+              className="p-4 bg-gray-100 rounded droppable-zone"
+              data-status-id={zone.statusId}
+            >
+              <h3 className="mb-4 font-bold">{zone.title}</h3>
+              {externalTasks.length > 0 && zoneTasks.map(task => (
                 <div
                   key={task.id}
-                  data-task-id={task.id.toString()}
+                  data-task-id={task.id}
                   className="fc-event p-2 mb-2 bg-white border rounded cursor-move hover:bg-gray-50"
                 >
-                  {task.title || 'Sans titre'}
+                  <div className="font-medium">{task.title}</div>
                   <div className="text-xs text-gray-500">ID: {task.id}</div>
                 </div>
               ))}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex-1 p-4" style={{ width: '2000px' }}>
@@ -185,14 +233,14 @@ export const CalendarView = () => {
             // Gérer la réception d'un événement dans le calendrier
             const taskId = parseInt(info.event.id);
             const resourceId = info.event._def.resourceIds[0];
-            
+
             const task = externalTasks.find(t => t.id === taskId);
             if (task) {
               const updates = {
                 ...task,
                 resourceId: resourceId ? parseInt(resourceId, 10) : null,
                 start: info.event.start,
-                end: info.event.end || new Date(info.event.start.getTime() + 24*60*60*1000),
+                end: info.event.end || new Date(info.event.start.getTime() + 24 * 60 * 60 * 1000),
                 statusId: '2' // Mettre à jour le statut si nécessaire
               };
 

@@ -58,18 +58,20 @@ export const useCalendarData = () => {
     console.log('formatTasksForCalendar tasksData :', tasksData);
 
     return tasksData.map(task => {
-      return {
+      const formattedTask = {
         id: task.id,
         title: task.title || 'Sans titre',
         start: task.startDate,
         end: task.endDate,
-        resourceId: task.ownerId,
-        statusId: task.statusId,
+        resourceId: task.ownerId || null, // Explicitement null si pas d'ownerId
+        statusId: task.statusId || '1', // Statut par défaut si non défini
         description: task.description,
         extendedProps: {
           userId: task.userId,
-        },
+          originalTask: task, // Garder les données originales
+        }
       };
+      return formattedTask;
     });
   }, []);
 
@@ -86,10 +88,23 @@ export const useCalendarData = () => {
         fetchStatuses(),
       ]);
 
+      console.log('Données récupérées:', {
+        tasks: tasksData.length,
+        owners: ownersData.length,
+        statuses: statusesData.length
+      });
+
+
       setHolidays(formatHolidays(holidayDates));
       setResources(formatResources(ownersData));
       setStatuses(statusesData);
-      setTasks(formatTasksForCalendar(tasksData, statusesData));
+      const formattedTasks = formatTasksForCalendar(tasksData, statusesData);
+      console.log('Tâches formatées finales:', {
+        total: formattedTasks.length,
+        withoutResource: formattedTasks.filter(t => !t.resourceId).length
+      });
+
+      setTasks(formattedTasks);
     } catch (err) {
       console.error('Detailed Error in loadData:', err);
       setError(err);
@@ -101,38 +116,33 @@ export const useCalendarData = () => {
 
   const updateTask = useCallback(async (taskId, updates) => {
     try {
-        // Appel API
-        const updatedTask = await updateTaskService(taskId, updates);
+      const updatedTask = await updateTaskService(taskId, updates);
+      
+      setTasks(currentTasks => {
+        const newTasks = currentTasks.filter(task => task.id !== taskId);
         
-        // Mise à jour de l'état local
-        setTasks(currentTasks => {
-            const newTasks = currentTasks.filter(task => task.id !== taskId);
-            
-            const formattedTask = {
-                id: updatedTask.id,
-                title: updatedTask.title || 'Sans titre',
-                start: updates.start,
-                end: updates.end,
-                resourceId: updates.resourceId,
-                statusId: updates.statusId,
-                description: updatedTask.description,
-                extendedProps: {
-                    userId: updatedTask.userId,
-                },
-                ...(updates.statusId === STATUS_TYPES.WIP && updates.resourceId && {
-                    source: 'calendar',
-                    isCalendarTask: true
-                })
-            };
+        const formattedTask = {
+          id: updatedTask.id,
+          title: updatedTask.title || 'Sans titre',
+          start: updates.start,
+          end: updates.end,
+          resourceId: updates.resourceId || null,
+          statusId: updates.statusId || '1',
+          description: updatedTask.description,
+          extendedProps: {
+            userId: updatedTask.userId,
+            originalTask: updatedTask
+          }
+        };
 
-            return [...newTasks, formattedTask];
-        });
+        return [...newTasks, formattedTask];
+      });
 
-        return updatedTask;
+      return updatedTask;
     } catch (error) {
-        throw error;
+      throw error;
     }
-}, []);
+  }, []);
 
   useEffect(() => {
     loadData();
