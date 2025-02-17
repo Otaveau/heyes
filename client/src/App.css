@@ -1,13 +1,23 @@
 .mainContainer {
-  width: 1800px;
+  width: 2000px;
   display: flex;
   justify-content: center;
+}
+
+.dashboard{
+  display: flex;
+  flex-direction: column;
+  /* width: 2000px; */
 }
 
 .fc-event {
   cursor: move !important;
   user-select: none;
 }
+
+/* .backlogs{
+
+} */
 
 .drop-zone {
   transition: all 0.3s ease;

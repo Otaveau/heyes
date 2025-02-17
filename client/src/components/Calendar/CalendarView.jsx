@@ -165,42 +165,9 @@ export const CalendarView = () => {
 
 
   return (
-    <div className="flex">
-      <div className="w-48 space-y-4">
-        
-        {dropZones.map((zone, index) => {
-          // Convertir les deux valeurs en nombres pour la comparaison
-          const zoneStatusId = Number(zone.statusId);
+    <div className="flex dashboard">
 
-          const zoneTasks = externalTasks.filter(task => 
-            Number(task.statusId) === zoneStatusId
-          );
-          
-          
-          return (
-            <div
-              key={zone.id}
-              ref={dropZoneRefs.current[index]}
-              className="p-4 bg-gray-100 rounded droppable-zone"
-              data-status-id={zone.statusId}
-            >
-              <h3 className="mb-4 font-bold">{zone.title}</h3>
-              {externalTasks.length > 0 && zoneTasks.map(task => (
-                <div
-                  key={task.id}
-                  data-task-id={task.id}
-                  className="fc-event p-2 mb-2 bg-white border rounded cursor-move hover:bg-gray-50"
-                >
-                  <div className="font-medium">{task.title}</div>
-                  <div className="text-xs text-gray-500">ID: {task.id}</div>
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex-1 p-4" style={{ width: '2000px' }}>
+      <div className="flex-1 p-4 calendar">
         <FullCalendar
           plugins={[resourceTimelinePlugin, interactionPlugin]}
           height='auto'
@@ -259,6 +226,40 @@ export const CalendarView = () => {
             }
           }}
         />
+      </div>
+
+      <div className="flex w-full space-y-4 backlogs">
+
+        {dropZones.map((zone, index) => {
+          // Convertir les deux valeurs en nombres pour la comparaison
+          const zoneStatusId = Number(zone.statusId);
+
+          const zoneTasks = externalTasks.filter(task =>
+            Number(task.statusId) === zoneStatusId
+          );
+
+
+          return (
+            <div
+              key={zone.id}
+              ref={dropZoneRefs.current[index]}
+              className="flex-1 w-1/4 p-4 bg-gray-100 rounded mt-4"
+              data-status-id={zone.statusId}
+            >
+              <h3 className="mb-4 font-bold">{zone.title}</h3>
+              {externalTasks.length > 0 && zoneTasks.map(task => (
+                <div
+                  key={task.id}
+                  data-task-id={task.id}
+                  className="fc-event p-2 mb-2 bg-white border rounded cursor-move hover:bg-gray-50"
+                >
+                  <div className="font-medium">{task.title}</div>
+                  <div className="text-xs text-gray-500">ID: {task.id}</div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       <TaskForm
