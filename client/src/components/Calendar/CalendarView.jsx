@@ -197,27 +197,48 @@ export const CalendarView = () => {
           eventResize={handleEventResize}
           eventDragStop={handleEventDragStop}
           eventReceive={(info) => {
-            // Gérer la réception d'un événement dans le calendrier
+            console.log('EventReceive déclenché', {
+              eventInfo: info,
+              eventId: info.event.id,
+              eventResourceIds: info.event._def.resourceIds
+            });
+          
             const taskId = parseInt(info.event.id);
             const resourceId = info.event._def.resourceIds[0];
-
-            const task = externalTasks.find(t => t.id === taskId);
+            
+            console.log('Recherche de la tâche', {
+              taskId,
+              resourceId,
+              externalTasksCount: externalTasks.length
+            });
+          
+            const task = externalTasks.find(t => t.id === taskId.toString());
+            console.log('Tâche trouvée:', task);
+          
             if (task) {
               const updates = {
                 ...task,
                 resourceId: resourceId ? parseInt(resourceId, 10) : null,
                 start: info.event.start,
                 end: info.event.end || new Date(info.event.start.getTime() + 24 * 60 * 60 * 1000),
-                statusId: '2' // Mettre à jour le statut si nécessaire
+                statusId: '2'
               };
-
+          
+              console.log('Mise à jour à effectuer:', updates);
+          
               updateTask(taskId, updates)
                 .then(() => {
-                  setTasks(prevTasks =>
-                    prevTasks.map(t =>
-                      t.id === taskId ? updates : t
-                    )
-                  );
+                  console.log('Mise à jour réussie, actualisation des états');
+                  
+                  setTasks(prevTasks => {
+                    console.log('Ancien état des tâches:', prevTasks);
+                    return [...prevTasks, updates];
+                  });
+          
+                  setExternalTasks(prevExternalTasks => {
+                    console.log('Suppression de la tâche des externals', taskId);
+                    return prevExternalTasks.filter(t => t.id !== taskId.toString());
+                  });
                 })
                 .catch(error => {
                   console.error('Erreur lors de la mise à jour:', error);
@@ -235,7 +256,7 @@ export const CalendarView = () => {
           const zoneTasks = externalTasks.filter(task =>
             Number(task.statusId) === zoneStatusId
           );
-          
+
           return (
             <div
               key={zone.id}
