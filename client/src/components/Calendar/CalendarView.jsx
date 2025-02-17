@@ -33,7 +33,7 @@ export const CalendarView = () => {
   const {
     handleTaskSubmit,
     handleDateSelect,
-    // handleStatusUpdate,
+    handleExternalTaskClick,
     // handleTaskClick,
     handleCalendarEventClick,
     handleEventDragStop,
@@ -231,14 +231,11 @@ export const CalendarView = () => {
       <div className="flex w-full space-y-4 backlogs">
 
         {dropZones.map((zone, index) => {
-          // Convertir les deux valeurs en nombres pour la comparaison
           const zoneStatusId = Number(zone.statusId);
-
           const zoneTasks = externalTasks.filter(task =>
             Number(task.statusId) === zoneStatusId
           );
-
-
+          
           return (
             <div
               key={zone.id}
@@ -252,6 +249,7 @@ export const CalendarView = () => {
                   key={task.id}
                   data-task-id={task.id}
                   className="fc-event p-2 mb-2 bg-white border rounded cursor-move hover:bg-gray-50"
+                  onClick={() => handleExternalTaskClick(task)}
                 >
                   <div className="font-medium">{task.title}</div>
                   <div className="text-xs text-gray-500">ID: {task.id}</div>

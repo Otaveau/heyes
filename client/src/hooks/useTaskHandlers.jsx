@@ -248,7 +248,18 @@ export const useTaskHandlers = (
     }
   }, [externalTasks, setTasks]);
 
-  
+  const handleExternalTaskClick = (task) => {
+    setCalendarState(prev => ({
+      ...prev,
+      isFormOpen: true,
+      selectedTask: task,
+      selectedDates: {
+        start: task.start,
+        end: task.end
+      }
+    }));
+  };
+
 
   const prepareTaskUpdate = (taskData, resourceId = null) => ({
     ...taskData,
@@ -283,6 +294,7 @@ export const useTaskHandlers = (
     handleEventDrop,
     handleExternalDrop,
     handleEventDragStop,
+    handleExternalTaskClick,
     // handleDrop,
     // handleEventReceive,
   };
