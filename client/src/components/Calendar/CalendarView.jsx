@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
+import frLocale from '@fullcalendar/core/locales/fr';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { TaskForm } from '../Tasks/TaskForm';
+import { isHoliday, isHolidayOrWeekend } from '../../utils/dateUtils';
+import '../../style/CalendarView.css';
 
 
 export const CalendarView = () => {
@@ -25,9 +28,10 @@ export const CalendarView = () => {
   ], []);
 
   const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
-  const { tasks, setTasks, resources, statuses } = useCalendarData();
+  const { tasks, setTasks, resources, holidays, statuses } = useCalendarData();
   const [externalTasks, setExternalTasks] = useState([]);
   const draggablesRef = useRef([]);
+
 
   const {
     handleTaskSubmit,
@@ -176,6 +180,7 @@ export const CalendarView = () => {
 
       <div className="flex-1 p-4 calendar">
         <FullCalendar
+          locale={frLocale}
           plugins={[resourceTimelinePlugin, interactionPlugin]}
           height='auto'
           schedulerLicenseKey='GPL-My-Project-Is-Open-Source'
@@ -187,7 +192,7 @@ export const CalendarView = () => {
           }}
           editable={true}
           selectable={true}
-          selectMirror={true} // Optionnel : affiche un aperçu de la sélection
+          selectMirror={true}
           droppable={true}
           events={tasks}
           resources={resources}
@@ -196,6 +201,51 @@ export const CalendarView = () => {
           selectConstraint={{
             start: '00:00',
             end: '24:00'
+          }}
+          weekends={true}
+          slotLabelFormat={[
+            { 
+              month: 'long'
+            },
+            {
+              weekday: 'short',
+              day: 'numeric'
+            }
+          ]}
+          slotLabelClassNames={(arg) => {
+            if (!arg?.date) return [];
+            const classes = [];
+            if (arg.level === 1 && isHolidayOrWeekend(arg.date, holidays)) {
+              classes.push(isHoliday(arg.date, holidays) ? 'holiday-slot' : 'weekend-slot');
+            }
+            return classes;
+          }}
+          
+          slotLaneClassNames={(arg) => {
+            if (!arg?.date) return '';
+            return isHolidayOrWeekend(arg.date, holidays)
+              ? isHoliday(arg.date, holidays)
+                ? 'holiday-column'
+                : 'weekend-column'
+              : '';
+          }}
+          
+          // Ajout des classes pour les en-têtes
+          dayHeaderClassNames={(arg) => {
+            if (!arg?.date) return '';
+            return isHolidayOrWeekend(arg.date, holidays)
+              ? isHoliday(arg.date, holidays)
+                ? 'holiday-header'
+                : 'weekend-header'
+              : '';
+          }}
+          dayCellClassNames={(arg) => {
+            // Ajoute des classes supplémentaires si nécessaire
+            const classes = [];
+            if (arg.date.getDay() === 0 || arg.date.getDay() === 6) {
+              classes.push('weekend-cell');
+            }
+            return classes;
           }}
           eventDrop={handleEventDrop}
           drop={handleExternalDrop}

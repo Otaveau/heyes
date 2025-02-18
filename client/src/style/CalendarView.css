@@ -1,90 +1,87 @@
-/* ========================= */
-/* Styles pour l'en-tête des mois */
-/* ========================= */
-.fc .month-header {
+/* styles/calendar.css */
+
+/* Styles pour les weekends */
+.weekend-slot,
+.weekend-column {
   background-color: #f8f9fa !important;
-  font-weight: bold;
-  font-size: 1.1em;
-  color: #333;
-  border-bottom: 2px solid #dee2e6;
+  color: #6c757d !important;
 }
 
-/* ========================= */
-/* Styles pour les jours spéciaux */
-/* ========================= */
-.fc .holiday-slot,
-.fc .weekend-slot,
-.fc .holiday-column,
-.fc .weekend-column {
-  background-color: rgba(240, 240, 240, 0.5) !important;
+/* Styles pour les jours fériés */
+.holiday-slot,
+.holiday-column {
+  background-color: #ffe6e6 !important;
+  color: #dc3545 !important;
 }
 
-.fc .holiday-slot .fc-timeline-slot-cushion,
-.fc .weekend-slot .fc-timeline-slot-cushion,
-.fc .holiday-column .fc-timeline-slot-cushion,
-.fc .weekend-column .fc-timeline-slot-cushion {
-  color: #666;
+/* Style pour les en-têtes de timeline */
+.fc-timeline-header-row .fc-resource-timeline-divider {
+  width: 1px !important;
 }
 
-/* ========================= */
-/* Styles pour le drag and drop */
-/* ========================= */
-.task-card {
-  touch-action: none;
-  transition: all 0.2s ease;
-  cursor: move;
+/* Style pour les en-têtes des jours fériés */
+.fc-timeline-header .holiday-header {
+  background-color: #ffebee !important;
+  font-weight: bold !important;
 }
 
-.task-card.dragging {
-  opacity: 0.6;
-  transform: scale(0.98);
+.fc-timeline-header .holiday-header .fc-timeline-slot-cushion {
+  color: #c62828 !important;
+  padding: 8px !important;
 }
 
-/* ========================= */
-/* Styles FullCalendar */
-/* ========================= */
-.task-card-wrapper.fc-event {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
+/* Style pour les en-têtes des weekends */
+.fc-timeline-header .weekend-header {
+  background-color: #f5f5f5 !important;
 }
 
-.backlog-container.drag-active {
-  background-color: rgba(59, 130, 246, 0.1);
-  border: 2px dashed rgb(59, 130, 246);
+.fc-timeline-header .weekend-header .fc-timeline-slot-cushion {
+  color: #616161 !important;
 }
 
-.fc-event.task-card {
-  background-color: transparent;
-  border: none;
+/* Style pour les colonnes */
+.fc-timeline-slots .holiday-column,
+.fc-timeline-slots .weekend-column {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.1) !important;
 }
 
-.fc-event.task-card.fc-dragging {
-  opacity: 0.6;
-  transform: scale(0.98);
+/* Style pour les événements dans les colonnes spéciales */
+.holiday-column .fc-timeline-event,
+.weekend-column .fc-timeline-event {
+  opacity: 0.9;
 }
 
-/* ========================= */
-/* Styles pour le feedback de drop sur le calendar */
-/* ========================= */
-.fc-highlight {
-  background-color: rgba(59, 130, 246, 0.1) !important;
-  border: 2px dashed rgb(59, 130, 246) !important;
+/* Indicateur pour les jours fériés */
+.fc-timeline-header .holiday-header::after {
+  content: '🌟';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
 }
 
-/* ========================= */
-/* Styles pour le traitement en cours */
-/* ========================= */
-.processing .task-card {
-  pointer-events: none;
-  opacity: 0.7;
+/* Effet hover sur les en-têtes */
+.fc-timeline-header .holiday-header:hover,
+.fc-timeline-header .weekend-header:hover {
+  opacity: 0.9;
 }
 
-/* ========================= */
-/* Améliorer la visibilité de la zone de drop */
-/* ========================= */
-.fc-view-harness.fc-drop-active {
-  outline: 2px dashed rgb(59, 130, 246);
-  outline-offset: -2px;
+/* Dans votre CSS */
+.fc-timeline-header-row-0 {
+  /* Style pour la ligne des mois */
+  background-color: #f8f9fa !important;
+}
+
+.fc-timeline-header-row-0 .fc-timeline-slot-cushion {
+  /* Style pour le texte des mois */
+  font-weight: bold !important;
+  color: #495057 !important;
+  text-transform: capitalize !important;
+  padding: 8px !important;
+}
+
+/* Séparation entre les mois */
+.fc-timeline-header-row-0 .fc-timeline-slot {
+  border-left: 2px solid #dee2e6 !important;
 }

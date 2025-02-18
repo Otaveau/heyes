@@ -1,6 +1,11 @@
 import { format } from 'date-fns';
 import { ERROR_MESSAGES } from '../constants/constants';
 
+export const isWeekend = (date) => {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+};
+
 
 export const isHoliday = (date, holidays) => {
   if (!date || !holidays || !Array.isArray(holidays)) return false;
