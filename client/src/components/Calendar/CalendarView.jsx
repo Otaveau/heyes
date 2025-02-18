@@ -6,7 +6,7 @@ import frLocale from '@fullcalendar/core/locales/fr';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { TaskForm } from '../Tasks/TaskForm';
-import { isHoliday, isHolidayOrWeekend } from '../../utils/dateUtils';
+import { DateUtils } from '../../utils/dateUtils';
 import '../../style/CalendarView.css';
 
 
@@ -216,16 +216,16 @@ export const CalendarView = () => {
           slotLabelClassNames={(arg) => {
             if (!arg?.date) return [];
             const classes = [];
-            if (arg.level === 1 && isHolidayOrWeekend(arg.date, holidays)) {
-              classes.push(isHoliday(arg.date, holidays) ? 'holiday-slot' : 'weekend-slot');
+            if (arg.level === 1 && DateUtils.isHolidayOrWeekend(arg.date, holidays)) {
+              classes.push(DateUtils.isHoliday(arg.date, holidays) ? 'holiday-slot' : 'weekend-slot');
             }
             return classes;
           }}
           
           slotLaneClassNames={(arg) => {
             if (!arg?.date) return '';
-            return isHolidayOrWeekend(arg.date, holidays)
-              ? isHoliday(arg.date, holidays)
+            return DateUtils.isHolidayOrWeekend(arg.date, holidays)
+              ? DateUtils.isHoliday(arg.date, holidays)
                 ? 'holiday-column'
                 : 'weekend-column'
               : '';
@@ -234,8 +234,8 @@ export const CalendarView = () => {
           // Ajout des classes pour les en-têtes
           dayHeaderClassNames={(arg) => {
             if (!arg?.date) return '';
-            return isHolidayOrWeekend(arg.date, holidays)
-              ? isHoliday(arg.date, holidays)
+            return DateUtils.isHolidayOrWeekend(arg.date, holidays)
+              ? DateUtils.isHoliday(arg.date, holidays)
                 ? 'holiday-header'
                 : 'weekend-header'
               : '';

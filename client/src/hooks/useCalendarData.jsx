@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { formatUTCDate } from '../utils/dateUtils';
+import { DateUtils } from '../utils/dateUtils';
 import { fetchTasks } from '../services/api/taskService';
 import { fetchOwners } from '../services/api/ownerService';
 import { fetchHolidays } from '../services/api/holidayService';
@@ -30,7 +30,7 @@ export const useCalendarData = () => {
     }
 
     try {
-      return Object.keys(holidayDates).map(formatUTCDate);
+      return Object.keys(holidayDates).map(DateUtils.formatUTCDate);
     } catch (error) {
       console.error('Error formatting holidays:', error);
       return [];

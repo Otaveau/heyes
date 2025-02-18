@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
-import { formatUTCDate } from '../../utils/dateUtils';
+import { DateUtils } from '../../utils/dateUtils';
 import { ERROR_MESSAGES } from '../../constants/constants';
 
 
@@ -21,8 +21,8 @@ export const TaskForm = ({
     const initialFormState = React.useMemo(() => ({
         title: '',
         description: '',
-        startDate: formatUTCDate(selectedDates?.start) || defaultStartDate,
-        endDate: formatUTCDate(selectedDates?.end) || defaultStartDate,
+        startDate: DateUtils.formatUTCDate(selectedDates?.start) || defaultStartDate,
+        endDate: DateUtils.formatUTCDate(selectedDates?.end) || defaultStartDate,
         resourceId: selectedDates?.resourceId || '',
         statusId: selectedDates?.resourceId ? '2' : ''
     }), [defaultStartDate, selectedDates]);
@@ -66,8 +66,8 @@ export const TaskForm = ({
           setFormData({
             title: selectedTask.title || '',
             description: selectedTask.description || '',
-            startDate: formatUTCDate(selectedTask.start) || defaultStartDate,
-            endDate: formatUTCDate(selectedTask.end) || defaultStartDate,
+            startDate: DateUtils.formatUTCDate(selectedTask.start) || defaultStartDate,
+            endDate: DateUtils.formatUTCDate(selectedTask.end) || defaultStartDate,
             resourceId: selectedTask.resourceId || '',
             statusId: selectedTask.resourceId ? '2' : (selectedTask.statusId || '')
           });
@@ -75,8 +75,8 @@ export const TaskForm = ({
           // Cas de création : on réinitialise le formulaire avec les dates sélectionnées
           setFormData({
             ...initialFormState,
-            startDate: formatUTCDate(selectedDates.start) || defaultStartDate,
-            endDate: formatUTCDate(selectedDates.end) || defaultStartDate,
+            startDate: DateUtils.formatUTCDate(selectedDates.start) || defaultStartDate,
+            endDate: DateUtils.formatUTCDate(selectedDates.end) || defaultStartDate,
             resourceId: selectedDates.resourceId || '',
             statusId: selectedDates.resourceId ? '2' : ''
           });

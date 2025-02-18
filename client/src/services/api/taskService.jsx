@@ -1,4 +1,4 @@
-import { formatUTCDate } from "../../utils/dateUtils";
+import { DateUtils } from "../../utils/dateUtils";
 import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
@@ -27,8 +27,8 @@ const handleFetchError = (error, action) => {
 
 const formatTaskData = (taskData) => ({
     title: taskData.title.trim(),
-    startDate: formatUTCDate(taskData.start),
-    endDate: formatUTCDate(taskData.end),
+    startDate: DateUtils.formatUTCDate(taskData.start),
+    endDate: DateUtils.formatUTCDate(taskData.end),
     description: taskData.description?.trim() || '',
     ownerId: taskData.resourceId,
     statusId: taskData.statusId

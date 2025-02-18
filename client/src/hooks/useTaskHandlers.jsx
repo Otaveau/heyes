@@ -1,12 +1,13 @@
 import { useCallback } from 'react';
 import { updateTask, createTask } from '../services/api/taskService';
-import { formatUTCDate } from '../utils/dateUtils';
-import { isHolidayOrWeekend } from '../utils/dateUtils';
+import {
+  validateWorkingDates,
+  prepareTaskUpdate,
+} from '../utils/taskUtils';
 import {
   TOAST_CONFIG,
   ERROR_MESSAGES,
-  DEFAULT_TASK_DURATION,
-  STATUS_IDS
+  DEFAULT_TASK_DURATION
 } from '../constants/constants';
 import { toast } from 'react-toastify';
 
@@ -18,17 +19,16 @@ export const useTaskHandlers = (
   externalTasks,
   dropZoneRefs,
   dropZones,
-  setExternalTasks, 
+  setExternalTasks,
   holidays
 ) => {
-
   const handleTaskSelection = useCallback((taskData) => {
     if (!taskData?.id) {
       console.warn(ERROR_MESSAGES.INVALID_TASK);
       return;
     }
 
-    setCalendarState((prev) => ({
+    setCalendarState(prev => ({
       ...prev,
       selectedTask: {
         id: taskData.id,
@@ -59,6 +59,12 @@ export const useTaskHandlers = (
       setCalendarState((prev) => ({ ...prev, isProcessing: true }));
       const { event } = info;
 
+      if (!validateWorkingDates(event.start, event.end, holidays)) {
+        toast.error('Impossible de créer ou terminer une tâche sur un week-end ou jour férié');
+        info.revert();
+        return;
+      }
+
       const updates = prepareTaskUpdate({
         title: event.title,
         start: event.start,
@@ -73,7 +79,7 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, setTasks]);
+  }, [holidays, setCalendarState, setTasks]);
 
 
   const handleDateSelect = useCallback((selectInfo) => {
@@ -82,13 +88,13 @@ export const useTaskHandlers = (
       ? new Date(selectInfo.end)
       : new Date(startDate.getTime() + DEFAULT_TASK_DURATION);
 
-    if (isHolidayOrWeekend(startDate, holidays)) {
-      toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
+    if (!validateWorkingDates(startDate, endDate, holidays)) {
+      toast.error('Impossible de créer ou terminer une tâche sur un week-end ou jour férié');
       selectInfo.view.calendar.unselect();
       return;
     }
 
-    setCalendarState((prev) => ({
+    setCalendarState(prev => ({
       ...prev,
       selectedDates: {
         start: startDate,
@@ -111,20 +117,19 @@ export const useTaskHandlers = (
     const startDate = new Date(formData.startDate);
     const endDate = new Date(formData.endDate);
 
-    // Vérifier si la date de début ou de fin est un weekend ou jour férié
-    if (isHolidayOrWeekend(startDate, holidays) || isHolidayOrWeekend(endDate, holidays)) {
-      toast.error('Impossible de créer ou modifier une tâche commençant ou terminant un weekend ou jour férié');
+    if (!validateWorkingDates(startDate, endDate, holidays)) {
+      toast.error('Impossible de créer ou terminer une tâche sur un week-end ou jour férié');
       return;
     }
 
     try {
-      setCalendarState((prev) => ({ ...prev, isProcessing: true }));
+      setCalendarState(prev => ({ ...prev, isProcessing: true }));
 
       const sanitizedFormData = {
         title: formData.title.trim(),
         description: (formData.description || '').trim(),
-        start: new Date(formData.startDate),
-        end: new Date(formData.endDate),
+        start: startDate,
+        end: endDate,
         resourceId: formData.resourceId ? parseInt(formData.resourceId, 10) : null,
         statusId: formData.statusId ? parseInt(formData.statusId, 10) : null,
       };
@@ -135,20 +140,17 @@ export const useTaskHandlers = (
 
       const formattedTask = {
         id: result.id || taskId,
-        title: result.title || sanitizedFormData.title,
+        ...sanitizedFormData,
         start: new Date(result.start_date || result.startDate || sanitizedFormData.start),
         end: new Date(result.end_date || result.endDate || sanitizedFormData.end),
-        description: result.description || sanitizedFormData.description,
-        resourceId: result.owner_id || result.ownerId || sanitizedFormData.resourceId,
-        statusId: result.status_id || result.statusId || sanitizedFormData.statusId,
       };
 
-      setTasks((prevTasks) => {
-        const otherTasks = taskId ? prevTasks.filter((task) => task.id !== taskId) : prevTasks;
-        return [...otherTasks, formattedTask];
-      });
+      setTasks(prevTasks => [
+        ...prevTasks.filter(task => task.id !== taskId),
+        formattedTask
+      ]);
 
-      setCalendarState((prev) => ({
+      setCalendarState(prev => ({
         ...prev,
         isFormOpen: false,
         selectedTask: null,
@@ -156,10 +158,9 @@ export const useTaskHandlers = (
 
       toast.success(taskId ? 'Tâche mise à jour' : 'Tâche créée', TOAST_CONFIG);
     } catch (error) {
-      console.error('Erreur de sauvegarde:', error);
-      toast.error(ERROR_MESSAGES.SAVE_ERROR, TOAST_CONFIG);
+      handleTaskError(error, ERROR_MESSAGES.SAVE_ERROR);
     } finally {
-      setCalendarState((prev) => ({ ...prev, isProcessing: false }));
+      setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
   }, [holidays, setCalendarState, setTasks]);
 
@@ -230,8 +231,8 @@ export const useTaskHandlers = (
     const startDate = event.start;
     const endDate = event._def.extendedProps.end || event._instance.range.end;
 
-    if (isHolidayOrWeekend(startDate, holidays) || isHolidayOrWeekend(endDate, holidays)) {
-        toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
+    if (!validateWorkingDates(startDate, endDate, holidays)) {
+      toast.error('Impossible de créer ou terminer une tâche sur un week-end ou jour férié');
       dropInfo.revert();
       return;
     }
@@ -267,17 +268,11 @@ export const useTaskHandlers = (
         ? new Date(newStartDate.getTime() + (new Date(existingTask.end) - new Date(existingTask.start)))
         : new Date(newStartDate.getTime() + DEFAULT_TASK_DURATION);
 
-        if (isHolidayOrWeekend(newStartDate, holidays) || isHolidayOrWeekend(newEndDate, holidays)) {
-          toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
-        info.revert();
+
+      if (!validateWorkingDates(newStartDate, newEndDate, holidays)) {
+        toast.error('Impossible de créer ou terminer une tâche sur un week-end ou jour férié');
         return;
       }
-
-        if (isHolidayOrWeekend(newStartDate, holidays)) {
-          toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
-          info.view.calendar.unselect();
-          return;
-        }
 
       const updates = prepareTaskUpdate({
         ...existingTask,
@@ -312,12 +307,11 @@ export const useTaskHandlers = (
     const startDate = info.event.start;
     const endDate = info.event.end || new Date(info.event.start.getTime() + 24 * 60 * 60 * 1000);
 
-    if (isHolidayOrWeekend(startDate, holidays) || isHolidayOrWeekend(endDate, holidays)) {
-      toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
+    if (!validateWorkingDates(startDate, endDate, holidays)) {
+      toast.error('Impossible de créer ou terminer une tâche sur un week-end ou jour férié');
       info.revert();
       return;
     }
-
 
     const task = externalTasks.find(t => t.id === taskId.toString());
     console.log('Tâche trouvée:', task);
@@ -349,17 +343,6 @@ export const useTaskHandlers = (
         });
     }
   }, [holidays, externalTasks, setTasks, setExternalTasks]);
-
-
-  const prepareTaskUpdate = (taskData, resourceId = null) => ({
-    ...taskData,
-    start: formatUTCDate(taskData.start),
-    end: formatUTCDate(taskData.end),
-    resourceId: resourceId ? parseInt(resourceId, 10) : null,
-    statusId: STATUS_IDS.WIP,
-    source: 'calendar',
-    isCalendarTask: true
-  });
 
   const handleTaskError = (error, errorMessage, revertFn = null) => {
     console.error('Erreur:', error);
