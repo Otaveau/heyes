@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { updateTask, createTask } from '../services/api/taskService';
 import { formatUTCDate } from '../utils/dateUtils';
+import { isHolidayOrWeekend } from '../utils/dateUtils';
 import {
   TOAST_CONFIG,
   ERROR_MESSAGES,
@@ -17,7 +18,8 @@ export const useTaskHandlers = (
   externalTasks,
   dropZoneRefs,
   dropZones,
-  setExternalTasks
+  setExternalTasks, 
+  holidays
 ) => {
 
   const handleTaskSelection = useCallback((taskData) => {
@@ -80,6 +82,12 @@ export const useTaskHandlers = (
       ? new Date(selectInfo.end)
       : new Date(startDate.getTime() + DEFAULT_TASK_DURATION);
 
+    if (isHolidayOrWeekend(startDate, holidays)) {
+      toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
+      selectInfo.view.calendar.unselect();
+      return;
+    }
+
     setCalendarState((prev) => ({
       ...prev,
       selectedDates: {
@@ -91,12 +99,21 @@ export const useTaskHandlers = (
     }));
 
     selectInfo.view.calendar.unselect();
-  }, [setCalendarState]);
+  }, [holidays, setCalendarState]);
 
 
   const handleTaskSubmit = useCallback(async (formData, taskId) => {
     if (!formData?.title) {
       toast.error(ERROR_MESSAGES.TITLE_REQUIRED, TOAST_CONFIG);
+      return;
+    }
+
+    const startDate = new Date(formData.startDate);
+    const endDate = new Date(formData.endDate);
+
+    // Vérifier si la date de début ou de fin est un weekend ou jour férié
+    if (isHolidayOrWeekend(startDate, holidays) || isHolidayOrWeekend(endDate, holidays)) {
+      toast.error('Impossible de créer ou modifier une tâche commençant ou terminant un weekend ou jour férié');
       return;
     }
 
@@ -144,7 +161,7 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, setTasks]);
+  }, [holidays, setCalendarState, setTasks]);
 
 
   const handleEventRemove = useCallback(async (info, targetStatusId) => {
@@ -210,6 +227,15 @@ export const useTaskHandlers = (
     const existingTask = tasks.find(t => t.id === taskId);
     const resourceId = event._def.resourceIds[0];
 
+    const startDate = event.start;
+    const endDate = event._def.extendedProps.end || event._instance.range.end;
+
+    if (isHolidayOrWeekend(startDate, holidays) || isHolidayOrWeekend(endDate, holidays)) {
+        toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
+      dropInfo.revert();
+      return;
+    }
+
     try {
       const updates = prepareTaskUpdate({
         ...existingTask,
@@ -222,7 +248,7 @@ export const useTaskHandlers = (
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.DROP_ERROR, dropInfo.revert);
     }
-  }, [tasks, setTasks]);
+  }, [tasks, holidays, setTasks]);
 
 
   const handleExternalDrop = useCallback(async (info) => {
@@ -241,6 +267,18 @@ export const useTaskHandlers = (
         ? new Date(newStartDate.getTime() + (new Date(existingTask.end) - new Date(existingTask.start)))
         : new Date(newStartDate.getTime() + DEFAULT_TASK_DURATION);
 
+        if (isHolidayOrWeekend(newStartDate, holidays) || isHolidayOrWeekend(newEndDate, holidays)) {
+          toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
+        info.revert();
+        return;
+      }
+
+        if (isHolidayOrWeekend(newStartDate, holidays)) {
+          toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
+          info.view.calendar.unselect();
+          return;
+        }
+
       const updates = prepareTaskUpdate({
         ...existingTask,
         start: newStartDate,
@@ -253,7 +291,7 @@ export const useTaskHandlers = (
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.DROP_ERROR);
     }
-  }, [externalTasks, setTasks]);
+  }, [externalTasks, holidays, setTasks]);
 
   const handleExternalTaskClick = (task) => {
     setCalendarState(prev => ({
@@ -268,20 +306,18 @@ export const useTaskHandlers = (
   };
 
   const handleEventReceive = useCallback((info) => {
-    console.log('EventReceive déclenché', {
-      eventInfo: info,
-      eventId: info.event.id,
-      eventResourceIds: info.event._def.resourceIds
-    });
 
     const taskId = parseInt(info.event.id);
     const resourceId = info.event._def.resourceIds[0];
+    const startDate = info.event.start;
+    const endDate = info.event.end || new Date(info.event.start.getTime() + 24 * 60 * 60 * 1000);
 
-    console.log('Recherche de la tâche', {
-      taskId,
-      resourceId,
-      externalTasksCount: externalTasks.length
-    });
+    if (isHolidayOrWeekend(startDate, holidays) || isHolidayOrWeekend(endDate, holidays)) {
+      toast.error('Impossible de créer une tâche sur un weekend ou un jour férié');
+      info.revert();
+      return;
+    }
+
 
     const task = externalTasks.find(t => t.id === taskId.toString());
     console.log('Tâche trouvée:', task);
@@ -290,16 +326,13 @@ export const useTaskHandlers = (
       const updates = {
         ...task,
         resourceId: resourceId ? parseInt(resourceId, 10) : null,
-        start: info.event.start,
-        end: info.event.end || new Date(info.event.start.getTime() + 24 * 60 * 60 * 1000),
+        start: startDate,
+        end: endDate,
         statusId: '2'
       };
 
-      console.log('Mise à jour à effectuer:', updates);
-
       updateTask(taskId, updates)
         .then(() => {
-          console.log('Mise à jour réussie, actualisation des états');
 
           setTasks(prevTasks => {
             console.log('Ancien état des tâches:', prevTasks);
@@ -307,7 +340,6 @@ export const useTaskHandlers = (
           });
 
           setExternalTasks(prevExternalTasks => {
-            console.log('Suppression de la tâche des externals', taskId);
             return prevExternalTasks.filter(t => t.id !== taskId.toString());
           });
         })
@@ -316,7 +348,7 @@ export const useTaskHandlers = (
           info.revert();
         });
     }
-  }, [externalTasks, setTasks, setExternalTasks]);
+  }, [holidays, externalTasks, setTasks, setExternalTasks]);
 
 
   const prepareTaskUpdate = (taskData, resourceId = null) => ({

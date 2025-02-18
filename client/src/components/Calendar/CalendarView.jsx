@@ -51,7 +51,8 @@ export const CalendarView = () => {
     externalTasks,
     dropZoneRefs,
     dropZones,
-    setExternalTasks  
+    setExternalTasks, 
+    holidays
   );
 
   // Gestionnaire des tâches externes unique
