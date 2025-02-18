@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { TaskForm } from '../Tasks/TaskForm';
-import { toast } from 'react-toastify';
 
 
 export const CalendarView = () => {
@@ -26,7 +25,7 @@ export const CalendarView = () => {
   ], []);
 
   const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
-  const { tasks, setTasks, updateTask, resources, statuses } = useCalendarData();
+  const { tasks, setTasks, resources, statuses } = useCalendarData();
   const [externalTasks, setExternalTasks] = useState([]);
   const draggablesRef = useRef([]);
 
@@ -34,14 +33,12 @@ export const CalendarView = () => {
     handleTaskSubmit,
     handleDateSelect,
     handleExternalTaskClick,
-    // handleTaskClick,
     handleCalendarEventClick,
     handleEventDragStop,
     handleEventDrop,
     handleExternalDrop,
     handleEventResize,
-    // handleDrop,
-    // handleEventReceive,
+    handleEventReceive
   } = useTaskHandlers(
     setTasks,
     setCalendarState,
@@ -49,7 +46,8 @@ export const CalendarView = () => {
     tasks,
     externalTasks,
     dropZoneRefs,
-    dropZones
+    dropZones,
+    setExternalTasks  
   );
 
   // Gestionnaire des tâches externes unique
@@ -80,6 +78,15 @@ export const CalendarView = () => {
     console.log('Tâches formatées:', formattedTasks);
     setExternalTasks(formattedTasks);
   }, [tasks]);
+
+  useEffect(() => {
+    if (!dropZoneRefs.current) {
+        console.warn('dropZoneRefs.current is undefined');
+        return;
+    }
+
+    console.log('dropZoneRefs initialized:', dropZoneRefs.current);
+}, []);
 
   // Gestionnaire unique des draggables
   useEffect(() => {
@@ -196,62 +203,17 @@ export const CalendarView = () => {
           eventClick={handleCalendarEventClick}
           eventResize={handleEventResize}
           eventDragStop={handleEventDragStop}
-          eventReceive={(info) => {
-            console.log('EventReceive déclenché', {
-              eventInfo: info,
-              eventId: info.event.id,
-              eventResourceIds: info.event._def.resourceIds
-            });
-          
-            const taskId = parseInt(info.event.id);
-            const resourceId = info.event._def.resourceIds[0];
-            
-            console.log('Recherche de la tâche', {
-              taskId,
-              resourceId,
-              externalTasksCount: externalTasks.length
-            });
-          
-            const task = externalTasks.find(t => t.id === taskId.toString());
-            console.log('Tâche trouvée:', task);
-          
-            if (task) {
-              const updates = {
-                ...task,
-                resourceId: resourceId ? parseInt(resourceId, 10) : null,
-                start: info.event.start,
-                end: info.event.end || new Date(info.event.start.getTime() + 24 * 60 * 60 * 1000),
-                statusId: '2'
-              };
-          
-              console.log('Mise à jour à effectuer:', updates);
-          
-              updateTask(taskId, updates)
-                .then(() => {
-                  console.log('Mise à jour réussie, actualisation des états');
-                  
-                  setTasks(prevTasks => {
-                    console.log('Ancien état des tâches:', prevTasks);
-                    return [...prevTasks, updates];
-                  });
-          
-                  setExternalTasks(prevExternalTasks => {
-                    console.log('Suppression de la tâche des externals', taskId);
-                    return prevExternalTasks.filter(t => t.id !== taskId.toString());
-                  });
-                })
-                .catch(error => {
-                  console.error('Erreur lors de la mise à jour:', error);
-                  info.revert();
-                });
-            }
-          }}
+          eventReceive={handleEventReceive} 
         />
       </div>
 
       <div className="flex w-full space-y-4 backlogs">
 
         {dropZones.map((zone, index) => {
+          if (!dropZoneRefs?.current?.[index]) {
+            console.warn(`Ref for zone ${index} is not properly initialized`);
+            return null;
+        }
           const zoneStatusId = Number(zone.statusId);
           const zoneTasks = externalTasks.filter(task =>
             Number(task.statusId) === zoneStatusId

@@ -10,13 +10,14 @@ import {
 import { toast } from 'react-toastify';
 
 export const useTaskHandlers = (
-  setTasks, 
-  setCalendarState, 
-  statuses, 
-  tasks, 
-  externalTasks, 
-  dropZoneRefs, 
-  dropZones
+  setTasks,
+  setCalendarState,
+  statuses,
+  tasks,
+  externalTasks,
+  dropZoneRefs,
+  dropZones,
+  setExternalTasks
 ) => {
 
   const handleTaskSelection = useCallback((taskData) => {
@@ -40,7 +41,7 @@ export const useTaskHandlers = (
     }));
   }, [setCalendarState]);
 
- 
+
   const handleCalendarEventClick = useCallback((clickInfo) => {
     const task = tasks.find((t) => t.id === parseInt(clickInfo.event.id));
     task ? handleTaskSelection(task) : console.warn('Tâche non trouvée:', clickInfo.event.id);
@@ -55,7 +56,7 @@ export const useTaskHandlers = (
     try {
       setCalendarState((prev) => ({ ...prev, isProcessing: true }));
       const { event } = info;
-      
+
       const updates = prepareTaskUpdate({
         title: event.title,
         start: event.start,
@@ -72,11 +73,11 @@ export const useTaskHandlers = (
     }
   }, [setCalendarState, setTasks]);
 
-  
+
   const handleDateSelect = useCallback((selectInfo) => {
     const startDate = new Date(selectInfo.start);
-    const endDate = selectInfo.end 
-      ? new Date(selectInfo.end) 
+    const endDate = selectInfo.end
+      ? new Date(selectInfo.end)
       : new Date(startDate.getTime() + DEFAULT_TASK_DURATION);
 
     setCalendarState((prev) => ({
@@ -160,8 +161,8 @@ export const useTaskHandlers = (
       };
 
       await updateTask(taskId, updatedTask);
-      setTasks(prevTasks => 
-        prevTasks.map(t => 
+      setTasks(prevTasks =>
+        prevTasks.map(t =>
           t.id === taskId ? updatedTask : t
         )
       );
@@ -176,14 +177,20 @@ export const useTaskHandlers = (
 
 
   const handleEventDragStop = useCallback((info) => {
+    // Ajout d'une vérification de sécurité
+    if (!dropZoneRefs?.current) {
+      console.warn('dropZoneRefs.current is undefined');
+      return;
+    }
+
     const eventRect = info.jsEvent.target.getBoundingClientRect();
-    
-    // Vérifier chaque zone de drop
+
     dropZoneRefs.current.forEach((ref, index) => {
+      if (!ref?.current) return; // Vérification supplémentaire
+
       const dropZoneEl = ref.current;
       const dropZoneRect = dropZoneEl.getBoundingClientRect();
 
-      // Si l'événement est déplacé dans cette zone
       if (
         eventRect.left >= dropZoneRect.left &&
         eventRect.right <= dropZoneRect.right &&
@@ -195,7 +202,7 @@ export const useTaskHandlers = (
     });
   }, [dropZoneRefs, dropZones, handleEventRemove]);
 
-  
+
 
   const handleEventDrop = useCallback(async (dropInfo) => {
     const { event } = dropInfo;
@@ -260,6 +267,57 @@ export const useTaskHandlers = (
     }));
   };
 
+  const handleEventReceive = useCallback((info) => {
+    console.log('EventReceive déclenché', {
+      eventInfo: info,
+      eventId: info.event.id,
+      eventResourceIds: info.event._def.resourceIds
+    });
+
+    const taskId = parseInt(info.event.id);
+    const resourceId = info.event._def.resourceIds[0];
+
+    console.log('Recherche de la tâche', {
+      taskId,
+      resourceId,
+      externalTasksCount: externalTasks.length
+    });
+
+    const task = externalTasks.find(t => t.id === taskId.toString());
+    console.log('Tâche trouvée:', task);
+
+    if (task) {
+      const updates = {
+        ...task,
+        resourceId: resourceId ? parseInt(resourceId, 10) : null,
+        start: info.event.start,
+        end: info.event.end || new Date(info.event.start.getTime() + 24 * 60 * 60 * 1000),
+        statusId: '2'
+      };
+
+      console.log('Mise à jour à effectuer:', updates);
+
+      updateTask(taskId, updates)
+        .then(() => {
+          console.log('Mise à jour réussie, actualisation des états');
+
+          setTasks(prevTasks => {
+            console.log('Ancien état des tâches:', prevTasks);
+            return [...prevTasks, updates];
+          });
+
+          setExternalTasks(prevExternalTasks => {
+            console.log('Suppression de la tâche des externals', taskId);
+            return prevExternalTasks.filter(t => t.id !== taskId.toString());
+          });
+        })
+        .catch(error => {
+          console.error('Erreur lors de la mise à jour:', error);
+          info.revert();
+        });
+    }
+  }, [externalTasks, setTasks, setExternalTasks]);
+
 
   const prepareTaskUpdate = (taskData, resourceId = null) => ({
     ...taskData,
@@ -270,21 +328,20 @@ export const useTaskHandlers = (
     source: 'calendar',
     isCalendarTask: true
   });
-  
+
   const handleTaskError = (error, errorMessage, revertFn = null) => {
     console.error('Erreur:', error);
     toast.error(errorMessage, TOAST_CONFIG);
     if (revertFn) revertFn();
   };
-  
+
   const updateTaskState = (taskId, updates, setTasks) => {
     setTasks(prevTasks =>
-      prevTasks.map(task => 
+      prevTasks.map(task =>
         task.id === taskId ? { ...task, ...updates } : task
       )
     );
   };
-
 
   return {
     handleDateSelect,
@@ -295,7 +352,6 @@ export const useTaskHandlers = (
     handleExternalDrop,
     handleEventDragStop,
     handleExternalTaskClick,
-    // handleDrop,
-    // handleEventReceive,
+    handleEventReceive,
   };
 };
