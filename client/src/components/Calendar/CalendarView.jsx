@@ -55,41 +55,35 @@ export const CalendarView = () => {
     holidays
   );
 
-  // Gestionnaire des tâches externes unique
-  useEffect(() => {
+
+  const formattedExternalTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) {
-      console.log('Pas de tâches disponibles');
-      return;
+      return [];
     }
 
-    // Filtrer les tâches sans ressource
-    const tasksWithoutResource = tasks.filter(task => {
-      const hasNoResource = !task.resourceId || task.resourceId === null || task.resourceId === undefined;
-      return hasNoResource;
-    });
-
-    // Formatter les tâches
-    const formattedTasks = tasksWithoutResource.map(task => ({
-      ...task,
-      id: task.id.toString(),
-      statusId: task.statusId || '1',
-      title: task.title || 'Sans titre'
-    }));
-
-    console.log('Tâches formatées:', formattedTasks);
-    setExternalTasks(formattedTasks);
+    return tasks
+      .filter(task => !task.resourceId || task.resourceId === null)
+      .map(task => ({
+        ...task,
+        id: task.id.toString(),
+        statusId: task.statusId || '1',
+        title: task.title || 'Sans titre'
+      }));
   }, [tasks]);
 
+  
   useEffect(() => {
+    setExternalTasks(formattedExternalTasks);
+  }, [formattedExternalTasks]);
+  
+  // Gestionnaire des tâches externes unique
+   useEffect(() => {
     if (!dropZoneRefs.current) {
-        console.warn('dropZoneRefs.current is undefined');
-        return;
+      console.warn('dropZoneRefs.current is undefined');
+      return;
     }
+  }, []);
 
-    console.log('dropZoneRefs initialized:', dropZoneRefs.current);
-}, []);
-
-  // Gestionnaire unique des draggables
   useEffect(() => {
     // Nettoyer les anciens draggables
     draggablesRef.current.forEach(draggable => {
@@ -105,7 +99,6 @@ export const CalendarView = () => {
         itemSelector: '.fc-event',
         eventData: function (eventEl) {
           const taskId = eventEl.getAttribute('data-task-id');
-          console.log('Recherche de la tâche avec ID:', taskId);
           const task = externalTasks.find(t => t.id === taskId);
 
           if (!task) {
@@ -113,7 +106,6 @@ export const CalendarView = () => {
             return null;
           }
 
-          console.log('Tâche trouvée:', task);
           return {
             id: task.id,
             title: task.title,
@@ -135,40 +127,6 @@ export const CalendarView = () => {
       draggablesRef.current = [];
     };
   }, [externalTasks, dropZones]);
-
-
-  // Gestionnaire des événements de drag
-  useEffect(() => {
-    dropZoneRefs.current.forEach(ref => {
-      if (!ref.current) return;
-
-      const element = ref.current;
-
-      const handleDragOver = (e) => {
-        e.preventDefault();
-        element.classList.add('drag-over');
-      };
-
-      const handleDragLeave = () => {
-        element.classList.remove('drag-over');
-      };
-
-      const handleDrop = () => {
-        element.classList.remove('drag-over');
-      };
-
-      element.addEventListener('dragover', handleDragOver);
-      element.addEventListener('dragleave', handleDragLeave);
-      element.addEventListener('drop', handleDrop);
-
-      return () => {
-        element.removeEventListener('dragover', handleDragOver);
-        element.removeEventListener('dragleave', handleDragLeave);
-        element.removeEventListener('drop', handleDrop);
-      };
-    });
-  }, []);
-
 
   return (
     <div className="flex dashboard">
@@ -253,15 +211,14 @@ export const CalendarView = () => {
       </div>
 
       <div className="flex w-full space-y-4 backlogs">
-
         {dropZones.map((zone, index) => {
           if (!dropZoneRefs?.current?.[index]) {
             console.warn(`Ref for zone ${index} is not properly initialized`);
             return null;
-        }
-          const zoneStatusId = Number(zone.statusId);
+          }
+
           const zoneTasks = externalTasks.filter(task =>
-            Number(task.statusId) === zoneStatusId
+            task.statusId.toString() === zone.statusId.toString()
           );
 
           return (
@@ -272,7 +229,7 @@ export const CalendarView = () => {
               data-status-id={zone.statusId}
             >
               <h3 className="mb-4 font-bold">{zone.title}</h3>
-              {externalTasks.length > 0 && zoneTasks.map(task => (
+              {zoneTasks.map(task => (
                 <div
                   key={task.id}
                   data-task-id={task.id}
@@ -287,7 +244,7 @@ export const CalendarView = () => {
           );
         })}
       </div>
-
+      
       <TaskForm
         isOpen={calendarState.isFormOpen}
         onClose={() => setCalendarState((prev) => ({

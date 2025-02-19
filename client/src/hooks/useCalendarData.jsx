@@ -53,21 +53,20 @@ export const useCalendarData = () => {
   }, []);
 
   const formatTasksForCalendar = useCallback((tasksData) => {
-
-    console.log('formatTasksForCalendar tasksData :', tasksData);
-
     return tasksData.map(task => {
       const formattedTask = {
         id: task.id,
         title: task.title || 'Sans titre',
-        start: task.startDate,
-        end: task.endDate,
-        resourceId: task.ownerId || null, // Explicitement null si pas d'ownerId
-        statusId: task.statusId || '1', // Statut par défaut si non défini
+        start: task.startDate || task.start,  // Prendre en compte les deux formats possibles
+        end: task.endDate || task.end,
+        resourceId: task.ownerId || task.resourceId || null,
+        statusId: task.statusId || '1',
         description: task.description,
         extendedProps: {
           userId: task.userId,
-          originalTask: task, // Garder les données originales
+          statusId: task.statusId || '1',
+          description: task.description,
+          originalTask: task,
         }
       };
       return formattedTask;
@@ -118,25 +117,35 @@ export const useCalendarData = () => {
       const updatedTask = await updateTaskService(taskId, updates);
       
       setTasks(currentTasks => {
-        const newTasks = currentTasks.filter(task => task.id !== taskId);
+        // Supprimer l'ancienne version de la tâche
+        const otherTasks = currentTasks.filter(task => task.id !== taskId);
         
+        // Créer une nouvelle version formatée de la tâche
         const formattedTask = {
           id: updatedTask.id,
-          title: updatedTask.title || 'Sans titre',
-          start: updates.start,
-          end: updates.end,
-          resourceId: updates.resourceId || null,
-          statusId: updates.statusId || '1',
-          description: updatedTask.description,
+          title: updates.title || updatedTask.title || 'Sans titre',
+          start: updates.start || updatedTask.startDate,
+          end: updates.end || updatedTask.endDate,
+          resourceId: updates.resourceId || updatedTask.ownerId || null,
+          statusId: updates.statusId || updatedTask.statusId || '1',
+          description: updates.description || updatedTask.description,
           extendedProps: {
             userId: updatedTask.userId,
+            statusId: updates.statusId || updatedTask.statusId || '1',
+            description: updates.description || updatedTask.description,
             originalTask: updatedTask
           }
         };
-
-        return [...newTasks, formattedTask];
+  
+        // Si la tâche a un resourceId, l'ajouter au calendrier
+        if (formattedTask.resourceId) {
+          return [...otherTasks, formattedTask];
+        }
+        
+        // Sinon, ne pas l'inclure dans les tâches du calendrier
+        return otherTasks;
       });
-
+  
       return updatedTask;
     } catch (error) {
       throw error;

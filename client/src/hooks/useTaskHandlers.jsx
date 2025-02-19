@@ -22,16 +22,19 @@ export const useTaskHandlers = (
       return;
     }
   
+    // S'assurer que toutes les propriétés sont définies avec des valeurs par défaut si nécessaire
     setCalendarState(prev => ({
       ...prev,
       selectedTask: {
-        id: taskData.id.toString(), // Conversion explicite en string
-        title: taskData.title,
-        start: taskData.start,
-        end: taskData.end,
-        description: taskData.description,
-        resourceId: taskData.resourceId,
-        statusId: taskData.statusId,
+        id: taskData.id.toString(),
+        title: taskData.title || '',
+        start: taskData.start || new Date(),
+        end: taskData.end || new Date(),
+        description: taskData.description || '',
+        resourceId: taskData.resourceId || '',
+        statusId: taskData.statusId || '',
+        // Ajouter d'autres propriétés qui pourraient être nécessaires dans votre formulaire
+        // avec des valeurs par défaut appropriées
       },
       isFormOpen: true,
     }));
@@ -197,30 +200,56 @@ export const useTaskHandlers = (
   const handleEventRemove = useCallback(async (info, targetStatusId) => {
     const taskId = parseInt(info.event.id);
     const task = tasks.find(t => t.id === taskId);
-
+  
     if (!task) return;
-
+  
     try {
-      const updatedTask = {
-        ...task,
-        resourceId: null,
+      // Préparer l'objet de mise à jour
+      const updateData = {
+        title: task.title,
+        description: task.description || '',
+        start: info.event.start,
+        end: info.event.end,
         statusId: targetStatusId,
+        resourceId: null,  // Retirer la ressource
+        ownerId: null     // S'assurer que ownerId est aussi null
       };
-
-      await updateTask(taskId, updatedTask);
-      setTasks(prevTasks =>
-        prevTasks.map(t =>
-          t.id === taskId ? updatedTask : t
-        )
-      );
-
-      toast.success(`Tâche déplacée vers ${dropZones.find(zone => zone.statusId === targetStatusId)?.title}`);
+  
+      // 1. Mettre à jour la base de données
+      await updateTask(taskId, updateData);
+  
+      // 2. La mise à jour de setTasks est gérée par updateTask dans useCalendarData
+      // qui retirera automatiquement la tâche car elle n'a plus de resourceId
+  
+      // 3. Forcer la mise à jour des tâches externes
+      const externalTask = {
+        ...task,
+        id: taskId.toString(),
+        resourceId: null,
+        ownerId: null,
+        statusId: targetStatusId,
+        start: info.event.start,
+        end: info.event.end,
+        title: task.title,
+        extendedProps: {
+          ...task.extendedProps,
+          statusId: targetStatusId,
+          description: task.description || ''
+        }
+      };
+  
+      setExternalTasks(prevExternalTasks => {
+        const filteredTasks = prevExternalTasks.filter(t => t.id !== taskId.toString());
+        return [...filteredTasks, externalTask];
+      });
+  
+      toast.success(`Tâche "${task.title}" déplacée vers ${dropZones.find(zone => zone.statusId === targetStatusId)?.title}`);
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la tâche:', error);
       info.revert();
       toast.error('Erreur lors de la mise à jour de la tâche');
     }
-  }, [tasks, setTasks, dropZones]);
+  }, [tasks, setExternalTasks, dropZones]);
 
 
   const handleEventDragStop = useCallback((info) => {
@@ -309,17 +338,21 @@ export const useTaskHandlers = (
       const updates = {
         ...existingTask,
         id: numericId,
-        title: existingTask.title,
-        description: existingTask.description,
+        title: existingTask.title || '',
+        description: existingTask.description || '',
         start: newStartDate,
         end: newEndDate,
-        resourceId: info.resource?.id || null,
+        resourceId: info.resource?.id || '',
         statusId: '2',
-        // Assurez-vous que toutes les propriétés nécessaires sont présentes
+        // S'assurer que toutes les propriétés sont définies
         extendedProps: {
-          description: existingTask.description,
+          description: existingTask.description || '',
           statusId: '2',
-          resourceId: info.resource?.id || null
+          resourceId: info.resource?.id || '',
+          // Ajouter toutes les autres propriétés nécessaires
+          start: newStartDate,
+          end: newEndDate,
+          title: existingTask.title || ''
         }
       };
   
