@@ -13,7 +13,7 @@ export const TaskForm = ({
     statuses = [],
     onSubmit: handleTaskSubmit
 }) => {
-    const defaultStartDate = React.useMemo(() => 
+    const defaultStartDate = React.useMemo(() =>
         new Date().toISOString().split('T')[0],
         []
     );
@@ -24,35 +24,46 @@ export const TaskForm = ({
         startDate: DateUtils.formatUTCDate(selectedDates?.start) || defaultStartDate,
         endDate: DateUtils.formatUTCDate(selectedDates?.end) || defaultStartDate,
         resourceId: selectedDates?.resourceId || '',
-        statusId: selectedDates?.resourceId ? '2' : ''
+        statusId: selectedDates?.resourceId ? '2' : '',
+        isConge: false
     }), [defaultStartDate, selectedDates]);
 
-    const [formData, setFormData] = useState({initialFormState});
+    const [formData, setFormData] = useState({ initialFormState });
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const validateForm = useCallback(() => {
         const newErrors = {};
-        
+
         if (!formData.title.trim()) {
             newErrors.title = ERROR_MESSAGES.TITLE_REQUIRED;
         }
-        
+
         if (!formData.startDate) {
             newErrors.startDate = ERROR_MESSAGES.START_DATE_REQUIRED;
         }
-        
+
         if (!formData.endDate) {
             newErrors.endDate = ERROR_MESSAGES.END_DATE_REQUIRED;
         }
-        
-        if (formData.startDate && formData.endDate && 
+
+        if (formData.startDate && formData.endDate &&
             new Date(formData.startDate) > new Date(formData.endDate)) {
             newErrors.endDate = ERROR_MESSAGES.END_DATE_VALIDATION;
         }
 
-        if (!formData.statusId) {
+        if (formData.isConge) {
+            if (!formData.resourceId) {
+                newErrors.resourceId = 'La ressource est requise pour un congé';
+            }
+            if (!formData.startDate) {
+                newErrors.startDate = 'La date de début est requise pour un congé';
+            }
+            if (!formData.endDate) {
+                newErrors.endDate = 'La date de fin est requise pour un congé';
+            }
+        } else if (!formData.statusId) {
             newErrors.statusId = ERROR_MESSAGES.STATUS_REQUIRED;
         }
 
@@ -62,33 +73,36 @@ export const TaskForm = ({
 
     useEffect(() => {
         if (selectedTask) {
-          // Cas de modification : on remplit avec les données de la tâche
-          setFormData({
-            title: selectedTask.title || '',
-            description: selectedTask.description || '',
-            startDate: DateUtils.formatUTCDate(selectedTask.start) || defaultStartDate,
-            endDate: DateUtils.formatUTCDate(selectedTask.end) || defaultStartDate,
-            resourceId: selectedTask.resourceId || '',
-            statusId: selectedTask.resourceId ? '2' : (selectedTask.statusId || '')
-          });
+
+            const isCongeTask = selectedTask.title === 'CONGE' || selectedTask.isConge;
+            // Cas de modification : on remplit avec les données de la tâche
+            setFormData({
+                title: selectedTask.isConge ? 'CONGE' : (selectedTask.title || ''),
+                description: selectedTask.description || '',
+                startDate: DateUtils.formatUTCDate(selectedTask.start) || defaultStartDate,
+                endDate: DateUtils.formatUTCDate(selectedTask.end) || defaultStartDate,
+                resourceId: selectedTask.resourceId || '',
+                statusId: selectedTask.resourceId ? '2' : (selectedTask.statusId || ''),
+                isConge: isCongeTask
+            });
         } else if (selectedDates) {
-          // Cas de création : on réinitialise le formulaire avec les dates sélectionnées
-          setFormData({
-            ...initialFormState,
-            startDate: DateUtils.formatUTCDate(selectedDates.start) || defaultStartDate,
-            endDate: DateUtils.formatUTCDate(selectedDates.end) || defaultStartDate,
-            resourceId: selectedDates.resourceId || '',
-            statusId: selectedDates.resourceId ? '2' : ''
-          });
+            // Cas de création : on réinitialise le formulaire avec les dates sélectionnées
+            setFormData({
+                ...initialFormState,
+                startDate: DateUtils.formatUTCDate(selectedDates.start) || defaultStartDate,
+                endDate: DateUtils.formatUTCDate(selectedDates.end) || defaultStartDate,
+                resourceId: selectedDates.resourceId || '',
+                statusId: selectedDates.resourceId ? '2' : ''
+            });
         } else {
-          // Réinitialisation complète si ni tâche ni dates sélectionnées
-          setFormData(initialFormState);
+            // Réinitialisation complète si ni tâche ni dates sélectionnées
+            setFormData(initialFormState);
         }
-      }, [selectedTask, selectedDates, defaultStartDate, isOpen, initialFormState]); 
+    }, [selectedTask, selectedDates, defaultStartDate, isOpen, initialFormState]);
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
             return;
         }
@@ -109,19 +123,34 @@ export const TaskForm = ({
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData(prev => {
             const newData = {
                 ...prev,
-                [name]: value
+                [name]: type === 'checkbox' ? checked : value
             };
+
+            // Gestion du changement de isConge
+            if (name === 'isConge') {
+                if (checked) {
+                    newData.statusId = '2';
+                    newData.title = 'CONGE'; // Définir le titre automatiquement
+                } else {
+                    newData.title = ''; // Réinitialiser le titre
+                    if (!newData.resourceId) {
+                        newData.statusId = '';
+                    }
+                }
+            }
+
+            // Mise à jour automatique lors de la sélection d'une ressource
             if (name === 'resourceId' && value !== '') {
                 newData.statusId = '2';
             }
+
             return newData;
         });
-        
-        // Clear error when field is modified
+
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
@@ -163,7 +192,7 @@ export const TaskForm = ({
     `;
 
     return (
-        <div 
+        <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             onClick={onClose}
             onKeyDown={handleKeyDown}
@@ -171,7 +200,7 @@ export const TaskForm = ({
             aria-modal="true"
             aria-labelledby="modal-title"
         >
-            <div 
+            <div
                 className="bg-white p-6 rounded-lg w-96 relative max-h-[90vh] overflow-y-auto"
                 onClick={handleModalClick}
             >
@@ -194,6 +223,20 @@ export const TaskForm = ({
                 )}
 
                 <form onSubmit={handleFormSubmit} className="space-y-4">
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="isConge"
+                            name="isConge"
+                            checked={formData.isConge}
+                            onChange={handleChange}
+                            className="h-4 w-4 text-blue-600"
+                        />
+                        <label htmlFor="isConge" className="text-gray-700">
+                            Congé
+                        </label>
+                    </div>
                     <FormField label="Titre" name="title" error={errors.title}>
                         <input
                             id="title"
@@ -204,6 +247,7 @@ export const TaskForm = ({
                             className={getInputClassName(errors.title)}
                             required
                             autoFocus
+                            disabled={formData.isConge} // Désactiver si c'est un congé
                         />
                     </FormField>
 
@@ -219,13 +263,19 @@ export const TaskForm = ({
                         />
                     </FormField>
 
-                    <FormField label="Assigné à" name="resourceId">
+                    <FormField
+                        label="Assigné à"
+                        name="resourceId"
+                        error={errors.resourceId}
+                        required={formData.isConge}
+                    >
                         <select
                             id="resourceId"
                             name="resourceId"
                             value={formData.resourceId}
                             onChange={handleChange}
-                            className={getInputClassName()}
+                            className={getInputClassName(errors.resourceId)}
+                            required={formData.isConge}
                         >
                             <option value="">Sélectionner une personne</option>
                             {resources.map(resource => (
@@ -269,8 +319,8 @@ export const TaskForm = ({
                             value={formData.statusId}
                             onChange={handleChange}
                             className={getInputClassName(errors.statusId)}
-                            required
-                            disabled={formData.resourceId !== ''}
+                            required={!formData.isConge}
+                            disabled={formData.resourceId !== '' || formData.isConge}
                         >
                             <option value="">Sélectionner un statut</option>
                             {statuses.map(status => (

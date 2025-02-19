@@ -57,8 +57,6 @@ export const CalendarView = () => {
 
   // Gestionnaire des tâches externes unique
   useEffect(() => {
-    console.log('Tasks reçus:', tasks);
-
     if (!tasks || !Array.isArray(tasks)) {
       console.log('Pas de tâches disponibles');
       return;
@@ -69,8 +67,6 @@ export const CalendarView = () => {
       const hasNoResource = !task.resourceId || task.resourceId === null || task.resourceId === undefined;
       return hasNoResource;
     });
-
-    console.log('Tâches sans ressource trouvées:', tasksWithoutResource);
 
     // Formatter les tâches
     const formattedTasks = tasksWithoutResource.map(task => ({
@@ -95,8 +91,6 @@ export const CalendarView = () => {
 
   // Gestionnaire unique des draggables
   useEffect(() => {
-    console.log('Mise à jour des draggables avec', externalTasks.length, 'tâches externes');
-
     // Nettoyer les anciens draggables
     draggablesRef.current.forEach(draggable => {
       if (draggable) draggable.destroy();

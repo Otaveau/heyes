@@ -54,6 +54,7 @@ export const useTaskHandlers = (
       setCalendarState((prev) => ({ ...prev, isProcessing: true }));
       const { event } = info;
       const statusId = event._def.extendedProps.statusId || event.extendedProps?.statusId;
+      const isConge = event._def.extendedProps.isConge || event.title === 'CONGE';
 
       if (!TaskUtils.validateWorkingDates(event.start, event.end, holidays)) {
         info.revert();
@@ -62,15 +63,18 @@ export const useTaskHandlers = (
 
       const updates = TaskUtils.prepareTaskUpdate(
         {
-          title: event.title,
+          title: isConge ? 'CONGE' : event.title,
           start: event.start,
           end: event.end,
           ...event._def.extendedProps,
+          isConge: isConge,
           statusId: statusId
         },
         event._def.resourceIds[0],
         statusId
       );
+
+      await updateTask(event.id, updates);
 
       // Mettre à jour l'état local avec toutes les propriétés
       setTasks(prevTasks =>
@@ -79,10 +83,12 @@ export const useTaskHandlers = (
             ? {
               ...task,
               ...updates,
+              end: event.end,
+              isConge: isConge,
               extendedProps: {
                 ...task.extendedProps,
                 ...updates,
-                end: event.end // S'assurer que la nouvelle fin est stockée
+                end: event.end,
               }
             }
             : task
