@@ -28,7 +28,7 @@ export const TaskForm = ({
         isConge: false
     }), [defaultStartDate, selectedDates]);
 
-    const [formData, setFormData] = useState({ initialFormState });
+    const [formData, setFormData] = useState(initialFormState);
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
