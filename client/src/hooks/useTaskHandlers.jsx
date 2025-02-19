@@ -64,14 +64,31 @@ export const useTaskHandlers = (
         {
           title: event.title,
           start: event.start,
-          end: event.end
+          end: event.end,
+          ...event._def.extendedProps,
+          statusId: statusId
         },
         event._def.resourceIds[0],
         statusId
       );
 
-      await updateTask(event.id, updates);
-      updateTaskState(event.id, updates, setTasks);
+      // Mettre à jour l'état local avec toutes les propriétés
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === parseInt(event.id)
+            ? {
+              ...task,
+              ...updates,
+              extendedProps: {
+                ...task.extendedProps,
+                ...updates,
+                end: event.end // S'assurer que la nouvelle fin est stockée
+              }
+            }
+            : task
+        )
+      );
+
       toast.success(`Tâche "${event.title}" redimensionnée`, TOAST_CONFIG);
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.RESIZE_ERROR, info.revert);
