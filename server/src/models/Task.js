@@ -15,7 +15,7 @@ class Task {
 
   static async create(data, userId) {
     const { title, start_date, end_date, description, owner_id, status_id } = data;
-    
+
     console.log('Data to insert:', { title, start_date, end_date, description, owner_id, status_id, userId });
 
     const result = await pool.query(
@@ -77,6 +77,19 @@ class Task {
       [ownerId, userId]
     );
     return result.rows;
+  }
+
+  static async delete(id, userId) {
+    const result = await pool.query(
+      'DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, userId]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error('Task not found or you do not have permission to delete');
+    }
+
+    return result.rows[0];
   }
 }
 
