@@ -21,11 +21,11 @@ export const useTaskHandlers = (
       console.warn(ERROR_MESSAGES.INVALID_TASK);
       return;
     }
-
+  
     setCalendarState(prev => ({
       ...prev,
       selectedTask: {
-        id: taskData.id,
+        id: taskData.id.toString(), // Conversion explicite en string
         title: taskData.title,
         start: taskData.start,
         end: taskData.end,
@@ -39,8 +39,15 @@ export const useTaskHandlers = (
 
 
   const handleCalendarEventClick = useCallback((clickInfo) => {
-    const task = tasks.find((t) => t.id === parseInt(clickInfo.event.id));
-    task ? handleTaskSelection(task) : console.warn('Tâche non trouvée:', clickInfo.event.id);
+    // Conversion explicite en string pour la comparaison
+    const eventId = clickInfo.event.id;
+    const task = tasks.find((t) => t.id.toString() === eventId.toString());
+    
+    if (task) {
+      handleTaskSelection(task);
+    } else {
+      console.warn('Tâche non trouvée:', eventId);
+    }
   }, [handleTaskSelection, tasks]);
 
 
@@ -278,39 +285,75 @@ export const useTaskHandlers = (
 
   const handleExternalDrop = useCallback(async (info) => {
     if (!info.draggedEl.parentNode) return;
-
+  
     try {
       const taskId = info.draggedEl.getAttribute('data-task-id');
       const existingTask = externalTasks.find(t => t.id.toString() === taskId);
-
+  
       if (!existingTask) {
         throw new Error(`Task with id ${taskId} not found in externalTasks`);
       }
-
+  
       const newStartDate = new Date(info.date);
       const newEndDate = existingTask.start && existingTask.end
         ? new Date(newStartDate.getTime() + (new Date(existingTask.end) - new Date(existingTask.start)))
         : new Date(newStartDate.getTime() + DEFAULT_TASK_DURATION);
-
+  
       if (!DateUtils.validateDateRange(newStartDate, newEndDate, holidays)) {
         return;
       }
-
-      const updates = TaskUtils.prepareTaskUpdate({
-        ...existingTask,
-        start: newStartDate,
-        end: newEndDate
-      },
-        info.resource?.id,
-        '2');
-
+  
       const numericId = parseInt(taskId, 10);
-      await updateTask(numericId, updates);
-      updateTaskState(numericId, updates, setTasks);
+      
+      // Création d'un objet de mise à jour complet
+      const updates = {
+        ...existingTask,
+        id: numericId,
+        title: existingTask.title,
+        description: existingTask.description,
+        start: newStartDate,
+        end: newEndDate,
+        resourceId: info.resource?.id || null,
+        statusId: '2',
+        // Assurez-vous que toutes les propriétés nécessaires sont présentes
+        extendedProps: {
+          description: existingTask.description,
+          statusId: '2',
+          resourceId: info.resource?.id || null
+        }
+      };
+  
+      // Mise à jour dans la base de données
+      await updateTask(numericId, {
+        title: updates.title,
+        description: updates.description,
+        start: updates.start,
+        end: updates.end,
+        resourceId: updates.resourceId,
+        statusId: updates.statusId
+      });
+  
+      // 1. D'abord retirer la tâche des tâches externes
+      setExternalTasks(prevExternalTasks => 
+        prevExternalTasks.filter(t => t.id.toString() !== taskId)
+      );
+  
+      // 2. Ensuite mettre à jour les tâches du calendrier
+      setTasks(prevTasks => {
+        // Filtrer d'abord les tâches existantes avec le même ID
+        const filteredTasks = prevTasks.filter(t => t.id.toString() !== taskId);
+        // Puis ajouter la nouvelle tâche
+        return [...filteredTasks, updates];
+      });
+      
+      toast.success(`Tâche "${existingTask.title}" déplacée vers le calendrier`, TOAST_CONFIG);
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.DROP_ERROR);
     }
-  }, [externalTasks, holidays, setTasks]);
+  }, [externalTasks, holidays, setTasks, setExternalTasks]);
+  
+
+
 
   const handleExternalTaskClick = (task) => {
     setCalendarState(prev => ({

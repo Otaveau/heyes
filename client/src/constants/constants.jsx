@@ -50,6 +50,7 @@ export const TOAST_CONFIG = {
 };
 
 export const DEFAULT_TASK_DURATION = 24 * 60 * 60 * 1000;
+export const DEFAULT_STATUS_ID = 2;
 
 // Messages d'erreur
 export const ERROR_MESSAGES = {
