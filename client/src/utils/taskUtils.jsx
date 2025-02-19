@@ -13,7 +13,7 @@ export class TaskUtils {
         }
     
         if (!DateUtils.validateDateRange(start, end, holidays)) {
-          toast.error('La tâche ne peut pas commencer ou se terminer sur un week-end ou un jour férié');
+          toast.error(ERROR_MESSAGES.INVALID_START_END_DATE);
           return false;
         }
     
