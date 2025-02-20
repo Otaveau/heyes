@@ -27,8 +27,8 @@ const handleFetchError = (error, action) => {
 
 const formatTaskData = (taskData) => ({
     title: taskData.title.trim(),
-    startDate: DateUtils.formatUTCDate(taskData.start),
-    endDate: DateUtils.formatUTCDate(taskData.end),
+    startDate: taskData.start,
+    endDate:taskData.end,
     description: taskData.description?.trim() || '',
     ownerId: taskData.resourceId,
     statusId: taskData.statusId

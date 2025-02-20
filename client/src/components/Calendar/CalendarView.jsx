@@ -46,12 +46,11 @@ export const CalendarView = () => {
   } = useTaskHandlers(
     setTasks,
     setCalendarState,
-    statuses,
     tasks,
     externalTasks,
     dropZoneRefs,
     dropZones,
-    setExternalTasks, 
+    setExternalTasks,
     holidays
   );
 
@@ -105,6 +104,8 @@ export const CalendarView = () => {
             console.log('Tâche non trouvée pour ID:', taskId);
             return null;
           }
+
+          console.log ('calendarView useEffect Draggable task :', task);
 
           return {
             id: task.id,

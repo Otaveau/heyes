@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
-import { DateUtils } from '../../utils/dateUtils';
 import { ERROR_MESSAGES } from '../../constants/constants';
 
 
@@ -21,12 +20,12 @@ export const TaskForm = ({
     const initialFormState = React.useMemo(() => ({
         title: '',
         description: '',
-        startDate: DateUtils.formatUTCDate(selectedDates?.start) || defaultStartDate,
-        endDate: DateUtils.formatUTCDate(selectedDates?.end) || defaultStartDate,
+        startDate:selectedDates?.start,
+        endDate: selectedDates?.end,
         resourceId: selectedDates?.resourceId || '',
         statusId: selectedDates?.resourceId ? '2' : '',
         isConge: false
-    }), [defaultStartDate, selectedDates]);
+    }), [selectedDates]);
 
     const [formData, setFormData] = useState(initialFormState);
 
@@ -79,8 +78,8 @@ export const TaskForm = ({
             setFormData({
                 title: selectedTask.isConge ? 'CONGE' : (selectedTask.title || ''),
                 description: selectedTask.description || '',
-                startDate: DateUtils.formatUTCDate(selectedTask.start) || defaultStartDate,
-                endDate: DateUtils.formatUTCDate(selectedTask.end) || defaultStartDate,
+                startDate: selectedTask.start,
+                endDate: selectedTask.end,
                 resourceId: selectedTask.resourceId || '',
                 statusId: selectedTask.resourceId ? '2' : (selectedTask.statusId || ''),
                 isConge: isCongeTask
@@ -89,8 +88,8 @@ export const TaskForm = ({
             // Cas de création : on réinitialise le formulaire avec les dates sélectionnées
             setFormData({
                 ...initialFormState,
-                startDate: DateUtils.formatUTCDate(selectedDates.start) || defaultStartDate,
-                endDate: DateUtils.formatUTCDate(selectedDates.end) || defaultStartDate,
+                startDate: selectedDates.start,
+                endDate: selectedDates.end,
                 resourceId: selectedDates.resourceId || '',
                 statusId: selectedDates.resourceId ? '2' : ''
             });
