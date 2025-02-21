@@ -1,63 +1,62 @@
-import { useCallback } from 'react';
 import { updateTask as updateTaskService, createTask } from '../services/api/taskService';
 import { toast } from 'react-toastify';
-import { TOAST_CONFIG  } from '../constants/constants';
+import { TOAST_CONFIG, ERROR_MESSAGES  } from '../constants/constants';
 
 export const useTaskOperations = (setTasks, setExternalTasks) => {
 
-  const updateTask = useCallback(async (taskId, updates) => {
+
+  const transformTaskForServer = (taskData) => ({
+    title: taskData.title.trim(),
+    startDate: taskData.start,
+    endDate: taskData.end,
+    description: taskData.description?.trim() || '',
+    ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
+    statusId: taskData.statusId ? parseInt(taskData.statusId, 10) : null
+  });
+
+
+  const transformServerResponseToTask = (serverResponse) => ({
+    id: serverResponse.id,
+    title: serverResponse.title,
+    start: serverResponse.start_date?.split('T')[0] || serverResponse.startDate?.split('T')[0],
+    end: serverResponse.end_date?.split('T')[0] || serverResponse.endDate?.split('T')[0],
+    resourceId: (serverResponse.owner_id || serverResponse.ownerId)?.toString(),
+    allDay: true,
+    extendedProps: {
+      statusId: (serverResponse.status_id || serverResponse.statusId)?.toString(),
+      userId: serverResponse.user_id || serverResponse.userId,
+      description: serverResponse.description || ''
+    }
+  });
+
+
+  const updateTask = async (taskId, taskData) => {
     try {
-      const updatedTask = await updateTaskService(taskId, updates);
-
-      // Mettre à jour les tâches du calendrier
-      setTasks(prevTasks => {
-        const otherTasks = prevTasks.filter(task => task.id !== taskId);
-        return updatedTask.resourceId ? [...otherTasks, updatedTask ] : otherTasks;
-      });
-
-      // Si nécessaire, mettre à jour les tâches externes
-      if (!updatedTask.resourceId) {
-        setExternalTasks(prevTasks => {
-          const filteredTasks = prevTasks.filter(t => t.id !== taskId.toString());
-          return [...filteredTasks, { ...updatedTask, id: taskId.toString() }];
-        });
-      } else {
-        setExternalTasks(prevTasks => 
-          prevTasks.filter(t => t.id !== taskId.toString())
-        );
-      }
-
-      return updatedTask;
+      const serverData = transformTaskForServer(taskData);
+      const response = await updateTaskService(taskId, serverData);
+      return transformServerResponseToTask(response);
     } catch (error) {
       throw error;
     }
-  }, [setTasks, setExternalTasks]);
+  };
 
 
-  const createNewTask = useCallback(async (taskData) => {
+  const createNewTask = async (taskData) => {
     try {
-      const result = await createTask(taskData);
-      
-      if (result.resourceId) {
-        setTasks(prevTasks => [...prevTasks, result]);
-      } else {
-        setExternalTasks(prevTasks => [...prevTasks, result]);
-      }
-
-      return result;
+      const serverData = transformTaskForServer(taskData);
+      const response = await createTask(serverData);
+      return transformServerResponseToTask(response);
     } catch (error) {
       throw error;
     }
-  }, [setTasks, setExternalTasks]);
+  };
 
+  const handleTaskError = (error, message, revertFunction) => {
+    console.error('Task operation error:', error);
+    toast.error(message || ERROR_MESSAGES.GENERIC_ERROR, TOAST_CONFIG);
+    if (revertFunction) revertFunction();
+  };
 
-  const handleTaskError = useCallback((error, errorMessage, revertFn = null) => {
-    console.error('Erreur:', error);
-    toast.error(errorMessage, TOAST_CONFIG);
-    if (revertFn) revertFn();
-  }, []);
-
-  
   return {
     updateTask,
     createNewTask,

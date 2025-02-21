@@ -1,36 +1,25 @@
 import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
-import { ERROR_MESSAGES, STATUS_TYPE_TO_ID, STATUS_ID_TO_TYPE } from "../../constants/constants";
+import { ERROR_MESSAGES} from "../../constants/constants";
 
 // Validateurs de données
 const validateTaskData = (taskData) => {
+
+    console.log('taskData :', taskData);
+
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
-    if (!taskData.start) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
-    if (!taskData.end) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
+    if (!taskData.startDate) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
+    if (!taskData.endDate) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
 
-    const start = new Date(taskData.start);
-    const end = new Date(taskData.end);
+    const start = new Date(taskData.startDate);
+    const end = new Date(taskData.endDate);
 
     if (isNaN(start.getTime())) throw new Error(ERROR_MESSAGES.INVALID_START_DATE);
     if (isNaN(end.getTime())) throw new Error(ERROR_MESSAGES.INVALID_END_DATE);
     if (end < start) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
 };
-
-const handleFetchError = (error, action) => {
-    console.error(`Erreur lors de ${action}:`, error);
-    throw error;
-};
-
-const formatTaskData = (taskData) => ({
-    title: taskData.title.trim(),
-    startDate: taskData.start,
-    endDate:taskData.end,
-    description: taskData.description?.trim() || '',
-    ownerId: taskData.resourceId,
-    statusId: taskData.statusId
-});
 
 
 export const fetchTasks = async () => {
@@ -39,38 +28,26 @@ export const fetchTasks = async () => {
             headers: getAuthHeaders()
         });
 
-        const tasks = await handleResponse(response);
-
-        return tasks.map(task => ({
-            id: task.id,
-            title: task.title,
-            startDate: task.start_date,
-            endDate: task.end_date,  
-            description: task.description || '',
-            resourceId: task.owner_id,
-            statusId: task.status_id,
-            userId: task.user_id
-        }));
-
+        return handleResponse(response);
     } catch (error) {
-        handleFetchError(error, 'la récupération des tâches');
+        console.error('Erreur lors de la récupération des tâches:', error);
+        throw error;
     }
 };
 
 export const createTask = async (taskData) => {
     try {
         validateTaskData(taskData);
-        const formattedData = formatTaskData(taskData);
-
         const response = await fetchWithTimeout(`${API_URL}/tasks`, {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify(formattedData)
+            body: JSON.stringify(taskData)
         });
 
         return handleResponse(response);
     } catch (error) {
-        handleFetchError(error, 'la création de la tâche');
+        console.error('Erreur lors de la création de la tâche:', error);
+        throw error;
     }
 };
 
@@ -80,17 +57,16 @@ export const updateTask = async (id, taskData) => {
         const taskId = parseInt(id);
         if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
 
-        const formattedData = formatTaskData(taskData);
-
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
-            body: JSON.stringify(formattedData)
+            body: JSON.stringify(taskData)
         });
 
         return handleResponse(response);
     } catch (error) {
-        handleFetchError(error, 'la mise à jour de la tâche');
+        console.error('Erreur lors de la mise à jour de la tâche:', error);
+        throw error;
     }
 };
 
@@ -105,7 +81,8 @@ export const deleteTask = async (id) => {
 
         return handleResponse(response);
     } catch (error) {
-        handleFetchError(error, 'la suppression de la tâche');
+        console.error(error, 'la suppression de la tâche');
+        throw error;
     }
 };
 
@@ -119,16 +96,7 @@ export const getTasksByStatus = async (statusId) => {
 
         return handleResponse(response);
     } catch (error) {
-        handleFetchError(error, 'la récupération des tâches par statut');
+        console.error(error, 'la récupération des tâches par statut');
+        throw error;
     }
-};
-
-export const getStatusIdFromType = (statusType) => {
-    const normalizedType = statusType?.toLowerCase().trim();
-    return STATUS_TYPE_TO_ID[normalizedType] || null;
-};
-
-export const getStatusTypeFromId = (statusId) => {
-    const numericId = Number(statusId);
-    return STATUS_ID_TO_TYPE[numericId] || null;
 };

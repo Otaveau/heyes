@@ -62,24 +62,19 @@ export const useCalendarData = () => {
       return [];
     }
 
-    return tasksData.map(task => {
-      const formattedTask = {
-        id: task.id,
-        title: task.title,
-        start: task.startDate,
-        end: task.endDate,
-        resourceId: task.resourceId?.toString() || '',
-        allDay: true,
-        extendedProps: {
-          userId: task.userId,
-          statusId: task.statusId?.toString() || '1',
-          description: task.description,
-          originalTask: task,
-        }
-      };
-
-      return formattedTask;
-    });
+    return tasksData.map(task => ({
+      id: task.id,
+      title: task.title,
+      start: task.start_date?.split('T')[0] || task.startDate?.split('T')[0],
+      end: task.end_date?.split('T')[0] || task.endDate?.split('T')[0],
+      resourceId: (task.owner_id || task.ownerId)?.toString(),
+      allDay: true,
+      extendedProps: {
+        statusId: (task.status_id || task.statusId)?.toString(),
+        userId: task.user_id || task.userId,
+        description: task.description || ''
+      }
+    }));
   }, []);
 
   const loadData = useCallback(async () => {

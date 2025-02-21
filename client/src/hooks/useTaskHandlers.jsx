@@ -128,10 +128,19 @@ export const useTaskHandlers = (
         statusId: formData.statusId ? formData.statusId : null,
       };
 
+       let updatedTask;
       if (taskId) {
-        await updateTask(taskId, taskData);
+        updatedTask = await updateTask(taskId, taskData);
+        // Mettre à jour la tâche existante dans le state
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === taskId ? { ...task, ...updatedTask } : task
+          )
+        );
       } else {
-        await createNewTask(taskData);
+        updatedTask = await createNewTask(taskData);
+        // Ajouter la nouvelle tâche au state
+        setTasks(prevTasks => [...prevTasks, updatedTask]);
       }
 
       setCalendarState(prev => ({
@@ -146,7 +155,7 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, updateTask, createNewTask, handleTaskError]);
+  }, [setCalendarState, updateTask, setTasks, createNewTask, handleTaskError]);
 
 
   const handleEventDrop = useCallback(async (dropInfo) => {
@@ -156,12 +165,14 @@ export const useTaskHandlers = (
     const resourceId = event._def.resourceIds[0];
     const statusId = event._def.extendedProps.statusId || existingTask?.statusId;
     const startDate = event.start;
-    const endDate = event.end;
+    const endDate = event.end || startDate;
 
     if(DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
       dropInfo.revert();
       return;
     }
+
+    console.log('event :', event);
 
     try {
       const updates = {
@@ -171,6 +182,8 @@ export const useTaskHandlers = (
         resourceId,
         statusId
       };
+
+      console.log('updates :', updates);
 
       await updateTask(taskId, updates);
     } catch (error) {

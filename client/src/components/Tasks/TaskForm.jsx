@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { ERROR_MESSAGES } from '../../constants/constants';
 
@@ -11,18 +11,28 @@ export const TaskForm = ({
     statuses = [],
     onSubmit: handleTaskSubmit
 }) => {
-    const [formData, setFormData] = useState({
+    const getInitialFormData = useMemo(() => () => ({
         title: selectedTask?.title || '',
         description: selectedTask?.description || '',
         startDate: selectedDates?.start || selectedTask?.start || '',
         endDate: selectedDates?.end || selectedTask?.end || '',
         resourceId: selectedDates?.resourceId || selectedTask?.resourceId || '',
-        statusId: (selectedDates?.resourceId || selectedTask?.resourceId) ? '2' : selectedTask?.statusId || '',
+        statusId: selectedTask?.statusId || (selectedDates?.resourceId ? '2' : ''),
         isConge: selectedTask?.isConge || false
-    });
+    }), [selectedDates, selectedTask]);
 
+    const [formData, setFormData] = useState(getInitialFormData());
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+
+    useEffect(() => {
+        if (isOpen) {
+            setFormData(getInitialFormData());
+            setErrors({});
+        }
+    }, [getInitialFormData, isOpen, selectedDates, selectedTask]);
+
 
     const handleChange = useCallback((e) => {
         if (!e || !e.target) return;
@@ -58,6 +68,7 @@ export const TaskForm = ({
         }
     }, [errors]);
 
+
     const validateForm = useCallback(() => {
         const newErrors = {};
 
@@ -90,6 +101,7 @@ export const TaskForm = ({
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
+
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -112,6 +124,7 @@ export const TaskForm = ({
             setIsSubmitting(false);
         }
     }, [formData, handleTaskSubmit, onClose, selectedTask?.id, validateForm]);
+
 
     const handleBackdropClick = useCallback((e) => {
         if (e.target === e.currentTarget) {

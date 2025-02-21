@@ -137,10 +137,6 @@ export const CalendarView = () => {
     };
   }, [externalTasks, dropZones]);
 
-  console.log('formattedExternalTasks:', formattedExternalTasks);
-  console.log('formattedCalendarTasks:', formattedCalendarTasks);
-  console.log('resources:', resources);
-
   return (
     <div className="flex dashboard">
 
