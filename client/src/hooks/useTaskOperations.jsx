@@ -8,7 +8,7 @@ export const useTaskOperations = (setTasks, setExternalTasks) => {
   const transformTaskForServer = (taskData) => ({
     title: taskData.title.trim(),
     startDate: taskData.start,
-    endDate: taskData.end,
+    endDate: taskData.end || taskData.start,
     description: taskData.description?.trim() || '',
     ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
     statusId: taskData.statusId ? parseInt(taskData.statusId, 10) : null
@@ -36,6 +36,8 @@ export const useTaskOperations = (setTasks, setExternalTasks) => {
       const response = await updateTaskService(taskId, serverData);
       return transformServerResponseToTask(response);
     } catch (error) {
+      const errorMessage = error.response?.data?.message || ERROR_MESSAGES.GENERIC_ERROR;
+      toast.error(errorMessage, TOAST_CONFIG);
       throw error;
     }
   };
@@ -47,15 +49,20 @@ export const useTaskOperations = (setTasks, setExternalTasks) => {
       const response = await createTask(serverData);
       return transformServerResponseToTask(response);
     } catch (error) {
+      const errorMessage = error.response?.data?.message || ERROR_MESSAGES.GENERIC_ERROR;
+      toast.error(errorMessage, TOAST_CONFIG);
       throw error;
     }
   };
 
+
   const handleTaskError = (error, message, revertFunction) => {
     console.error('Task operation error:', error);
-    toast.error(message || ERROR_MESSAGES.GENERIC_ERROR, TOAST_CONFIG);
+    const errorMessage = message || error.response?.data?.message || ERROR_MESSAGES.GENERIC_ERROR;
+    toast.error(errorMessage, TOAST_CONFIG);
     if (revertFunction) revertFunction();
   };
+
 
   return {
     updateTask,

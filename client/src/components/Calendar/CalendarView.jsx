@@ -5,6 +5,7 @@ import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
+import { useTaskOperations } from '../../hooks/useTaskOperations';
 import { TaskForm } from '../Tasks/TaskForm';
 import { DateUtils } from '../../utils/dateUtils';
 import '../../style/CalendarView.css';
@@ -27,11 +28,14 @@ export const CalendarView = () => {
     { id: 'done', statusId: '4', title: 'Terminé' }
   ], []);
 
+
   const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
   const { tasks, setTasks, resources, holidays, statuses, loadData } = useCalendarData();
   const [externalTasks, setExternalTasks] = useState([]);
   const draggablesRef = useRef([]);
+  const calendarRef = useRef(null);
 
+  const { updateTask, handleTaskError } = useTaskOperations();
 
   const {
     handleTaskSubmit,
@@ -50,8 +54,8 @@ export const CalendarView = () => {
     externalTasks,
     dropZoneRefs,
     dropZones,
-    setExternalTasks,
-    holidays
+    holidays,
+    calendarRef
   );
 
   // Formater les tâches du calendrier
@@ -97,7 +101,7 @@ export const CalendarView = () => {
     setExternalTasks(formattedExternalTasks);
   }, [formattedExternalTasks]);
 
-
+  // Gestion des draggables
   useEffect(() => {
     // Nettoyer les anciens draggables
     draggablesRef.current.forEach(draggable => {
@@ -142,6 +146,7 @@ export const CalendarView = () => {
 
       <div className="flex-1 p-4 calendar">
         <FullCalendar
+          ref={calendarRef}
           locale={frLocale}
           timeZone='local'
           nextDayThreshold="00:00:00"

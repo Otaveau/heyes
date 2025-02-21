@@ -11,9 +11,35 @@ export const useTaskHandlers = (
   externalTasks,
   dropZoneRefs,
   dropZones,
-  setExternalTasks
+  calendarRef
 ) => {
-  const { updateTask, createNewTask, handleTaskError } = useTaskOperations(setTasks, setExternalTasks);
+  const { updateTask, createNewTask, handleTaskError } = useTaskOperations();
+
+  // Gestionnaire de mise à jour synchronisée
+  const handleTaskUpdate = useCallback(async (taskId, updatedTaskData, revertFunc) => {
+    try {
+      // Appel au service de mise à jour
+      const updatedTask = await updateTask(taskId, updatedTaskData);
+      
+      // Mise à jour locale des tâches
+      setTasks(currentTasks => 
+        currentTasks.map(task => 
+          task.id === taskId ? updatedTask : task
+        )
+      );
+
+      // Force le rafraîchissement du calendrier
+      if (calendarRef?.current) {
+        const calendarApi = calendarRef.current.getApi();
+        calendarApi.refetchEvents();
+      }
+
+      return updatedTask;
+    } catch (error) {
+      handleTaskError(error, null, revertFunc);
+      throw error;
+    }
+  }, [updateTask, handleTaskError, setTasks, calendarRef]);
 
 
   // Handlers
@@ -29,6 +55,7 @@ export const useTaskHandlers = (
       isFormOpen: true,
     }));
   }, [setCalendarState]);
+
 
   const handleCalendarEventClick = useCallback((clickInfo) => {
     const eventId = clickInfo.event.id;
@@ -68,14 +95,14 @@ export const useTaskHandlers = (
         description: event._def.extendedProps.description
       };
 
-      await updateTask(event.id, updates);
+      await handleTaskUpdate(event.id, updates, info.revert);
       toast.success(`Tâche "${event.title}" redimensionnée`, TOAST_CONFIG);
     } catch (error) {
-      handleTaskError(error, ERROR_MESSAGES.RESIZE_ERROR, info.revert);
+      // Erreur déjà gérée dans handleTaskUpdate
     } finally {
       setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, updateTask, handleTaskError]);
+  }, [setCalendarState, handleTaskUpdate,]);
 
 
   const handleDateSelect = useCallback((selectInfo) => {
@@ -128,18 +155,11 @@ export const useTaskHandlers = (
         statusId: formData.statusId ? formData.statusId : null,
       };
 
-       let updatedTask;
+      let updatedTask;
       if (taskId) {
-        updatedTask = await updateTask(taskId, taskData);
-        // Mettre à jour la tâche existante dans le state
-        setTasks(prevTasks => 
-          prevTasks.map(task => 
-            task.id === taskId ? { ...task, ...updatedTask } : task
-          )
-        );
+        updatedTask = await handleTaskUpdate(taskId, taskData);
       } else {
         updatedTask = await createNewTask(taskData);
-        // Ajouter la nouvelle tâche au state
         setTasks(prevTasks => [...prevTasks, updatedTask]);
       }
 
@@ -151,11 +171,11 @@ export const useTaskHandlers = (
 
       toast.success(taskId ? 'Tâche mise à jour' : 'Tâche créée', TOAST_CONFIG);
     } catch (error) {
-      handleTaskError(error, ERROR_MESSAGES.SAVE_ERROR);
+      // Erreur déjà gérée dans handleTaskUpdate ou createNewTask
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, updateTask, setTasks, createNewTask, handleTaskError]);
+  }, [setCalendarState, handleTaskUpdate, createNewTask, setTasks]);
 
 
   const handleEventDrop = useCallback(async (dropInfo) => {
@@ -172,8 +192,6 @@ export const useTaskHandlers = (
       return;
     }
 
-    console.log('event :', event);
-
     try {
       const updates = {
         ...existingTask,
@@ -183,13 +201,11 @@ export const useTaskHandlers = (
         statusId
       };
 
-      console.log('updates :', updates);
-
-      await updateTask(taskId, updates);
+      await handleTaskUpdate(taskId, updates, dropInfo.revert);
     } catch (error) {
-      handleTaskError(error, ERROR_MESSAGES.DROP_ERROR, dropInfo.revert);
+      console.warn('Failed to update task:', error);
     }
-  }, [tasks, updateTask, handleTaskError]);
+  }, [tasks, handleTaskUpdate]);
 
 
   const handleExternalDrop = useCallback(async (info) => {
@@ -215,54 +231,69 @@ export const useTaskHandlers = (
         statusId: '2'
       };
 
-      await updateTask(parseInt(taskId), updates);
-      toast.success(`Tâche "${existingTask.title}" déplacée vers le calendrier`, TOAST_CONFIG);
+      await handleTaskUpdate(taskId, updates, info.revert);
     } catch (error) {
-      handleTaskError(error, ERROR_MESSAGES.DROP_ERROR);
-      if (info.revert) info.revert();
+      console.warn('Failed to update task:', error);
     }
-  }, [externalTasks, updateTask, handleTaskError]);
+  }, [externalTasks, handleTaskUpdate]);
 
-  const handleEventDragStop = useCallback((info) => {
+  const handleEventDragStop = useCallback(async (info) => {
     if (!dropZoneRefs?.current) {
       console.warn('dropZoneRefs.current is undefined');
       return;
     }
-
+  
     const eventRect = info.jsEvent.target.getBoundingClientRect();
-
-    dropZoneRefs.current.forEach((ref, index) => {
-      if (!ref?.current) return;
-
+    let dropFound = false;
+  
+    // Vérifier chaque zone de dépôt
+    for (let index = 0; index < dropZoneRefs.current.length; index++) {
+      const ref = dropZoneRefs.current[index];
+      if (!ref?.current) continue;
+  
       const dropZoneEl = ref.current;
       const dropZoneRect = dropZoneEl.getBoundingClientRect();
-
+  
       const isWithinDropZone =
         eventRect.left >= dropZoneRect.left &&
         eventRect.right <= dropZoneRect.right &&
         eventRect.top >= dropZoneRect.top &&
         eventRect.bottom <= dropZoneRect.bottom;
-
+  
       if (isWithinDropZone) {
+        dropFound = true;
         const taskId = parseInt(info.event.id);
         const task = tasks.find(t => t.id === taskId);
-
-        if (!task) return;
-
-        const updates = {
-          ...task,
-          start: info.event.start,
-          end: info.event.end,
-          statusId: dropZones[index].statusId,
-          resourceId: null
-        };
-
-        updateTask(taskId, updates).catch(error => {
-          handleTaskError(error, ERROR_MESSAGES.DROP_ERROR, info.revert);
-        });
+  
+        if (!task) {
+          console.warn(`Task with id ${taskId} not found`);
+          continue;
+        }
+  
+        try {
+          const updates = {
+            ...task,
+            start: info.event.start,
+            end: info.event.end || info.event.start,
+            statusId: dropZones[index].statusId,
+            resourceId: null
+          };
+  
+          await handleTaskUpdate(taskId, updates, info.revert);
+          toast.success(`Tâche déplacée vers ${dropZones[index].title}`, TOAST_CONFIG);
+          break;
+        } catch (error) {
+          console.warn('Failed to update task:', error);
+          if (info.revert) info.revert();
+        }
       }
-    });
-  }, [dropZoneRefs, dropZones, tasks, updateTask, handleTaskError]);
+    }
+  
+    // Si aucune zone de dépôt n'a été trouvée, on peut revenir à l'état initial
+    if (!dropFound && info.revert) {
+      info.revert();
+    }
+  }, [dropZoneRefs, dropZones, tasks, handleTaskUpdate]);
 
   const handleExternalTaskClick = useCallback((task) => {
     setCalendarState(prev => ({
@@ -276,32 +307,44 @@ export const useTaskHandlers = (
     }));
   }, [setCalendarState]);
 
-  const handleEventReceive = useCallback((info) => {
-    const taskId = parseInt(info.event.id);
-    const resourceId = info.event._def.resourceIds[0];
-    const startDate = info.event.start;
-    const endDate = startDate;
-
-    if(DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
-      info.revert();
-      return;
+  const handleEventReceive = useCallback(async (info) => {
+    try {
+      const taskId = parseInt(info.event.id);
+      const resourceId = info.event._def.resourceIds[0];
+      const startDate = info.event.start;
+      const endDate = startDate;
+  
+      // Vérifier les week-ends et jours fériés
+      if (DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
+        toast.error('Impossible de déplacer une tâche sur un week-end ou jour férié', TOAST_CONFIG);
+        info.revert();
+        return;
+      }
+  
+      // Vérifier l'existence de la tâche
+      const task = externalTasks.find(t => t.id === taskId.toString());
+      if (!task) {
+        console.warn(`Task with id ${taskId} not found in external tasks`);
+        info.revert();
+        return;
+      }
+  
+      const updates = {
+        ...task,
+        start: startDate,
+        end: endDate,
+        resourceId,
+        statusId: '2' // En cours
+      };
+  
+      await handleTaskUpdate(taskId, updates, info.revert);
+      toast.success(`Tâche "${task.title}" déplacée vers le calendrier`, TOAST_CONFIG);
+  
+    } catch (error) {
+      console.warn('Failed to handle event receive:', error);
+      if (info.revert) info.revert();
     }
-
-    const task = externalTasks.find(t => t.id === taskId.toString());
-    if (!task) return;
-
-    const updates = {
-      ...task,
-      start: startDate,
-      end: endDate,
-      resourceId,
-      statusId: '2'
-    };
-
-    updateTask(taskId, updates).catch(error => {
-      handleTaskError(error, ERROR_MESSAGES.DROP_ERROR, info.revert);
-    });
-  }, [externalTasks, updateTask, handleTaskError]);
+  }, [externalTasks, handleTaskUpdate]);
 
   return {
     handleDateSelect,
