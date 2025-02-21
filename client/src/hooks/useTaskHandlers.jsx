@@ -11,8 +11,7 @@ export const useTaskHandlers = (
   externalTasks,
   dropZoneRefs,
   dropZones,
-  setExternalTasks,
-  loadData
+  setExternalTasks
 ) => {
   const { updateTask, createNewTask, handleTaskError } = useTaskOperations(setTasks, setExternalTasks);
 
@@ -70,14 +69,13 @@ export const useTaskHandlers = (
       };
 
       await updateTask(event.id, updates);
-      await loadData();
       toast.success(`Tâche "${event.title}" redimensionnée`, TOAST_CONFIG);
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.RESIZE_ERROR, info.revert);
     } finally {
       setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, updateTask, handleTaskError, loadData]);
+  }, [setCalendarState, updateTask, handleTaskError]);
 
 
   const handleDateSelect = useCallback((selectInfo) => {
@@ -136,8 +134,6 @@ export const useTaskHandlers = (
         await createNewTask(taskData);
       }
 
-      await loadData();
-
       setCalendarState(prev => ({
         ...prev,
         isFormOpen: false,
@@ -150,7 +146,7 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, loadData, updateTask, createNewTask, handleTaskError]);
+  }, [setCalendarState, updateTask, createNewTask, handleTaskError]);
 
 
   const handleEventDrop = useCallback(async (dropInfo) => {
@@ -177,11 +173,10 @@ export const useTaskHandlers = (
       };
 
       await updateTask(taskId, updates);
-      await loadData();
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.DROP_ERROR, dropInfo.revert);
     }
-  }, [tasks, updateTask, handleTaskError, loadData]);
+  }, [tasks, updateTask, handleTaskError]);
 
 
   const handleExternalDrop = useCallback(async (info) => {
@@ -208,13 +203,12 @@ export const useTaskHandlers = (
       };
 
       await updateTask(parseInt(taskId), updates);
-      await loadData();
       toast.success(`Tâche "${existingTask.title}" déplacée vers le calendrier`, TOAST_CONFIG);
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.DROP_ERROR);
       if (info.revert) info.revert();
     }
-  }, [externalTasks, updateTask, handleTaskError, loadData]);
+  }, [externalTasks, updateTask, handleTaskError]);
 
   const handleEventDragStop = useCallback((info) => {
     if (!dropZoneRefs?.current) {

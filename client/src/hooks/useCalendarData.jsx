@@ -120,7 +120,6 @@ export const useCalendarData = () => {
     statuses,
     isLoading,
     error,
-    loadData,
     setTasks,
   };
 };

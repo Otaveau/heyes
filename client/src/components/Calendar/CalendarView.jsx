@@ -51,8 +51,7 @@ export const CalendarView = () => {
     dropZoneRefs,
     dropZones,
     setExternalTasks,
-    holidays,
-    loadData
+    holidays
   );
 
   const formattedCalendarTasks = useMemo(() => {
@@ -114,7 +113,7 @@ export const CalendarView = () => {
         eventData: function (eventEl) {
           const taskId = eventEl.getAttribute('data-task-id');
           const task = externalTasks.find(t => t.id === taskId);
-          
+
           return {
             id: task.id,
             title: task.title,
