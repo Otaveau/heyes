@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { ERROR_MESSAGES } from '../../constants/constants';
-
 
 export const TaskForm = ({
     isOpen,
@@ -12,21 +11,52 @@ export const TaskForm = ({
     statuses = [],
     onSubmit: handleTaskSubmit
 }) => {
-
-    const initialFormState = React.useMemo(() => ({
-        title: '',
-        description: '',
-        startDate: selectedDates?.start,
-        endDate: selectedDates?.end,
-        resourceId: selectedDates?.resourceId || '',
-        statusId: selectedDates?.resourceId ? '2' : '',
-        isConge: false
-    }), [selectedDates]);
-
-    const [formData, setFormData] = useState(initialFormState);
+    const [formData, setFormData] = useState({
+        title: selectedTask?.title || '',
+        description: selectedTask?.description || '',
+        startDate: selectedDates?.start || selectedTask?.start || '',
+        endDate: selectedDates?.end || selectedTask?.end || '',
+        resourceId: selectedDates?.resourceId || selectedTask?.resourceId || '',
+        statusId: (selectedDates?.resourceId || selectedTask?.resourceId) ? '2' : selectedTask?.statusId || '',
+        isConge: selectedTask?.isConge || false
+    });
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleChange = useCallback((e) => {
+        if (!e || !e.target) return;
+        
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => {
+            const newData = {
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value
+            };
+
+            if (name === 'isConge') {
+                if (checked) {
+                    newData.statusId = '2';
+                    newData.title = 'CONGE';
+                } else {
+                    newData.title = '';
+                    if (!newData.resourceId) {
+                        newData.statusId = '';
+                    }
+                }
+            }
+
+            if (name === 'resourceId' && value !== '') {
+                newData.statusId = '2';
+            }
+
+            return newData;
+        });
+
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
+    }, [errors]);
 
     const validateForm = useCallback(() => {
         const newErrors = {};
@@ -52,12 +82,6 @@ export const TaskForm = ({
             if (!formData.resourceId) {
                 newErrors.resourceId = 'La ressource est requise pour un congé';
             }
-            if (!formData.startDate) {
-                newErrors.startDate = 'La date de début est requise pour un congé';
-            }
-            if (!formData.endDate) {
-                newErrors.endDate = 'La date de fin est requise pour un congé';
-            }
         } else if (!formData.statusId) {
             newErrors.statusId = ERROR_MESSAGES.STATUS_REQUIRED;
         }
@@ -66,36 +90,9 @@ export const TaskForm = ({
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
-    useEffect(() => {
-        if (selectedTask) {
-
-            const isCongeTask = selectedTask.title === 'CONGE' || selectedTask.isConge;
-
-            setFormData({
-                title: selectedTask.isConge ? 'CONGE' : (selectedTask.title || ''),
-                description: selectedTask.description || '',
-                startDate: selectedTask.start,
-                endDate: selectedTask.end,
-                resourceId: selectedTask.resourceId || '',
-                statusId: selectedTask.resourceId ? '2' : selectedTask.statusId,
-                isConge: isCongeTask
-            });
-        } else if (selectedDates) {
-
-            setFormData({
-                ...initialFormState,
-                startDate: selectedDates.start,
-                endDate: selectedDates.end, 
-                resourceId: selectedDates.resourceId || '',
-                statusId: selectedDates.resourceId ? '2' : ''
-            });
-        } else {
-            setFormData(initialFormState);
-        }
-    }, [selectedTask, selectedDates, isOpen, initialFormState]);
-
-    const handleFormSubmit = async (e) => {
+    const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
+        e.stopPropagation();
 
         if (!validateForm()) {
             return;
@@ -114,233 +111,166 @@ export const TaskForm = ({
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [formData, handleTaskSubmit, onClose, selectedTask?.id, validateForm]);
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => {
-            const newData = {
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value
-            };
-
-            // Gestion du changement de isConge
-            if (name === 'isConge') {
-                if (checked) {
-                    newData.statusId = '2';
-                    newData.title = 'CONGE'; // Définir le titre automatiquement
-                } else {
-                    newData.title = ''; // Réinitialiser le titre
-                    if (!newData.resourceId) {
-                        newData.statusId = '';
-                    }
-                }
-            }
-
-            // Mise à jour automatique lors de la sélection d'une ressource
-            if (name === 'resourceId' && value !== '') {
-                newData.statusId = '2';
-            }
-
-            return newData;
-        });
-
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: null }));
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
+    const handleBackdropClick = useCallback((e) => {
+        if (e.target === e.currentTarget) {
+            e.preventDefault();
+            e.stopPropagation();
             onClose();
         }
-    };
-
-    // Stop propagation of clicks inside the modal
-    const handleModalClick = (e) => {
-        e.stopPropagation();
-    };
+    }, [onClose]);
 
     if (!isOpen) return null;
 
-    const FormField = ({ label, name, error, children }) => (
-        <div>
-            <label htmlFor={name} className="block mb-1 font-medium text-gray-700">
-                {label}
-                {error && <span className="text-red-500 text-sm ml-2">{error}</span>}
-            </label>
-            {children}
-        </div>
-    );
-
-    const getInputClassName = (error) => `
-        w-full 
-        border 
-        rounded 
-        p-2 
-        transition-colors
-        focus:outline-none 
-        focus:ring-2 
-        focus:ring-blue-500
-        ${error ? 'border-red-500' : 'border-gray-300'}
-    `;
-
     return (
-        <div
+        <div 
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={onClose}
-            onKeyDown={handleKeyDown}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
+            onClick={handleBackdropClick}
         >
-            <div
-                className="bg-white p-6 rounded-lg w-96 relative max-h-[90vh] overflow-y-auto"
-                onClick={handleModalClick}
-            >
+            <div className="bg-white p-6 rounded-lg w-96 relative max-h-[90vh] overflow-y-auto">
                 <button
+                    type="button"
                     onClick={onClose}
-                    className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors"
-                    aria-label="Fermer"
+                    className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
                 >
                     <X size={20} />
                 </button>
 
-                <h2 id="modal-title" className="text-xl font-bold mb-4">
+                <h2 className="text-xl font-bold mb-6">
                     {selectedTask ? 'Modifier la tâche' : 'Nouvelle tâche'}
                 </h2>
 
-                {errors.submit && (
-                    <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-                        {errors.submit}
-                    </div>
-                )}
-
-                <form onSubmit={handleFormSubmit} className="space-y-4">
-
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            id="isConge"
-                            name="isConge"
-                            checked={formData.isConge}
-                            onChange={handleChange}
-                            className="h-4 w-4 text-blue-600"
-                        />
-                        <label htmlFor="isConge" className="text-gray-700">
-                            Congé
-                        </label>
-                    </div>
-                    <FormField label="Titre" name="title" error={errors.title}>
-                        <input
-                            id="title"
-                            type="text"
-                            name="title"
-                            value={formData.title}
-                            onChange={handleChange}
-                            className={getInputClassName(errors.title)}
-                            required
-                            autoFocus
-                            disabled={formData.isConge} // Désactiver si c'est un congé
-                        />
-                    </FormField>
-
-                    <FormField label="Description" name="description">
-                        <textarea
-                            id="description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            className={getInputClassName()}
-                            rows="4"
-                            placeholder="Description optionnelle de la tâche"
-                        />
-                    </FormField>
-
-                    <FormField
-                        label="Assigné à"
-                        name="resourceId"
-                        error={errors.resourceId}
-                        required={formData.isConge}
-                    >
-                        <select
-                            id="resourceId"
-                            name="resourceId"
-                            value={formData.resourceId}
-                            onChange={handleChange}
-                            className={getInputClassName(errors.resourceId)}
-                            required={formData.isConge}
-                        >
-                            <option value="">Sélectionner une personne</option>
-                            {resources.map(resource => (
-                                <option key={resource.id} value={resource.id}>
-                                    {resource.title}
-                                </option>
-                            ))}
-                        </select>
-                    </FormField>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField label="Date de début" name="startDate" error={errors.startDate}>
+                <form onSubmit={handleSubmit}>
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
                             <input
-                                id="startDate"
-                                type="date"
-                                name="startDate"
-                                value={formData.startDate}
+                                type="checkbox"
+                                id="isConge"
+                                name="isConge"
+                                checked={formData.isConge}
                                 onChange={handleChange}
-                                className={getInputClassName(errors.startDate)}
+                                className="h-4 w-4 text-blue-600"
+                            />
+                            <label htmlFor="isConge" className="text-gray-700">
+                                Congé
+                            </label>
+                        </div>
+
+                        <div>
+                            <label htmlFor="title" className="block mb-1">Titre</label>
+                            <input
+                                type="text"
+                                id="title"
+                                name="title"
+                                value={formData.title}
+                                onChange={handleChange}
+                                className="w-full p-2 border rounded"
+                                disabled={formData.isConge}
                                 required
                             />
-                        </FormField>
+                            {errors.title && (
+                                <span className="text-red-500 text-sm">{errors.title}</span>
+                            )}
+                        </div>
 
-                        <FormField label="Date de fin" name="endDate" error={errors.endDate}>
-                            <input
-                                id="endDate"
-                                type="date"
-                                name="endDate"
-                                value={formData.endDate}
+                        <div>
+                            <label htmlFor="description" className="block mb-1">Description</label>
+                            <textarea
+                                id="description"
+                                name="description"
+                                value={formData.description}
                                 onChange={handleChange}
-                                className={getInputClassName(errors.endDate)}
-                                required
+                                className="w-full p-2 border rounded"
+                                rows="4"
                             />
-                        </FormField>
+                        </div>
+
+                        <div>
+                            <label htmlFor="resourceId" className="block mb-1">Assigné à</label>
+                            <select
+                                id="resourceId"
+                                name="resourceId"
+                                value={formData.resourceId}
+                                onChange={handleChange}
+                                className="w-full p-2 border rounded"
+                                required={formData.isConge}
+                            >
+                                <option value="">Sélectionner une personne</option>
+                                {resources.map(resource => (
+                                    <option key={resource.id} value={resource.id}>
+                                        {resource.title}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.resourceId && (
+                                <span className="text-red-500 text-sm">{errors.resourceId}</span>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="startDate" className="block mb-1">Date de début</label>
+                                <input
+                                    type="date"
+                                    id="startDate"
+                                    name="startDate"
+                                    value={formData.startDate}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border rounded"
+                                    required
+                                />
+                                {errors.startDate && (
+                                    <span className="text-red-500 text-sm">{errors.startDate}</span>
+                                )}
+                            </div>
+
+                            <div>
+                                <label htmlFor="endDate" className="block mb-1">Date de fin</label>
+                                <input
+                                    type="date"
+                                    id="endDate"
+                                    name="endDate"
+                                    value={formData.endDate}
+                                    onChange={handleChange}
+                                    className="w-full p-2 border rounded"
+                                    required
+                                />
+                                {errors.endDate && (
+                                    <span className="text-red-500 text-sm">{errors.endDate}</span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="statusId" className="block mb-1">Statut</label>
+                            <select
+                                id="statusId"
+                                name="statusId"
+                                value={formData.statusId}
+                                onChange={handleChange}
+                                className="w-full p-2 border rounded"
+                                required={!formData.isConge}
+                                disabled={formData.resourceId !== '' || formData.isConge}
+                            >
+                                <option value="">Sélectionner un statut</option>
+                                {statuses.map(status => (
+                                    <option key={status.statusId} value={status.statusId}>
+                                        {status.statusType}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.statusId && (
+                                <span className="text-red-500 text-sm">{errors.statusId}</span>
+                            )}
+                        </div>
                     </div>
 
-                    <FormField label="Statut" name="statusId" error={errors.statusId}>
-                        <select
-                            id="statusId"
-                            name="statusId"
-                            value={formData.statusId}
-                            onChange={handleChange}
-                            className={getInputClassName(errors.statusId)}
-                            required={!formData.isConge}
-                            disabled={formData.resourceId !== '' || formData.isConge}
-                        >
-                            <option value="">Sélectionner un statut</option>
-                            {statuses.map(status => (
-                                <option key={status.statusId} value={status.statusId}>
-                                    {status.statusType}
-                                </option>
-                            ))}
-                        </select>
-                    </FormField>
-
-                    <div className="flex gap-4 pt-4">
+                    <div className="flex gap-4 mt-6">
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="
-                                flex-1
-                                bg-blue-500 
-                                text-white 
-                                px-4 
-                                py-2 
-                                rounded 
-                                hover:bg-blue-600
-                                disabled:bg-blue-300
-                                disabled:cursor-not-allowed
-                                transition-colors
-                            "
+                            className="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
                         >
                             {isSubmitting ? 'En cours...' : (selectedTask ? 'Modifier' : 'Créer')}
                         </button>
@@ -348,17 +278,7 @@ export const TaskForm = ({
                             type="button"
                             onClick={onClose}
                             disabled={isSubmitting}
-                            className="
-                                flex-1
-                                bg-gray-300 
-                                px-4 
-                                py-2 
-                                rounded 
-                                hover:bg-gray-400
-                                disabled:bg-gray-200
-                                disabled:cursor-not-allowed
-                                transition-colors
-                            "
+                            className="flex-1 bg-gray-300 p-2 rounded hover:bg-gray-400 disabled:bg-gray-200"
                         >
                             Annuler
                         </button>

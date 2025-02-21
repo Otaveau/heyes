@@ -23,6 +23,7 @@ export const useCalendarData = () => {
   }, []);
 
   const formatHolidays = useCallback((holidayDates) => {
+    
     if (!holidayDates || typeof holidayDates !== 'object') {
       console.warn(ERROR_MESSAGES.INVALID_HOLIDAY_FORMAT);
       return [];

@@ -54,13 +54,14 @@ export const CalendarView = () => {
     holidays
   );
 
+  // Formater les tâches du calendrier
   const formattedCalendarTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) {
       return [];
     }
 
     return tasks
-      .filter(task => task.resourceId) // Garder uniquement les tâches avec resourceId
+      .filter(task => task.resourceId)
       .map(task => ({
         id: task.id?.toString() || '',
         title: task.title,
