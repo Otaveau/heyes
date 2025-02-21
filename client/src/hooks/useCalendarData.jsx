@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { DateUtils } from '../utils/dateUtils';
 import { fetchTasks } from '../services/api/taskService';
 import { fetchOwners } from '../services/api/ownerService';
 import { fetchHolidays } from '../services/api/holidayService';
 import { fetchStatuses } from '../services/api/statusService';
 import { ERROR_MESSAGES } from '../constants/constants';
-import { toast } from 'react-toastify';
 
 
 export const useCalendarData = () => {
@@ -29,9 +27,12 @@ export const useCalendarData = () => {
       console.warn(ERROR_MESSAGES.INVALID_HOLIDAY_FORMAT);
       return [];
     }
-
     try {
-      return Object.keys(holidayDates).map();
+
+      return Object.keys(holidayDates).map(date => ({
+        start: date,
+        allDay: true
+      }));
     } catch (error) {
       console.error('Error formatting holidays:', error);
       return [];
@@ -64,17 +65,18 @@ export const useCalendarData = () => {
       const formattedTask = {
         id: task.id,
         title: task.title,
-        start: task.start,
-        end: task.end,
-        resourceId: task.resourceId || null,
+        start: task.startDate,
+        end: task.endDate,
+        resourceId: task.resourceId?.toString() || '',
         allDay: true,
         extendedProps: {
           userId: task.userId,
-          statusId: task.statusId || '1',
+          statusId: task.statusId?.toString() || '1',
           description: task.description,
           originalTask: task,
         }
       };
+
       return formattedTask;
     });
   }, []);
@@ -96,10 +98,6 @@ export const useCalendarData = () => {
       setResources(formatResources(ownersData));
       setStatuses(statusesData);
       const formattedTasks = formatTasksForCalendar(tasksData, statusesData);
-      console.log('Tâches formatées finales:', {
-        total: formattedTasks,
-        withoutResource: formattedTasks.filter(t => !t.resourceId).length
-      });
 
       setTasks(formattedTasks);
     } catch (err) {
@@ -122,7 +120,7 @@ export const useCalendarData = () => {
     statuses,
     isLoading,
     error,
-    refreshData: loadData,
+    loadData,
     setTasks,
   };
 };

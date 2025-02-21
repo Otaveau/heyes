@@ -1,7 +1,6 @@
 const { Team } = require('../models/Team');
 
 const getTeams = async (req, res) => {
-  console.log('Getting teams for user:', req.user.id);
   try {
     const teams = await Team.findAll(req.user.id);
     res.json(teams);

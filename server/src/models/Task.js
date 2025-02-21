@@ -16,8 +16,6 @@ class Task {
   static async create(data, userId) {
     const { title, start_date, end_date, description, owner_id, status_id } = data;
 
-    console.log('Data to insert:', { title, start_date, end_date, description, owner_id, status_id, userId });
-
     const result = await pool.query(
       'INSERT INTO tasks (title, start_date, end_date, description, owner_id, status_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
       [title, start_date, end_date, description, owner_id, status_id, userId]
@@ -40,8 +38,6 @@ class Task {
     }
 
     const { title, start_date, end_date, owner_id, status_id, description } = data;
-
-    console.log('BE Task Model update data :', data);
 
     const result = await pool.query(
       'UPDATE tasks SET title = $1, start_date = $2, end_date = $3, owner_id = $4, status_id = $5, description = $6 WHERE id = $7 AND user_id = $8 RETURNING *',

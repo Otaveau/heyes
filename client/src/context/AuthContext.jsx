@@ -84,7 +84,6 @@ export const AuthProvider = ({ children }) => {
             }
           });
         } else {
-          console.log('Invalid token response');
           dispatch({ type: 'INVALIDATE_TOKEN' });
         }
       } catch (error) {

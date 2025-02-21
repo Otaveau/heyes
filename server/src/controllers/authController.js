@@ -10,7 +10,6 @@ const register = async (req, res) => {
     const existingUser = await pool.query('SELECT * FROM users WHERE email = $1 OR name = $2', [email, name]);
     
     if (existingUser.rows.length > 0) {
-      console.log('User already exists:', existingUser.rows);
       return res.status(400).json({ error: 'Email ou nom déjà utilisé' });
     }
 
@@ -29,11 +28,9 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-  console.log('Login attempt:', { email, password }); // Log complet
 
   try {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    console.log('Query result:', result.rows); // Log du résultat de la requête
 
     const user = result.rows[0];
     if (!user) {
@@ -41,7 +38,6 @@ const login = async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password match:', isMatch);
 
     if (!isMatch) {
       return res.status(400).json({ error: 'Mot de passe incorrect' });

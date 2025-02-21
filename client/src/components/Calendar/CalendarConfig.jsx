@@ -26,7 +26,7 @@ export const createCalendarOptions = ({
     // Fonction utilitaire pour gérer la réception d'événements
     const handleEventReceiveWrapper = (info) => {
         if (!handleEventReceive || !info.event) return;
-        console.log('Event receive:', info);
+
         try {
             const taskData = JSON.parse(info.draggedEl.dataset.event);
             handleEventReceive({
@@ -40,7 +40,7 @@ export const createCalendarOptions = ({
 
     // Fonction utilitaire pour gérer le drop d'événements
     const handleDropWrapper = (info) => {
-        console.log('Drop:', info);
+
         try {
             const taskData = JSON.parse(info.draggedEl.dataset.event);
             info.draggedEl.style.opacity = '1';
@@ -106,12 +106,10 @@ export const createCalendarOptions = ({
         eventResize: handleEventResize,
         eventAllow: () => !isProcessing,
         eventDragStart: (info) => {
-            console.log('Drag start:', info);
             info.el.style.opacity = '0.7';
         },
 
         eventDragStop: (info) => {
-            console.log('Drag stop:', info);
             info.el.style.opacity = '1';
         },
         eventReceive: handleEventReceiveWrapper,

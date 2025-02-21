@@ -12,16 +12,10 @@ export const useTaskHandlers = (
   dropZoneRefs,
   dropZones,
   setExternalTasks,
-  holidays
+  loadData
 ) => {
   const { updateTask, createNewTask, handleTaskError } = useTaskOperations(setTasks, setExternalTasks);
 
-  //Utils
-  function addDays(date, days) {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-  }
 
   // Handlers
   const handleTaskSelection = useCallback((taskData) => {
@@ -47,6 +41,7 @@ export const useTaskHandlers = (
       console.warn('Tâche non trouvée:', eventId);
     }
   }, [handleTaskSelection, tasks]);
+
 
   const handleEventResize = useCallback(async (info) => {
     if (info.isProcessing) {
@@ -75,17 +70,19 @@ export const useTaskHandlers = (
       };
 
       await updateTask(event.id, updates);
+      await loadData();
       toast.success(`Tâche "${event.title}" redimensionnée`, TOAST_CONFIG);
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.RESIZE_ERROR, info.revert);
     } finally {
       setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, updateTask, handleTaskError]);
+  }, [setCalendarState, updateTask, handleTaskError, loadData]);
+
 
   const handleDateSelect = useCallback((selectInfo) => {
-    const startDate = selectInfo.start;
-    const endDate = addDays(startDate, 1);
+    const startDate = selectInfo.startStr;
+    const endDate = startDate;
 
     if(DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
       toast.error('Impossible de créer une tâche sur un week-end ou jour férié');
@@ -105,6 +102,7 @@ export const useTaskHandlers = (
 
     selectInfo.view.calendar.unselect();
   }, [setCalendarState]);
+
 
   const handleTaskSubmit = useCallback(async (formData, taskId) => {
     if (!formData?.title) {
@@ -138,6 +136,8 @@ export const useTaskHandlers = (
         await createNewTask(taskData);
       }
 
+      await loadData();
+
       setCalendarState(prev => ({
         ...prev,
         isFormOpen: false,
@@ -150,7 +150,8 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, updateTask, createNewTask, handleTaskError]);
+  }, [setCalendarState, loadData, updateTask, createNewTask, handleTaskError]);
+
 
   const handleEventDrop = useCallback(async (dropInfo) => {
     const { event } = dropInfo;
@@ -176,10 +177,12 @@ export const useTaskHandlers = (
       };
 
       await updateTask(taskId, updates);
+      await loadData();
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.DROP_ERROR, dropInfo.revert);
     }
-  }, [tasks, updateTask, handleTaskError]);
+  }, [tasks, updateTask, handleTaskError, loadData]);
+
 
   const handleExternalDrop = useCallback(async (info) => {
     if (!info.draggedEl.parentNode) return;
@@ -193,7 +196,7 @@ export const useTaskHandlers = (
       }
 
       const startDate = info.date;
-      const endDate = addDays(startDate, 1);
+      const endDate = startDate;
 
       const updates = {
         title: existingTask.title,
@@ -205,12 +208,13 @@ export const useTaskHandlers = (
       };
 
       await updateTask(parseInt(taskId), updates);
+      await loadData();
       toast.success(`Tâche "${existingTask.title}" déplacée vers le calendrier`, TOAST_CONFIG);
     } catch (error) {
       handleTaskError(error, ERROR_MESSAGES.DROP_ERROR);
       if (info.revert) info.revert();
     }
-  }, [externalTasks, updateTask, handleTaskError]);
+  }, [externalTasks, updateTask, handleTaskError, loadData]);
 
   const handleEventDragStop = useCallback((info) => {
     if (!dropZoneRefs?.current) {
@@ -269,7 +273,7 @@ export const useTaskHandlers = (
     const taskId = parseInt(info.event.id);
     const resourceId = info.event._def.resourceIds[0];
     const startDate = info.event.start;
-    const endDate = addDays(startDate, 1);
+    const endDate = startDate;
 
     if(DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
       info.revert();

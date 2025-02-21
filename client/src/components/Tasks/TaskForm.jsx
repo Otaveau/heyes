@@ -12,15 +12,11 @@ export const TaskForm = ({
     statuses = [],
     onSubmit: handleTaskSubmit
 }) => {
-    const defaultStartDate = React.useMemo(() =>
-        new Date().toISOString().split('T')[0],
-        []
-    );
 
     const initialFormState = React.useMemo(() => ({
         title: '',
         description: '',
-        startDate:selectedDates?.start,
+        startDate: selectedDates?.start,
         endDate: selectedDates?.end,
         resourceId: selectedDates?.resourceId || '',
         statusId: selectedDates?.resourceId ? '2' : '',
@@ -74,30 +70,29 @@ export const TaskForm = ({
         if (selectedTask) {
 
             const isCongeTask = selectedTask.title === 'CONGE' || selectedTask.isConge;
-            // Cas de modification : on remplit avec les données de la tâche
+
             setFormData({
                 title: selectedTask.isConge ? 'CONGE' : (selectedTask.title || ''),
                 description: selectedTask.description || '',
                 startDate: selectedTask.start,
                 endDate: selectedTask.end,
                 resourceId: selectedTask.resourceId || '',
-                statusId: selectedTask.resourceId ? '2' : (selectedTask.statusId || ''),
+                statusId: selectedTask.resourceId ? '2' : selectedTask.statusId,
                 isConge: isCongeTask
             });
         } else if (selectedDates) {
-            // Cas de création : on réinitialise le formulaire avec les dates sélectionnées
+
             setFormData({
                 ...initialFormState,
                 startDate: selectedDates.start,
-                endDate: selectedDates.end,
+                endDate: selectedDates.end, 
                 resourceId: selectedDates.resourceId || '',
                 statusId: selectedDates.resourceId ? '2' : ''
             });
         } else {
-            // Réinitialisation complète si ni tâche ni dates sélectionnées
             setFormData(initialFormState);
         }
-    }, [selectedTask, selectedDates, defaultStartDate, isOpen, initialFormState]);
+    }, [selectedTask, selectedDates, isOpen, initialFormState]);
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();

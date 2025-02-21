@@ -1,7 +1,6 @@
 const { Status } = require('../models/Status');
 
 const getStatuss = async (req, res) => {
-  console.log('Getting status for user:', req.user.id);
   try {
     const statuss = await Status.findAll(req.user.id);
     res.json(statuss);

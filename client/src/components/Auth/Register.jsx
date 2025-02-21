@@ -23,7 +23,6 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Données d\'inscription:', formData);
     if (formData.password !== formData.confirmPassword) {
       setError('Les mots de passe ne correspondent pas');
       return;

@@ -28,7 +28,7 @@ export const CalendarView = () => {
   ], []);
 
   const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
-  const { tasks, setTasks, resources, holidays, statuses } = useCalendarData();
+  const { tasks, setTasks, resources, holidays, statuses, loadData } = useCalendarData();
   const [externalTasks, setExternalTasks] = useState([]);
   const draggablesRef = useRef([]);
 
@@ -51,37 +51,52 @@ export const CalendarView = () => {
     dropZoneRefs,
     dropZones,
     setExternalTasks,
-    holidays
+    holidays,
+    loadData
   );
 
+  const formattedCalendarTasks = useMemo(() => {
+    if (!tasks || !Array.isArray(tasks)) {
+      return [];
+    }
 
+    return tasks
+      .filter(task => task.resourceId) // Garder uniquement les tâches avec resourceId
+      .map(task => ({
+        id: task.id?.toString() || '',
+        title: task.title,
+        start: task.start,
+        end: task.end,
+        resourceId: task.resourceId?.toString(),
+        allDay: task.allDay || true,
+        extendedProps: {
+          ...task.extendedProps,
+          statusId: task.extendedProps?.statusId || task.statusId || '1'
+        }
+      }));
+  }, [tasks]);
+
+
+  // Formater les tâches externes (backlog)
   const formattedExternalTasks = useMemo(() => {
     if (!tasks || !Array.isArray(tasks)) {
       return [];
     }
 
     return tasks
-      .filter(task => !task.resourceId || task.resourceId === null)
+      .filter(task => !task.resourceId)
       .map(task => ({
-        ...task,
-        id: task.id.toString(),
-        statusId: task.statusId || '1',
-        title: task.title || 'Sans titre'
+        id: task.id?.toString() || '',
+        statusId: task.extendedProps?.statusId || task.statusId || '1',
+        title: task.title
       }));
   }, [tasks]);
 
-  
+
   useEffect(() => {
     setExternalTasks(formattedExternalTasks);
   }, [formattedExternalTasks]);
-  
-  // Gestionnaire des tâches externes unique
-   useEffect(() => {
-    if (!dropZoneRefs.current) {
-      console.warn('dropZoneRefs.current is undefined');
-      return;
-    }
-  }, []);
+
 
   useEffect(() => {
     // Nettoyer les anciens draggables
@@ -99,14 +114,7 @@ export const CalendarView = () => {
         eventData: function (eventEl) {
           const taskId = eventEl.getAttribute('data-task-id');
           const task = externalTasks.find(t => t.id === taskId);
-
-          if (!task) {
-            console.log('Tâche non trouvée pour ID:', taskId);
-            return null;
-          }
-
-          console.log ('calendarView useEffect Draggable task :', task);
-
+          
           return {
             id: task.id,
             title: task.title,
@@ -129,12 +137,33 @@ export const CalendarView = () => {
     };
   }, [externalTasks, dropZones]);
 
+  console.log('formattedExternalTasks:', formattedExternalTasks);
+  console.log('formattedCalendarTasks:', formattedCalendarTasks);
+  console.log('resources:', resources);
+
   return (
     <div className="flex dashboard">
 
       <div className="flex-1 p-4 calendar">
         <FullCalendar
           locale={frLocale}
+          timeZone='local'
+          nextDayThreshold="00:00:00"
+          slotLabelFormat={[
+            {
+              month: 'long'
+            },
+            {
+              weekday: 'short',
+              day: 'numeric'
+            }
+          ]}
+          eventTimeFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'local'
+          }}
           plugins={[resourceTimelinePlugin, interactionPlugin]}
           height='auto'
           schedulerLicenseKey='GPL-My-Project-Is-Open-Source'
@@ -148,7 +177,7 @@ export const CalendarView = () => {
           selectable={true}
           selectMirror={true}
           droppable={true}
-          events={tasks}
+          events={formattedCalendarTasks}
           resources={resources}
           resourceAreaWidth="15%"
           slotDuration={{ days: 1 }}
@@ -157,15 +186,6 @@ export const CalendarView = () => {
             end: '24:00'
           }}
           weekends={true}
-          slotLabelFormat={[
-            { 
-              month: 'long'
-            },
-            {
-              weekday: 'short',
-              day: 'numeric'
-            }
-          ]}
           slotLabelClassNames={(arg) => {
             if (!arg?.date) return [];
             const classes = [];
@@ -174,7 +194,6 @@ export const CalendarView = () => {
             }
             return classes;
           }}
-          
           slotLaneClassNames={(arg) => {
             if (!arg?.date) return '';
             return DateUtils.isHolidayOrWeekend(arg.date, holidays)
@@ -183,8 +202,6 @@ export const CalendarView = () => {
                 : 'weekend-column'
               : '';
           }}
-          
-          // Ajout des classes pour les en-têtes
           dayHeaderClassNames={(arg) => {
             if (!arg?.date) return '';
             return DateUtils.isHolidayOrWeekend(arg.date, holidays)
@@ -194,7 +211,6 @@ export const CalendarView = () => {
               : '';
           }}
           dayCellClassNames={(arg) => {
-            // Ajoute des classes supplémentaires si nécessaire
             const classes = [];
             if (arg.date.getDay() === 0 || arg.date.getDay() === 6) {
               classes.push('weekend-cell');
@@ -207,21 +223,20 @@ export const CalendarView = () => {
           eventClick={handleCalendarEventClick}
           eventResize={handleEventResize}
           eventDragStop={handleEventDragStop}
-          eventReceive={handleEventReceive} 
+          eventReceive={handleEventReceive}
         />
       </div>
 
       <div className="flex w-full space-y-4 backlogs">
         {dropZones.map((zone, index) => {
+
           if (!dropZoneRefs?.current?.[index]) {
             console.warn(`Ref for zone ${index} is not properly initialized`);
             return null;
           }
-
-          const zoneTasks = externalTasks.filter(task =>
-            task.statusId.toString() === zone.statusId.toString()
+          const zoneTasks = externalTasks.filter(task => 
+            task.statusId === zone.statusId
           );
-
           return (
             <div
               key={zone.id}
@@ -245,7 +260,7 @@ export const CalendarView = () => {
           );
         })}
       </div>
-      
+
       <TaskForm
         isOpen={calendarState.isFormOpen}
         onClose={() => setCalendarState((prev) => ({

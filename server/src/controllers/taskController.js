@@ -55,8 +55,6 @@ const updateTask = async (req, res) => {
     status_id: statusId
   };
 
-  console.log('BE taskController updateTask :', data);
-
   try {
     const task = await Task.update(id, data, req.user.id);
     if (!task) return res.status(404).json({ error: 'Task not found' });
@@ -69,7 +67,6 @@ const updateTask = async (req, res) => {
 const updateTaskStatus = async (req, res) => {
   const { id } = req.params;
   const { statusId } = req.body;
-  console.log('Updating task status:', { taskId: id, statusId });
 
   try {
     const task = await Task.updateStatus(id, statusId, req.user.id);

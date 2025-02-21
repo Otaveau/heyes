@@ -1,4 +1,3 @@
-import { DateUtils } from "../../utils/dateUtils";
 import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
@@ -6,7 +5,6 @@ import { ERROR_MESSAGES, STATUS_TYPE_TO_ID, STATUS_ID_TO_TYPE } from "../../cons
 
 // Validateurs de données
 const validateTaskData = (taskData) => {
-    console.log('validateTaskData taskData :', taskData);
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
     if (!taskData.start) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
@@ -43,18 +41,17 @@ export const fetchTasks = async () => {
 
         const tasks = await handleResponse(response);
 
-        console.log('tasksService fetchTasks tasks :', tasks);
-
         return tasks.map(task => ({
             id: task.id,
             title: task.title,
             startDate: task.start_date,
             endDate: task.end_date,  
             description: task.description || '',
-            ownerId: task.owner_id,
+            resourceId: task.owner_id,
             statusId: task.status_id,
             userId: task.user_id
         }));
+
     } catch (error) {
         handleFetchError(error, 'la récupération des tâches');
     }
@@ -83,11 +80,7 @@ export const updateTask = async (id, taskData) => {
         const taskId = parseInt(id);
         if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
 
-        console.log('taskService updateTask taskData :', taskData);
-
         const formattedData = formatTaskData(taskData);
-
-        console.log('taskService updateTask formattedData :', formattedData);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',

@@ -1,7 +1,6 @@
 const { Owner } = require('../models/Owner');
 
 const getOwners = async (req, res) => {
-  console.log('Getting owners for user:', req.user.id);
   try {
     const owners = await Owner.findAll(req.user.id);
     res.json(owners);
