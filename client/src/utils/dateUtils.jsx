@@ -1,14 +1,15 @@
 import { ERROR_MESSAGES } from '../constants/constants';
+import { DateTime } from 'luxon';
 
 export class DateUtils {
-  static parseDate(date) {
+
+
+  static formatLocalDate = (date) => {
     if (!date) return null;
-    if (date instanceof Date) return date;
     if (typeof date === 'string') {
-      // Pour gérer les dates au format ISO
-      return new Date(date);
+      return date;
     }
-    return null;
+    return DateTime.fromJSDate(date).toISO();
   }
 
   static isWeekend(date) {
@@ -41,5 +42,16 @@ export class DateUtils {
 
   static isHolidayOrWeekend(date, holidays) {
     return this.isWeekend(date) || this.isHoliday(date, holidays);
+  }
+
+  //Utils
+  static parseDate(date) {
+    if (!date) return null;
+    if (date instanceof Date) return date;
+    if (typeof date === 'string') {
+      // Pour gérer les dates au format ISO
+      return new Date(date);
+    }
+    return null;
   }
 }
