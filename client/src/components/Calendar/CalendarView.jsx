@@ -5,7 +5,6 @@ import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
-import { useTaskOperations } from '../../hooks/useTaskOperations';
 import { TaskForm } from '../Tasks/TaskForm';
 import { DateUtils } from '../../utils/dateUtils';
 import '../../style/CalendarView.css';

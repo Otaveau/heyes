@@ -11,19 +11,28 @@ export const useTaskHandlers = (
   externalTasks,
   dropZoneRefs,
   dropZones,
-  calendarRef
+  holidays
 ) => {
   const { updateTask, createNewTask, handleTaskError } = useTaskOperations();
+
+  const checkDatesValidity = useCallback((startDate, endDate) => {
+    if (DateUtils.isHolidayOrWeekend(startDate, holidays) || DateUtils.isHolidayOrWeekend(endDate, holidays)) {
+      toast.error('Impossible de créer ou modifier une tâche sur un week-end ou jour férié', TOAST_CONFIG);
+      return false;
+    }
+    return true;
+  }, [holidays]);
 
   // Gestionnaire de mise à jour synchronisée
   const handleTaskUpdate = useCallback(async (taskId, updatedTaskData, revertFunc) => {
     try {
 
-      console.log('handleTaskUpdate updatedTaskData:', updatedTaskData);
 
+      if (!checkDatesValidity(updatedTaskData.start, updatedTaskData.end)) {
+        if (revertFunc) revertFunc();
+        throw new Error('Dates invalides (week-end ou jour férié)');
+      }
       const updatedTask = await updateTask(taskId, updatedTaskData);
-
-      console.log('handleTaskUpdate updatedTask:', updatedTask);
       
       // Mise à jour locale des tâches
       setTasks(currentTasks => 
@@ -37,7 +46,7 @@ export const useTaskHandlers = (
       handleTaskError(error, null, revertFunc);
       throw error;
     }
-  }, [updateTask, handleTaskError, setTasks]);
+  }, [checkDatesValidity, updateTask, setTasks, handleTaskError]);
 
 
   // Handlers
@@ -79,7 +88,7 @@ export const useTaskHandlers = (
       const startDate = event.start;
       const endDate = event.end;
 
-      if(DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
+      if (!checkDatesValidity(startDate, endDate)) {
         info.revert();
         return;
       }
@@ -92,8 +101,6 @@ export const useTaskHandlers = (
         statusId: event._def.extendedProps.statusId,
         description: event._def.extendedProps.description
       };
-
-      console.log('handleEventResize updates:', updates);
 
       const updatedTask = await updateTask(event.id, updates);
     
@@ -123,15 +130,14 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, updateTask]);
+  }, [checkDatesValidity, setCalendarState, updateTask]);
 
 
   const handleDateSelect = useCallback((selectInfo) => {
     const startDate = selectInfo.startStr;
     const endDate = startDate;
 
-    if(DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
-      toast.error('Impossible de créer une tâche sur un week-end ou jour férié');
+    if (!checkDatesValidity(startDate, endDate)) {
       selectInfo.view.calendar.unselect();
       return;
     }
@@ -147,7 +153,7 @@ export const useTaskHandlers = (
     }));
 
     selectInfo.view.calendar.unselect();
-  }, [setCalendarState]);
+  }, [checkDatesValidity, setCalendarState]);
 
 
   const handleTaskSubmit = useCallback(async (formData, taskId) => {
@@ -159,8 +165,7 @@ export const useTaskHandlers = (
     const startDate = formData.startDate;
     const endDate = formData.endDate;
 
-    if(DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
-      toast.error('Impossible de créer une tâche sur un week-end ou jour férié');
+    if (!checkDatesValidity(startDate, endDate)) {
       return;
     }
 
@@ -196,7 +201,7 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, handleTaskUpdate, createNewTask, setTasks]);
+  }, [checkDatesValidity, setCalendarState, handleTaskUpdate, createNewTask, setTasks]);
 
 
   const handleEventDrop = useCallback(async (dropInfo) => {
@@ -208,7 +213,7 @@ export const useTaskHandlers = (
     const startDate = event.start;
     const endDate = event.end || startDate;
 
-    if(DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
+    if (!checkDatesValidity(startDate, endDate)) {
       dropInfo.revert();
       return;
     }
@@ -226,7 +231,7 @@ export const useTaskHandlers = (
     } catch (error) {
       console.warn('Failed to update task:', error);
     }
-  }, [tasks, handleTaskUpdate]);
+  }, [tasks, checkDatesValidity, handleTaskUpdate]);
 
 
   const handleExternalDrop = useCallback(async (info) => {
@@ -243,6 +248,11 @@ export const useTaskHandlers = (
       const startDate = info.date;
       const endDate = startDate;
 
+      if (!checkDatesValidity(startDate, endDate)) {
+        info.revert();
+        return;
+      }
+
       const updates = {
         title: existingTask.title,
         description: existingTask.description || '',
@@ -256,7 +266,7 @@ export const useTaskHandlers = (
     } catch (error) {
       console.warn('Failed to update task:', error);
     }
-  }, [externalTasks, handleTaskUpdate]);
+  }, [externalTasks, handleTaskUpdate, checkDatesValidity]);
 
   const handleEventDragStop = useCallback(async (info) => {
     if (!dropZoneRefs?.current) {
@@ -292,6 +302,16 @@ export const useTaskHandlers = (
         }
   
         try {
+
+          const startDate = info.event.start;
+          const endDate = info.event.end || info.event.start;
+          
+          // Vérification des dates avant déplacement vers zone
+          if (!checkDatesValidity(startDate, endDate)) {
+            info.revert();
+            break;
+          }
+
           const updates = {
             ...task,
             start: info.event.start,
@@ -314,7 +334,7 @@ export const useTaskHandlers = (
     if (!dropFound && info.revert) {
       info.revert();
     }
-  }, [dropZoneRefs, dropZones, tasks, handleTaskUpdate]);
+  }, [dropZoneRefs, tasks, checkDatesValidity, dropZones, handleTaskUpdate]);
 
   const handleExternalTaskClick = useCallback((task) => {
     setCalendarState(prev => ({
@@ -335,9 +355,7 @@ export const useTaskHandlers = (
       const startDate = info.event.start;
       const endDate = startDate;
   
-      // Vérifier les week-ends et jours fériés
-      if (DateUtils.isHolidayOrWeekend(startDate) || DateUtils.isHolidayOrWeekend(endDate)) {
-        toast.error('Impossible de déplacer une tâche sur un week-end ou jour férié', TOAST_CONFIG);
+      if (!checkDatesValidity(startDate, endDate)) {
         info.revert();
         return;
       }
@@ -355,7 +373,7 @@ export const useTaskHandlers = (
         start: startDate,
         end: endDate,
         resourceId,
-        statusId: '2' // En cours
+        statusId: '2'
       };
   
       await handleTaskUpdate(taskId, updates, info.revert);
@@ -365,7 +383,7 @@ export const useTaskHandlers = (
       console.warn('Failed to handle event receive:', error);
       if (info.revert) info.revert();
     }
-  }, [externalTasks, handleTaskUpdate]);
+  }, [checkDatesValidity, externalTasks, handleTaskUpdate]);
 
   return {
     handleDateSelect,
