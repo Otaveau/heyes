@@ -18,8 +18,12 @@ export const useTaskHandlers = (
   // Gestionnaire de mise à jour synchronisée
   const handleTaskUpdate = useCallback(async (taskId, updatedTaskData, revertFunc) => {
     try {
-      // Appel au service de mise à jour
+
+      console.log('handleTaskUpdate updatedTaskData:', updatedTaskData);
+
       const updatedTask = await updateTask(taskId, updatedTaskData);
+
+      console.log('handleTaskUpdate updatedTask:', updatedTask);
       
       // Mise à jour locale des tâches
       setTasks(currentTasks => 
@@ -28,18 +32,12 @@ export const useTaskHandlers = (
         )
       );
 
-      // Force le rafraîchissement du calendrier
-      if (calendarRef?.current) {
-        const calendarApi = calendarRef.current.getApi();
-        calendarApi.refetchEvents();
-      }
-
       return updatedTask;
     } catch (error) {
       handleTaskError(error, null, revertFunc);
       throw error;
     }
-  }, [updateTask, handleTaskError, setTasks, calendarRef]);
+  }, [updateTask, handleTaskError, setTasks]);
 
 
   // Handlers
@@ -95,14 +93,37 @@ export const useTaskHandlers = (
         description: event._def.extendedProps.description
       };
 
-      await handleTaskUpdate(event.id, updates, info.revert);
-      toast.success(`Tâche "${event.title}" redimensionnée`, TOAST_CONFIG);
+      console.log('handleEventResize updates:', updates);
+
+      const updatedTask = await updateTask(event.id, updates);
+    
+      if (updatedTask) {
+        // Mise à jour explicite de l'événement dans le calendrier
+        const calendarApi = info.view.calendar;
+        
+        // Supprimer l'événement actuel
+        event.remove();
+        
+        // Ajouter l'événement mis à jour
+        calendarApi.addEvent({
+          id: updatedTask.id,
+          title: updatedTask.title,
+          start: updatedTask.start,
+          end: updatedTask.end,
+          resourceId: updatedTask.resourceId,
+          allDay: true,
+          extendedProps: updatedTask.extendedProps
+        });
+        
+        toast.success(`Tâche "${updatedTask.title}" redimensionnée`, TOAST_CONFIG);
+      }
     } catch (error) {
       // Erreur déjà gérée dans handleTaskUpdate
+      console.error('Erreur lors du redimensionnement:', error);
     } finally {
       setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, handleTaskUpdate,]);
+  }, [setCalendarState, updateTask]);
 
 
   const handleDateSelect = useCallback((selectInfo) => {

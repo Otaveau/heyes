@@ -30,12 +30,10 @@ export const CalendarView = () => {
 
 
   const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
-  const { tasks, setTasks, resources, holidays, statuses, loadData } = useCalendarData();
+  const { tasks, setTasks, resources, holidays, statuses } = useCalendarData();
   const [externalTasks, setExternalTasks] = useState([]);
   const draggablesRef = useRef([]);
   const calendarRef = useRef(null);
-
-  const { updateTask, handleTaskError } = useTaskOperations();
 
   const {
     handleTaskSubmit,

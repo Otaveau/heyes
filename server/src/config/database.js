@@ -12,7 +12,6 @@ const pool = new Pool({
 (async () => {
   try {
     await pool.query("SET timezone = 'UTC';");
-    console.log('Timezone set to UTC for database connections');
   } catch (error) {
     console.error('Error setting timezone:', error);
   }
