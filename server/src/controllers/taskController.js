@@ -44,8 +44,6 @@ const updateTask = async (req, res) => {
   const { id } = req.params;
   const { title, startDate, endDate, description, ownerId, statusId } = req.body;
 
-  
-  
   const data = {
     title,
     start_date: startDate,

@@ -36,11 +36,9 @@ class Task {
     if (data.status_id && Object.keys(data).length === 1) {
       return this.updateStatus(id, data.status_id, user_id);
     }
-
     const { title, start_date, end_date, owner_id, status_id, description } = data;
-
     const result = await pool.query(
-      'UPDATE tasks SET title = $1, start_date = $2, end_date = $3, owner_id = $4, status_id = $5, description = $6 WHERE id = $7 AND user_id = $8 RETURNING *',
+      'UPDATE tasks SET title = $1, start_date = $2::date, end_date = $3::date, owner_id = $4, status_id = $5, description = $6 WHERE id = $7 AND user_id = $8 RETURNING *',
       [title, start_date, end_date, owner_id, status_id, description, id, user_id]
     );
     return result.rows[0];

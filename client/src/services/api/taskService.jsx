@@ -2,9 +2,6 @@ import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
 import { ERROR_MESSAGES} from '../../constants/constants';
-import { DateUtils } from '../../utils/dateUtils';
-import { DateTime } from 'luxon';
-
 
 // Validateurs de données
 const validateTaskData = (taskData) => {
@@ -15,23 +12,8 @@ const validateTaskData = (taskData) => {
     if (!taskData.startDate) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
     if (!taskData.endDate) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
 
-    const start = DateTime.fromISO(DateUtils.formatLocalDate(taskData.startDate));
-    const end = DateTime.fromISO(DateUtils.formatLocalDate(taskData.endDate));
-
-    if (!start.isValid) throw new Error(ERROR_MESSAGES.INVALID_START_DATE);
-    if (!end.isValid) throw new Error(ERROR_MESSAGES.INVALID_END_DATE);
-    if (end < start) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
+    if (taskData.endDate < taskData.startDate) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
 };
-
-
-const prepareTaskData = (taskData) => {
-    return {
-        ...taskData,
-        startDate: DateUtils.formatLocalDate(taskData.startDate),
-        endDate: DateUtils.formatLocalDate(taskData.endDate)
-    };
-};
-
 
 export const fetchTasks = async () => {
     try {
@@ -46,16 +28,12 @@ export const fetchTasks = async () => {
     }
 };
 
-
 export const createTask = async (taskData) => {
     try {
-        validateTaskData(taskData);
-        const preparedData = prepareTaskData(taskData);
-        
         const response = await fetchWithTimeout(`${API_URL}/tasks`, {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify(preparedData)
+            body: JSON.stringify(taskData)
         });
 
         return handleResponse(response);
@@ -70,14 +48,10 @@ export const updateTask = async (id, taskData) => {
         validateTaskData(taskData);
         const taskId = parseInt(id);
         if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
-
-        const preparedData = prepareTaskData(taskData);
-        console.log('FE updateTask taskData', preparedData);
-
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
-            body: JSON.stringify(preparedData)
+            body: JSON.stringify(taskData)
         });
 
         return handleResponse(response);
@@ -87,7 +61,6 @@ export const updateTask = async (id, taskData) => {
         throw error;
     }
 };
-
 
 export const deleteTask = async (id) => {
     try {
