@@ -6,6 +6,7 @@ import frLocale from '@fullcalendar/core/locales/fr';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { TaskForm } from '../Tasks/TaskForm';
+import { TaskBoard } from '../Tasks/TaskBoard';
 import { DateUtils } from '../../utils/dateUtils';
 import '../../style/CalendarView.css';
 
@@ -19,7 +20,6 @@ export const CalendarView = () => {
     isProcessing: false,
   });
 
-  // Définir les zones de drop et leurs statuts associés
   const dropZones = useMemo(() => [
     { id: 'todo', statusId: '1', title: 'À faire' },
     { id: 'inProgress', statusId: '2', title: 'En cours' },
@@ -36,7 +36,7 @@ export const CalendarView = () => {
 
   const {
     handleTaskSubmit,
-    handleDateSelect,
+    handleDateClick,
     handleExternalTaskClick,
     handleCalendarEventClick,
     handleEventDragStop,
@@ -54,6 +54,12 @@ export const CalendarView = () => {
     holidays,
     calendarRef
   );
+
+  const handleDeleteTask = (taskId) => {
+    // Supprimer la tâche à la fois des tâches calendrier et externes
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    setTasks(updatedTasks);
+  };
 
   // Formater les tâches du calendrier
   const formattedCalendarTasks = useMemo(() => {
@@ -116,6 +122,8 @@ export const CalendarView = () => {
           const taskId = eventEl.getAttribute('data-task-id');
           const task = externalTasks.find(t => t.id === taskId);
 
+          if (!task) return {};
+
           return {
             id: task.id,
             title: task.title,
@@ -138,23 +146,19 @@ export const CalendarView = () => {
     };
   }, [externalTasks, dropZones]);
 
-  return (
-    <div className="flex dashboard">
 
-      <div className="flex-1 p-4 calendar">
+  return (
+    <div className="flex flex-col dashboard">
+
+      <div className="w-full p-4 calendar">
         <FullCalendar
           ref={calendarRef}
           locale={frLocale}
           timeZone='local'
           nextDayThreshold="00:00:00"
           slotLabelFormat={[
-            {
-              month: 'long'
-            },
-            {
-              weekday: 'short',
-              day: 'numeric'
-            }
+            { month: 'long' },
+            { weekday: 'short', day: 'numeric' }
           ]}
           eventTimeFormat={{
             hour: '2-digit',
@@ -188,12 +192,12 @@ export const CalendarView = () => {
             const startDate = new Date(dropInfo.start);
             const endDate = new Date(dropInfo.end);
             endDate.setDate(endDate.getDate() - 1);
-        
-            if (DateUtils.isHolidayOrWeekend(startDate, holidays) || 
-                DateUtils.isHolidayOrWeekend(endDate, holidays)) {
+
+            if (DateUtils.isHolidayOrWeekend(startDate, holidays) ||
+              DateUtils.isHolidayOrWeekend(endDate, holidays)) {
               return false;
             }
-            
+
             return true;
           }}
           slotLabelClassNames={(arg) => {
@@ -204,7 +208,7 @@ export const CalendarView = () => {
             }
             return classes;
           }}
-          
+
           slotLaneClassNames={(arg) => {
             if (!arg?.date) return '';
             return DateUtils.isHolidayOrWeekend(arg.date, holidays)
@@ -213,76 +217,51 @@ export const CalendarView = () => {
                 : 'weekend-column'
               : '';
           }}
-          
+
           dayHeaderClassNames={(arg) => {
             if (!arg?.date) return '';
-            
+
             // Faire un log pour déboguer si nécessaire
             console.log('Date header:', arg.date, 'isHoliday:', DateUtils.isHoliday(arg.date, holidays));
-            
+
             return DateUtils.isHolidayOrWeekend(arg.date, holidays)
               ? DateUtils.isHoliday(arg.date, holidays)
                 ? 'holiday-header'
                 : 'weekend-header'
               : '';
           }}
-          
+
           dayCellClassNames={(arg) => {
             if (!arg?.date) return [];
             const classes = [];
-            
+
             if (DateUtils.isWeekend(arg.date)) {
               classes.push('weekend-cell');
             }
-            
+
             if (DateUtils.isHoliday(arg.date, holidays)) {
               classes.push('holiday-cell');
             }
-            
+
             return classes;
           }}
           eventDrop={handleEventDrop}
           drop={handleExternalDrop}
-          select={handleDateSelect}
+          select={handleDateClick}
           eventClick={handleCalendarEventClick}
           eventResize={handleEventResize}
           eventDragStop={handleEventDragStop}
           eventReceive={handleEventReceive}
         />
       </div>
-
-      <div className="flex w-full space-y-4 backlogs">
-        {dropZones.map((zone, index) => {
-
-          if (!dropZoneRefs?.current?.[index]) {
-            console.warn(`Ref for zone ${index} is not properly initialized`);
-            return null;
-          }
-          const zoneTasks = externalTasks.filter(task => 
-            task.statusId === zone.statusId
-          );
-          return (
-            <div
-              key={zone.id}
-              ref={dropZoneRefs.current[index]}
-              className="flex-1 w-1/4 p-4 bg-gray-100 rounded mt-4"
-              data-status-id={zone.statusId}
-            >
-              <h3 className="mb-4 font-bold">{zone.title}</h3>
-              {zoneTasks.map(task => (
-                <div
-                  key={task.id}
-                  data-task-id={task.id}
-                  className="fc-event p-2 mb-2 bg-white border rounded cursor-move hover:bg-gray-50"
-                  onClick={() => handleExternalTaskClick(task)}
-                >
-                  <div className="font-medium">{task.title}</div>
-                  <div className="text-xs text-gray-500">ID: {task.id}</div>
-                </div>
-              ))}
-            </div>
-          );
-        })}
+      <div className="w-full mt-4">
+        <TaskBoard
+          dropZones={dropZones}
+          dropZoneRefs={dropZoneRefs}
+          externalTasks={externalTasks}
+          handleExternalTaskClick={handleExternalTaskClick}
+          onDeleteTask={handleDeleteTask}
+        />
       </div>
 
       <TaskForm

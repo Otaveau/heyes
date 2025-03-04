@@ -3,15 +3,41 @@ import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
 import { ERROR_MESSAGES} from '../../constants/constants';
 
+
+
+const transformTaskForServer = (taskData) => {
+    return {
+      title: taskData.title.trim(),
+      startDate: taskData.start,
+      endDate: taskData.end,
+      description: taskData.description?.trim() || '',
+      ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
+      statusId: taskData.statusId ? parseInt(taskData.statusId, 10) : null
+    };
+  };
+
+  const transformServerResponseToTask = (serverResponse) => {
+    return {
+      id: serverResponse.id,
+      title: serverResponse.title,
+      start: serverResponse.startDate,
+      end: serverResponse.endDate,
+      resourceId: (serverResponse.owner_id || serverResponse.ownerId)?.toString(),
+      allDay: true,
+      extendedProps: {
+        statusId: (serverResponse.status_id || serverResponse.statusId)?.toString(),
+        userId: serverResponse.user_id || serverResponse.userId,
+        description: serverResponse.description || ''
+      }
+    };
+  };
+
 // Validateurs de données
 const validateTaskData = (taskData) => {
-
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
-
-    if (!taskData.startDate) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
-    if (!taskData.endDate) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
-
+    if (!taskData.start) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
+    if (!taskData.end) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
     if (taskData.endDate < taskData.startDate) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
 };
 
@@ -44,17 +70,28 @@ export const createTask = async (taskData) => {
 };
 
 export const updateTask = async (id, taskData) => {
+
+    console.log('taskData :', taskData);
+
     try {
         validateTaskData(taskData);
         const taskId = parseInt(id);
         if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
+
+        const dataToServer = transformTaskForServer(taskData);
+
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
-            body: JSON.stringify(taskData)
+            body: JSON.stringify(dataToServer)
         });
 
-        return handleResponse(response);
+        // Obtenir les données JSON de la réponse
+        const dataFromServer = await handleResponse(response);
+
+        const transformedTask = transformServerResponseToTask(dataFromServer);
+
+        return transformedTask;
 
     } catch (error) {
         console.error('Erreur lors de la mise à jour de la tâche:', error);
@@ -78,17 +115,3 @@ export const deleteTask = async (id) => {
     }
 };
 
-export const getTasksByStatus = async (statusId) => {
-    try {
-        if (!statusId) throw new Error(ERROR_MESSAGES.STATUS_ID_REQUIRED);
-
-        const response = await fetchWithTimeout(`${API_URL}/tasks/status/${statusId}`, {
-            headers: getAuthHeaders()
-        });
-
-        return handleResponse(response);
-    } catch (error) {
-        console.error(error, 'la récupération des tâches par statut');
-        throw error;
-    }
-};

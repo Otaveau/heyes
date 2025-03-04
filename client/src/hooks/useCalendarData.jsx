@@ -16,52 +16,30 @@ export const useCalendarData = () => {
   const [error, setError] = useState(null);
   const isMounted = useRef(true);
 
+
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
 
-  const formatHolidays = useCallback((holidayDates) => {
-    
-    if (!holidayDates || typeof holidayDates !== 'object') {
-      console.warn(ERROR_MESSAGES.INVALID_HOLIDAY_FORMAT);
-      return [];
-    }
-    try {
 
-      return Object.keys(holidayDates).map(date => ({
-        start: date,
-        allDay: true
-      }));
-    } catch (error) {
-      console.error('Error formatting holidays:', error);
-      return [];
-    }
+  const formatHolidays = useCallback((holidayDates) => {
+      return holidayDates;
   }, []);
 
-  const formatResources = useCallback((ownersData) => {
-    if (!Array.isArray(ownersData)) {
-      console.warn(ERROR_MESSAGES.INVALID_OWNERS_FORMAT);
-      return [];
-    }
 
+  const formatResources = useCallback((ownersData) => {
     return ownersData.map(owner => ({
       id: owner.ownerId,
       title: owner.name,
       email: owner.email,
-      department: owner.teamId,
-      isActive: owner.isActive !== false
+      team: owner.teamId
     }));
   }, []);
 
+
   const formatTasksForCalendar = useCallback((tasksData) => {
-
-    if (!Array.isArray(tasksData)) {
-      console.warn(ERROR_MESSAGES.INVALID_TASKS_FORMAT);
-      return [];
-    }
-
     return tasksData.map(task => ({
       id: task.id,
       title: task.title,
@@ -81,7 +59,6 @@ export const useCalendarData = () => {
     try {
       setIsLoading(true);
       setError(null);
-
       const year = new Date().getFullYear();
       const [holidayDates, ownersData, tasksData, statusesData] = await Promise.all([
         fetchHolidays(year),

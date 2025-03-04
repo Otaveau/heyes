@@ -55,7 +55,7 @@ export const DEFAULT_STATUS_ID = 2;
 // Messages d'erreur
 export const ERROR_MESSAGES = {
   INVALID_DATE: 'Date invalide',
-  INVALID_START_END_DATE: 'La tâche ne peut pas commencer ou se terminer sur un week-end ou un jour férié',
+  INVALID_START_END_DATE: 'Dates invalides (week-end ou jour férié)',
   INVALID_TASK: 'Tâche invalide',
   TITLE_REQUIRED: 'Le titre est requis',
   SAVE_ERROR: 'Erreur lors de la sauvegarde',

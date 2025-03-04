@@ -11,15 +11,41 @@ export const TaskForm = ({
     statuses = [],
     onSubmit: handleTaskSubmit
 }) => {
+
+    // Fonction d'aide pour formater les dates ISO en YYYY-MM-DD
+    const formatDateForInput = useCallback((dateString) => {
+        if (!dateString) return '';
+
+        // Si la date est déjà au format YYYY-MM-DD, la retourner telle quelle
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            return dateString;
+        }
+
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return ''; // Date invalide
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        } catch (e) {
+            console.error('Erreur lors du formatage de la date:', e);
+            return '';
+        }
+    }, []);
+
+
     const getInitialFormData = useMemo(() => () => ({
         title: selectedTask?.title || '',
         description: selectedTask?.description || '',
-        startDate: selectedDates?.start || selectedTask?.start || '',
-        endDate: selectedDates?.end || selectedTask?.end || '',
+        startDate: formatDateForInput(selectedDates?.start) || selectedTask?.start || '',
+        endDate: formatDateForInput(selectedDates?.end) || selectedTask?.end || '',
         resourceId: selectedDates?.resourceId || selectedTask?.resourceId || '',
         statusId: selectedTask?.statusId || (selectedDates?.resourceId ? '2' : ''),
         isConge: selectedTask?.isConge || false
-    }), [selectedDates, selectedTask]);
+    }), [selectedDates, selectedTask, formatDateForInput]);
 
     const [formData, setFormData] = useState(getInitialFormData());
     const [errors, setErrors] = useState({});
@@ -30,6 +56,8 @@ export const TaskForm = ({
         if (isOpen) {
             setFormData(getInitialFormData());
             setErrors({});
+            console.log('selectedTask :', selectedTask);
+            console.log('selectedDates :', selectedDates);
         }
     }, [getInitialFormData, isOpen, selectedDates, selectedTask]);
 
