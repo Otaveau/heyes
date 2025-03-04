@@ -192,6 +192,7 @@ export const CalendarView = () => {
             }
             return classes;
           }}
+          
           slotLaneClassNames={(arg) => {
             if (!arg?.date) return '';
             return DateUtils.isHolidayOrWeekend(arg.date, holidays)
@@ -200,19 +201,32 @@ export const CalendarView = () => {
                 : 'weekend-column'
               : '';
           }}
+          
           dayHeaderClassNames={(arg) => {
             if (!arg?.date) return '';
+            
+            // Faire un log pour déboguer si nécessaire
+            console.log('Date header:', arg.date, 'isHoliday:', DateUtils.isHoliday(arg.date, holidays));
+            
             return DateUtils.isHolidayOrWeekend(arg.date, holidays)
               ? DateUtils.isHoliday(arg.date, holidays)
                 ? 'holiday-header'
                 : 'weekend-header'
               : '';
           }}
+          
           dayCellClassNames={(arg) => {
+            if (!arg?.date) return [];
             const classes = [];
-            if (arg.date.getDay() === 0 || arg.date.getDay() === 6) {
+            
+            if (DateUtils.isWeekend(arg.date)) {
               classes.push('weekend-cell');
             }
+            
+            if (DateUtils.isHoliday(arg.date, holidays)) {
+              classes.push('holiday-cell');
+            }
+            
             return classes;
           }}
           eventDrop={handleEventDrop}
