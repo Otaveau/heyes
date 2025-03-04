@@ -184,6 +184,18 @@ export const CalendarView = () => {
             end: '24:00'
           }}
           weekends={true}
+          eventAllow={(dropInfo) => {
+            const startDate = new Date(dropInfo.start);
+            const endDate = new Date(dropInfo.end);
+            endDate.setDate(endDate.getDate() - 1);
+        
+            if (DateUtils.isHolidayOrWeekend(startDate, holidays) || 
+                DateUtils.isHolidayOrWeekend(endDate, holidays)) {
+              return false;
+            }
+            
+            return true;
+          }}
           slotLabelClassNames={(arg) => {
             if (!arg?.date) return [];
             const classes = [];

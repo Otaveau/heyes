@@ -16,9 +16,17 @@ export const useTaskHandlers = (
   const { updateTask, createNewTask, handleTaskError } = useTaskOperations();
 
   const checkDatesValidity = useCallback((startDate, endDate) => {
-
     const startDateObj = startDate instanceof Date ? startDate : new Date(startDate);
-    let endDateObj = endDate instanceof Date ? endDate : new Date(endDate || startDate);
+
+    let endDateObj;
+    if (!endDate) {
+      endDateObj = new Date(startDateObj);
+    } else {
+      endDateObj = endDate instanceof Date ? new Date(endDate) : new Date(endDate);
+      if (endDateObj.getHours() === 0 && endDateObj.getMinutes() === 0) {
+        endDateObj.setDate(endDateObj.getDate() - 1);
+      }
+    }
 
     if (DateUtils.isHolidayOrWeekend(startDateObj, holidays) || DateUtils.isHolidayOrWeekend(endDateObj, holidays)) {
       toast.error('Impossible de créer ou modifier une tâche sur un week-end ou jour férié', TOAST_CONFIG);
@@ -91,6 +99,9 @@ export const useTaskHandlers = (
       const { event } = info;
       const startDate = event.start;
       const endDate = event.end;
+
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
 
       if (!checkDatesValidity(startDate, endDate)) {
         info.revert();
@@ -167,7 +178,14 @@ export const useTaskHandlers = (
     }
 
     const startDate = formData.startDate;
-    const endDate = formData.endDate;
+    let endDate = formData.endDate;
+
+    // Si les dates sont égales, ajuster la date de fin pour FullCalendar
+    if (new Date(startDate).toDateString() === new Date(endDate).toDateString()) {
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+      endDate = adjustedEndDate;
+    }
 
     if (!checkDatesValidity(startDate, endDate)) {
       return;
@@ -217,6 +235,12 @@ export const useTaskHandlers = (
     const startDate = event.start;
     const endDate = event.end || startDate;
 
+    const adjustedEndDate = new Date(endDate);
+    if (endDate.getHours() === 0 && endDate.getMinutes() === 0) {
+      adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+    }
+
+
     if (!checkDatesValidity(startDate, endDate)) {
       dropInfo.revert();
       return;
@@ -250,7 +274,8 @@ export const useTaskHandlers = (
       }
 
       const startDate = info.date;
-      const endDate = startDate;
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 1);
 
       if (!checkDatesValidity(startDate, endDate)) {
         info.revert();
