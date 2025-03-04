@@ -16,7 +16,11 @@ export const useTaskHandlers = (
   const { updateTask, createNewTask, handleTaskError } = useTaskOperations();
 
   const checkDatesValidity = useCallback((startDate, endDate) => {
-    if (DateUtils.isHolidayOrWeekend(startDate, holidays) || DateUtils.isHolidayOrWeekend(endDate, holidays)) {
+
+    const startDateObj = startDate instanceof Date ? startDate : new Date(startDate);
+    let endDateObj = endDate instanceof Date ? endDate : new Date(endDate || startDate);
+
+    if (DateUtils.isHolidayOrWeekend(startDateObj, holidays) || DateUtils.isHolidayOrWeekend(endDateObj, holidays)) {
       toast.error('Impossible de créer ou modifier une tâche sur un week-end ou jour férié', TOAST_CONFIG);
       return false;
     }
