@@ -31,6 +31,8 @@ const createTask = async (req, res) => {
     owner_id: ownerId || null,
     status_id: statusId || null
   };
+
+  
   try {
     const task = await Task.create(data, req.user.id);
     res.status(201).json(task);

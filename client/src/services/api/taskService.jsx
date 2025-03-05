@@ -1,36 +1,40 @@
 import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
-import { ERROR_MESSAGES} from '../../constants/constants';
+import { ERROR_MESSAGES } from '../../constants/constants';
+import { DateUtils } from '../../utils/dateUtils';
 
 
 
 const transformTaskForServer = (taskData) => {
     return {
-      title: taskData.title.trim(),
-      startDate: taskData.start,
-      endDate: taskData.end,
-      description: taskData.description?.trim() || '',
-      ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
-      statusId: taskData.statusId ? parseInt(taskData.statusId, 10) : null
+        title: taskData.title.trim(),
+        startDate: new Date(taskData.start).toISOString(),
+        endDate: new Date(taskData.end).toISOString(),
+        description: taskData.description?.trim() || '',
+        ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
+        statusId: taskData.statusId ? parseInt(taskData.statusId, 10) : null
     };
-  };
+};
 
-  const transformServerResponseToTask = (serverResponse) => {
+const transformServerResponseToTask = (serverResponse) => {
+
+    DateUtils.normalizeTaskDates(serverResponse);
+  
     return {
-      id: serverResponse.id,
-      title: serverResponse.title,
-      start: serverResponse.startDate,
-      end: serverResponse.endDate,
-      resourceId: (serverResponse.owner_id || serverResponse.ownerId)?.toString(),
-      allDay: true,
-      extendedProps: {
-        statusId: (serverResponse.status_id || serverResponse.statusId)?.toString(),
-        userId: serverResponse.user_id || serverResponse.userId,
-        description: serverResponse.description || ''
-      }
+        id: serverResponse.id,
+        title: serverResponse.title,
+        start: serverResponse.start_Date,
+        end: serverResponse.end_Date,
+        resourceId: (serverResponse.owner_id || serverResponse.ownerId)?.toString(),
+        allDay: true,
+        extendedProps: {
+            statusId: (serverResponse.status_id || serverResponse.statusId)?.toString(),
+            userId: serverResponse.user_id || serverResponse.userId,
+            description: serverResponse.description || ''
+        }
     };
-  };
+};
 
 // Validateurs de données
 const validateTaskData = (taskData) => {
@@ -56,10 +60,13 @@ export const fetchTasks = async () => {
 
 export const createTask = async (taskData) => {
     try {
+        validateTaskData(taskData);
+        const dataToServer = transformTaskForServer(taskData);
+
         const response = await fetchWithTimeout(`${API_URL}/tasks`, {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify(taskData)
+            body: JSON.stringify(dataToServer)
         });
 
         return handleResponse(response);
@@ -70,9 +77,6 @@ export const createTask = async (taskData) => {
 };
 
 export const updateTask = async (id, taskData) => {
-
-    console.log('taskData :', taskData);
-
     try {
         validateTaskData(taskData);
         const taskId = parseInt(id);

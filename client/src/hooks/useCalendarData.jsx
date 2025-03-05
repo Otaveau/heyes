@@ -3,7 +3,7 @@ import { fetchTasks } from '../services/api/taskService';
 import { fetchOwners } from '../services/api/ownerService';
 import { fetchHolidays } from '../services/api/holidayService';
 import { fetchStatuses } from '../services/api/statusService';
-import { ERROR_MESSAGES } from '../constants/constants';
+import { DateUtils } from '../utils/dateUtils';
 
 
 export const useCalendarData = () => {
@@ -25,7 +25,7 @@ export const useCalendarData = () => {
 
 
   const formatHolidays = useCallback((holidayDates) => {
-      return holidayDates;
+    return holidayDates;
   }, []);
 
 
@@ -40,19 +40,30 @@ export const useCalendarData = () => {
 
 
   const formatTasksForCalendar = useCallback((tasksData) => {
-    return tasksData.map(task => ({
-      id: task.id,
-      title: task.title,
-      start: task.start_date?.split('T')[0] || task.startDate?.split('T')[0],
-      end: task.end_date?.split('T')[0] || task.endDate?.split('T')[0],
-      resourceId: (task.owner_id || task.ownerId)?.toString(),
-      allDay: true,
-      extendedProps: {
-        statusId: (task.status_id || task.statusId)?.toString(),
-        userId: task.user_id || task.userId,
-        description: task.description || ''
+
+    return tasksData.map(task => {
+
+      let startDate = new Date(task.start_date);
+      let endDate = task.end_date ? new Date(task.end_date) : startDate;
+
+      startDate.setDate(startDate.getDate() + 1);
+      if (endDate) {
+        endDate.setDate(endDate.getDate() + 1);
       }
-    }));
+      return {
+        id: task.id,
+        title: task.title,
+        start: startDate,
+        end: endDate,
+        resourceId: (task.owner_id || task.ownerId)?.toString(),
+        allDay: true,
+        extendedProps: {
+          statusId: (task.status_id || task.statusId)?.toString(),
+          userId: task.user_id || task.userId,
+          description: task.description || ''
+        }
+      }
+    });
   }, []);
 
   const loadData = useCallback(async () => {

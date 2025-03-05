@@ -184,8 +184,6 @@ export const useTaskHandlers = (
     const startDate = event.start;
     const endDate = event.end || startDate;
 
-    console.log('event :', event);
-
     if (DateUtils.isHolidayOrWeekend(startDate,holidays) || DateUtils.isHolidayOrWeekend(endDate,holidays)) {
       throw new Error('Dates invalides (week-end ou jour férié)');
     }

@@ -8,13 +8,4 @@ const pool = new Pool({
   database: process.env.DB_NAME
 });
 
-// Définir le fuseau horaire UTC pour toutes les connexions
-(async () => {
-  try {
-    await pool.query("SET timezone = 'UTC';");
-  } catch (error) {
-    console.error('Error setting timezone:', error);
-  }
-})();
-
 module.exports = pool;

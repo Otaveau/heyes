@@ -138,6 +138,8 @@ export const TaskForm = ({
             return;
         }
 
+        console.log('handleSubmit formData :', formData);
+
         setIsSubmitting(true);
         try {
             await handleTaskSubmit(formData, selectedTask?.id);
