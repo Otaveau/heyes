@@ -11,86 +11,69 @@ export const useTaskHandlers = (
   externalTasks,
   dropZoneRefs,
   dropZones,
-  holidays,
-  calendarRef // Ajout du calendarRef comme paramètre
+  holidays
 ) => {
-  // Fonction centralisée pour rafraîchir le calendrier
-  const refreshCalendar = useCallback(() => {
-    if (calendarRef?.current) {
-      const calendarApi = calendarRef.current.getApi();
-      // Forcer le rechargement complet des événements
-      calendarApi.refetchEvents();
-      
-      // Ajout d'un log pour vérifier que la fonction est appelée
-      console.log('Calendar refreshed at:', new Date().toISOString());
-    } else {
-      console.warn('calendarRef is not available, cannot refresh calendar');
-    }
-  }, [calendarRef]);
 
-  // Fonction centralisée pour mettre à jour une tâche
   const handleTaskUpdate = useCallback(async (taskId, updates, options = {}) => {
     const { revertFunction = null, successMessage = null } = options;
-    // Notez que j'ai supprimé l'option skipRefresh
-    
     try {
       setCalendarState((prev) => ({ ...prev, isProcessing: true }));
-      
-      // Trouver la tâche existante pour obtenir des données complètes
+
       const existingTask = tasks.find(task => task.id.toString() === taskId.toString());
-      
-      if (!existingTask) {
-        throw new Error(`Tâche avec l'ID ${taskId} introuvable`);
-      }
-      
-      // S'assurer que le titre est toujours inclus dans les mises à jour
+
       const completeUpdates = {
         ...updates,
         title: updates.title || existingTask.title
       };
-      
-      // Appel API pour mettre à jour la tâche
-      const updatedTask = await updateTask(taskId, completeUpdates);
-      
+
+      const apiResponse = await updateTask(taskId, completeUpdates);
+
+      // Créer un nouvel objet de tâche avec le format attendu par FullCalendar
+      const updatedTask = {
+        id: apiResponse.id || existingTask.id,
+        title: apiResponse.title || completeUpdates.title,
+        start: apiResponse.start || completeUpdates.start || existingTask.start,
+        end: apiResponse.end || completeUpdates.end || existingTask.end,
+        resourceId: (apiResponse.resourceId || completeUpdates.resourceId || existingTask.resourceId)?.toString(),
+        allDay: true,
+        extendedProps: {
+          statusId: (apiResponse.statusId || completeUpdates.statusId || existingTask.extendedProps?.statusId)?.toString(),
+          description: apiResponse.description || completeUpdates.description || existingTask.extendedProps?.description || '',
+          // Conserver toutes les autres propriétés extended qui pourraient exister
+          ...existingTask.extendedProps,
+        }
+      };
+
       // Mettre à jour l'état local des tâches avec une nouvelle référence
       setTasks(prevTasks => {
-        const newTasks = prevTasks.map(task => 
-          task.id.toString() === taskId.toString() 
-            ? { ...task, ...updatedTask } 
+        const newTasks = prevTasks.map(task =>
+          task.id.toString() === taskId.toString()
+            ? updatedTask
             : task
         );
-        console.log('Tasks state updated with new task data');
+        console.log('Tasks state updated with new task data:', newTasks);
         return newTasks;
       });
-      
-      // Toujours rafraîchir le calendrier après une mise à jour
-      // Ne pas essayer de mettre à jour l'événement manuellement
-      refreshCalendar();
-      
-      // Afficher le message de succès si fourni
+
       if (successMessage) {
         toast.success(successMessage, TOAST_CONFIG);
       }
-      
+
       return updatedTask;
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la tâche:', error);
       toast.error(ERROR_MESSAGES.UPDATE_FAILED, TOAST_CONFIG);
-      
-      // Appeler la fonction revert si fournie
+
       if (revertFunction) {
         revertFunction();
       }
-      
-      // Rafraîchir le calendrier pour revenir à l'état précédent
-      refreshCalendar();
-      
       return null;
     } finally {
       setCalendarState((prev) => ({ ...prev, isProcessing: false }));
     }
-  }, [refreshCalendar, setCalendarState, setTasks, tasks]);
-  
+  }, [setCalendarState, setTasks, tasks]);
+
+
   // Sélection d'une tâche pour édition
   const handleTaskSelection = useCallback((taskData) => {
     if (!taskData?.id) {
@@ -127,7 +110,7 @@ export const useTaskHandlers = (
     const { event } = info;
     const startDate = event.start;
     const endDate = event.end;
-    
+
     // Vérifier que l'événement commence et se termine sur des jours ouvrés
     if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
       info.revert();
@@ -153,9 +136,9 @@ export const useTaskHandlers = (
     };
 
     await handleTaskUpdate(
-      event.id, 
-      updates, 
-      { 
+      event.id,
+      updates,
+      {
         revertFunction: info.revert,
         successMessage: `Tâche "${event.title}" redimensionnée`
       }
@@ -189,7 +172,7 @@ export const useTaskHandlers = (
 
     const startDate = formData.startDate;
     const endDate = formData.endDate;
-    
+
     // Vérifier que les dates de début et fin sont des jours ouvrés
     if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
       toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
@@ -211,8 +194,8 @@ export const useTaskHandlers = (
       let updatedTask;
       if (taskId) {
         updatedTask = await updateTask(taskId, taskData);
-        setTasks(prevTasks => 
-          prevTasks.map(task => 
+        setTasks(prevTasks =>
+          prevTasks.map(task =>
             task.id.toString() === taskId.toString() ? { ...task, ...updatedTask } : task
           )
         );
@@ -220,9 +203,6 @@ export const useTaskHandlers = (
         updatedTask = await createTask(taskData);
         setTasks(prevTasks => [...prevTasks, updatedTask]);
       }
-
-      // Rafraîchir le calendrier après la mise à jour
-      refreshCalendar();
 
       setCalendarState(prev => ({
         ...prev,
@@ -237,30 +217,30 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, setTasks, refreshCalendar, holidays]);
+  }, [setCalendarState, setTasks, holidays]);
 
   // Déplacement d'un événement
   const handleEventDrop = useCallback(async (dropInfo) => {
     const { event } = dropInfo;
     const startDate = event.start;
     const endDate = event.end || new Date(startDate.getTime() + 86400000); // +1 jour si pas de fin
-    
+
     // Vérifier que l'événement commence et se termine sur des jours ouvrés
     if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
       dropInfo.revert();
       toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
       return;
     }
-    
+
     const taskId = event.id;
     const existingTask = tasks.find(t => t.id.toString() === taskId.toString());
-    
+
     if (!existingTask) {
       console.warn(`Tâche avec l'ID ${taskId} introuvable`);
       dropInfo.revert();
       return;
     }
-    
+
     const resourceId = event._def.resourceIds[0];
     const statusId = event._def.extendedProps.statusId || existingTask.statusId;
 
@@ -273,9 +253,9 @@ export const useTaskHandlers = (
     };
 
     await handleTaskUpdate(
-      taskId, 
-      updates, 
-      { 
+      taskId,
+      updates,
+      {
         revertFunction: dropInfo.revert,
         successMessage: `Tâche "${event.title}" déplacée`
       }
@@ -313,8 +293,8 @@ export const useTaskHandlers = (
       };
 
       await handleTaskUpdate(
-        taskId, 
-        updates, 
+        taskId,
+        updates,
         {
           successMessage: `Tâche "${existingTask.title}" déplacée vers le calendrier`
         }
@@ -331,47 +311,47 @@ export const useTaskHandlers = (
       console.warn('dropZoneRefs.current is undefined');
       return;
     }
-  
+
     const eventRect = info.jsEvent.target.getBoundingClientRect();
     let dropFound = false;
-  
+
     // Vérifier chaque zone de dépôt
     for (let index = 0; index < dropZoneRefs.current.length; index++) {
       const ref = dropZoneRefs.current[index];
       if (!ref?.current) continue;
-  
+
       const dropZoneEl = ref.current;
       const dropZoneRect = dropZoneEl.getBoundingClientRect();
-  
+
       const isWithinDropZone =
         eventRect.left >= dropZoneRect.left &&
         eventRect.right <= dropZoneRect.right &&
         eventRect.top >= dropZoneRect.top &&
         eventRect.bottom <= dropZoneRect.bottom;
-  
+
       if (isWithinDropZone) {
         dropFound = true;
         const taskId = info.event.id;
         const task = tasks.find(t => t.id.toString() === taskId.toString());
-  
+
         if (!task) {
           console.warn(`Task with id ${taskId} not found`);
           continue;
         }
-  
+
         const startDate = info.event.start;
         const endDate = info.event.end || info.event.start;
-        
+
         const updates = {
           start: startDate,
           end: endDate,
           statusId: dropZones[index].statusId,
           resourceId: null
         };
-  
+
         await handleTaskUpdate(
-          taskId, 
-          updates, 
+          taskId,
+          updates,
           {
             successMessage: `Tâche déplacée vers ${dropZones[index].title}`
           }
@@ -379,7 +359,7 @@ export const useTaskHandlers = (
         break;
       }
     }
-  
+
     // Si aucune zone de dépôt n'a été trouvée, on peut revenir à l'état initial
     if (!dropFound && info.revert) {
       info.revert();
@@ -406,14 +386,14 @@ export const useTaskHandlers = (
       const resourceId = info.event._def.resourceIds[0];
       const startDate = info.event.start;
       const endDate = new Date(startDate.getTime() + 86400000); // +1 jour par défaut
-      
+
       // Vérifier si la date tombe sur un jour non ouvré
       if (DateUtils.isHolidayOrWeekend(startDate, holidays)) {
         info.revert();
         toast.warning('Impossible de planifier sur un jour non ouvré', TOAST_CONFIG);
         return;
       }
-  
+
       // Vérifier l'existence de la tâche
       const task = externalTasks.find(t => t.id.toString() === taskId.toString());
       if (!task) {
@@ -421,18 +401,18 @@ export const useTaskHandlers = (
         info.revert();
         return;
       }
-  
+
       const updates = {
         start: startDate,
         end: endDate,
         resourceId,
         statusId: '2' // En cours
       };
-  
+
       await handleTaskUpdate(
-        taskId, 
-        updates, 
-        { 
+        taskId,
+        updates,
+        {
           revertFunction: info.revert,
           successMessage: `Tâche "${task.title}" placée dans le calendrier`
         }
@@ -447,18 +427,13 @@ export const useTaskHandlers = (
   const handleDeleteTask = useCallback(async (taskId) => {
     try {
       setCalendarState(prev => ({ ...prev, isProcessing: true }));
-      
+
       // Appel API pour supprimer la tâche
       await deleteTask(taskId);
-      
+
       // Mettre à jour l'état local
       setTasks(prevTasks => prevTasks.filter(task => task.id.toString() !== taskId.toString()));
-      
-      // Forcer le rafraîchissement du calendrier
-      if (calendarRef?.current) {
-        refreshCalendar();
-      }
-      
+
       toast.success('Tâche supprimée', TOAST_CONFIG);
       return true;
     } catch (error) {
@@ -468,7 +443,7 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [setCalendarState, setTasks, calendarRef, refreshCalendar]);
+  }, [setCalendarState, setTasks]);
 
   return {
     handleDateClick,
@@ -480,7 +455,6 @@ export const useTaskHandlers = (
     handleEventDragStop,
     handleExternalTaskClick,
     handleEventReceive,
-    handleDeleteTask,
-    refreshCalendar,
+    handleDeleteTask
   };
 };

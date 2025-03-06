@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
@@ -8,9 +8,6 @@ import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { TaskForm } from '../Tasks/TaskForm';
 import { TaskBoard } from '../Tasks/TaskBoard';
 import { DateUtils } from '../../utils/dateUtils';
-import { createTask, updateTask, deleteTask } from '../../services/api/taskService';
-import { toast } from 'react-toastify';
-import { ERROR_MESSAGES, TOAST_CONFIG } from '../../constants/constants';
 import '../../style/CalendarView.css';
 
 export const CalendarView = () => {
@@ -54,18 +51,8 @@ export const CalendarView = () => {
     externalTasks,
     dropZoneRefs,
     dropZones,
-    holidays,
-    calendarRef,
+    holidays
   );
-
-  useEffect(() => {
-    // Rafraîchir le calendrier chaque fois que les tâches changent
-    if (calendarRef?.current && tasks && tasks.length > 0) {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.refetchEvents();
-      console.log('Calendar refreshed due to tasks change');
-    }
-  }, [tasks]);
 
 
   // Formater les tâches externes (backlog)
@@ -86,6 +73,7 @@ export const CalendarView = () => {
   useEffect(() => {
     setExternalTasks(formattedExternalTasks);
   }, [formattedExternalTasks]);
+
 
   // Gestion des draggables
   useEffect(() => {
@@ -136,6 +124,8 @@ export const CalendarView = () => {
           ref={calendarRef}
           locale={frLocale}
           timeZone='Europe/Paris'
+          events={tasks}
+          resources={resources}
           nextDayThreshold="00:00:00"
           slotLabelFormat={[
             { month: 'long' },
@@ -160,8 +150,6 @@ export const CalendarView = () => {
           selectable={true}
           selectMirror={true}
           droppable={true}
-          events={tasks}
-          resources={resources}
           resourceAreaWidth="15%"
           slotDuration={{ days: 1 }}
           selectConstraint={{
