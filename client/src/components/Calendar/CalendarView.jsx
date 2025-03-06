@@ -35,12 +35,6 @@ export const CalendarView = () => {
   const draggablesRef = useRef([]);
   const calendarRef = useRef(null);
 
-
-  // Implémentation améliorée de handleDeleteTask qui supprime directement du calendrier
-  const handleDeleteTask = useCallback(async (taskId) => {
-      toast.success('Tâche supprimée', TOAST_CONFIG);
-  }, []);
-
   // Utiliser le gestionnaire de tâches pour les autres fonctions
   const {
     handleDateClick,
@@ -52,6 +46,7 @@ export const CalendarView = () => {
     handleExternalDrop,
     handleEventResize,
     handleEventReceive,
+    handleDeleteTask
   } = useTaskHandlers(
     setTasks,
     setCalendarState,
@@ -60,8 +55,17 @@ export const CalendarView = () => {
     dropZoneRefs,
     dropZones,
     holidays,
-    calendarRef, // Passer la fonction de mise à jour du calendrier
+    calendarRef,
   );
+
+  useEffect(() => {
+    // Rafraîchir le calendrier chaque fois que les tâches changent
+    if (calendarRef?.current && tasks && tasks.length > 0) {
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.refetchEvents();
+      console.log('Calendar refreshed due to tasks change');
+    }
+  }, [tasks]);
 
 
   // Formater les tâches externes (backlog)
