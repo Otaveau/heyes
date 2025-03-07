@@ -25,11 +25,11 @@ const createTask = async (req, res) => {
   const { title, startDate, endDate, description, ownerId, statusId } = req.body;
   const data = {
     title,
-    start_date: startDate,
-    end_date: endDate,
+    start_date: startDate || null,
+    end_date: endDate || null,
     description: description || null,
     owner_id: ownerId || null,
-    status_id: statusId || null
+    status_id: statusId
   };
 
   

@@ -20,7 +20,7 @@ export const useTaskHandlers = (
 ) => {
 
   const updateTaskStatus = useCallback((taskId, updates) => {
-    // Mettre à jour les tâches brutes
+    
     setTasks(prevTasks => {
       const updatedTasks = prevTasks.map(task => {
         if (task.id.toString() === taskId.toString()) {
@@ -32,11 +32,12 @@ export const useTaskHandlers = (
               ...(updates.extendedProps || {})
             }
           };
+
+          console.log('updatedTask :', updatedTask);
           
-          // Si statusId est fourni directement (pas dans extendedProps)
-          if (updates.statusId) {
-            updatedTask.extendedProps.statusId = updates.statusId;
-          }
+          // if (updates.statusId) {
+          //   updatedTask.extendedProps.statusId = updates.statusId;
+          // }
           
           return updatedTask;
         }
@@ -121,14 +122,14 @@ export const useTaskHandlers = (
   // Clic sur un événement du calendrier
   const handleCalendarEventClick = useCallback((clickInfo) => {
     const eventId = clickInfo.event.id;
-    const task = tasks.find((t) => t.id.toString() === eventId.toString());
+    const task = calendarTasks.find((t) => t.id.toString() === eventId.toString());
 
     if (task) {
       handleTaskSelection(task);
     } else {
       console.warn('Tâche non trouvée:', eventId);
     }
-  }, [handleTaskSelection, tasks]);
+  }, [handleTaskSelection, calendarTasks]);
 
 
   // Redimensionnement d'un événement
@@ -261,18 +262,22 @@ export const useTaskHandlers = (
         // Si c'était un ID temporaire, mettre à jour avec l'ID réel
         if (taskId.toString().startsWith('temp-')) {
           // Remplacer la tâche avec ID temporaire par celle avec ID réel
-          setTasks(prevTasks => prevTasks.map(task => 
-            task.id === taskId ? { ...task, id: updatedTask.id } : task
-          ));
-          
-          // Mettre à jour les listes filtrées
-          setTimeout(() => {
-            const calendar = tasks.filter(task => task.resourceId);
-            const board = tasks.filter(task => !task.resourceId);
+          setTasks(prevTasks => {
+            const updatedTasks = prevTasks.map(task => 
+              task.id === taskId ? { ...task, id: updatedTask.id } : task
+            );
             
-            setCalendarTasks(calendar);
-            setBoardTasks(board);
-          }, 0);
+            // Mettre à jour les listes filtrées
+            setTimeout(() => {
+              const calendar = updatedTasks.filter(task => task.resourceId);
+              const board = updatedTasks.filter(task => !task.resourceId);
+              
+              setCalendarTasks(calendar);
+              setBoardTasks(board);
+            }, 0);
+            
+            return updatedTasks;
+          });
         }
       }
 
@@ -292,11 +297,13 @@ export const useTaskHandlers = (
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [holidays, setCalendarState, setHasLocalChanges, updateTaskStatus, setCalendarTasks, setBoardTasks, setTasks, tasks]);
+  }, [holidays, setCalendarState, setHasLocalChanges, updateTaskStatus, setCalendarTasks, setBoardTasks, setTasks]);
 
 
   // Déplacement d'un événement
   const handleEventDrop = useCallback(async (dropInfo) => {
+    console.log('handleEventDrop');
+
     const { event } = dropInfo;
     const startDate = event.start;
     const endDate = event.end || new Date(startDate.getTime() + 86400000); // +1 jour si pas de fin
@@ -340,6 +347,7 @@ export const useTaskHandlers = (
 
   // Dépôt d'une tâche externe sur le calendrier
   const handleExternalDrop = useCallback(async (info) => {
+    console.log('handleExternalDrop');
     if (!info.draggedEl.parentNode) return;
 
     const startDate = info.date;
@@ -420,29 +428,66 @@ export const useTaskHandlers = (
           console.warn(`Task with id ${taskId} not found`);
           continue;
         }
+
+        info.event.remove();
+
+        console.log('task :', task);
   
-         const updates = {
-          resourceId: null, // Important: retirer du calendrier
+        const updates = {
+          resourceId: null,
+          statusId: dropZones[index].statusId,  // Important: retirer du calendrier
           extendedProps: {
             statusId: dropZones[index].statusId
-          }
+          },
+          title: task.title
         };
         
-        // Mettre à jour les états
-        updateTaskStatus(taskId, updates);
+        // Appliquer les mises à jour localement directement au niveau du setTasks
+        // sans passer par updateTaskStatus
+        setTasks(prevTasks => {
+          const updatedTasks = prevTasks.map(t => {
+            if (t.id.toString() === taskId.toString()) {
+              return {
+                ...t,
+                ...updates,
+                extendedProps: {
+                  ...t.extendedProps,
+                  ...updates.extendedProps
+                }
+              };
+            }
+            return t;
+          });
+          
+          // Mettre à jour les listes filtrées
+          setTimeout(() => {
+            const calendar = updatedTasks.filter(task => task.resourceId);
+            const board = updatedTasks.filter(task => !task.resourceId);
+            
+            setCalendarTasks(calendar);
+            setBoardTasks(board);
+          }, 0);
+          
+          return updatedTasks;
+        });
         
-        // Déplacer du calendrier vers le board
-        setCalendarTasks(prev => prev.filter(t => t.id.toString() !== taskId.toString()));
+        // Indiquer que des changements locaux ont été effectués
+        setHasLocalChanges(true);
         
-        // Mettre à jour sur le serveur
-        await handleTaskUpdate(
-          taskId,
-          updates,
-          {
-            successMessage: `Tâche déplacée vers ${dropZones[index].title}`,
-            skipApiCall: false // Appeler l'API pour synchroniser
-          }
-        );
+        // Mettre à jour sur le serveur sans passer par updateTaskStatus
+        try {
+          // Appel API pour mise à jour
+          await updateTask(taskId, updates);
+          
+          // Afficher un toast de succès
+          toast.success(`Tâche déplacée vers ${dropZones[index].title}`, TOAST_CONFIG);
+          
+          // Réinitialiser le flag de changements locaux
+          setHasLocalChanges(false);
+        } catch (error) {
+          console.error('Erreur lors de la mise à jour de la tâche:', error);
+          toast.error(ERROR_MESSAGES.UPDATE_FAILED, TOAST_CONFIG);
+        }
         
         break;
       }
@@ -452,7 +497,7 @@ export const useTaskHandlers = (
     if (!dropFound && info.revert) {
       info.revert();
     }
-  }, [dropZoneRefs, tasks, dropZones, updateTaskStatus, setCalendarTasks, handleTaskUpdate]);
+  }, [dropZoneRefs, tasks, dropZones, setTasks, setCalendarTasks, setBoardTasks, setHasLocalChanges]);
 
   
   // Clic sur une tâche externe
@@ -480,8 +525,6 @@ export const useTaskHandlers = (
 
   // Réception d'un événement externe
   const handleEventReceive = useCallback(async (info) => {
-    // Cette fonction est appelée après handleExternalDrop,
-    // elle pourrait être utilisée pour des traitements supplémentaires
     console.log('Event received:', info.event);
   }, []);
 

@@ -69,10 +69,6 @@ export const CalendarView = () => {
     if (!hasLocalChanges) return;
     
     try {
-      // Appeler l'API pour synchroniser toutes les tâches
-      // Remplacez cette ligne par votre appel API réel
-      console.log("Synchronisation des tâches avec le serveur...", tasks);
-      
       // Simuler un délai de réseau
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -82,7 +78,7 @@ export const CalendarView = () => {
       console.error('Error syncing tasks:', error);
       toast.error('Erreur de synchronisation', TOAST_CONFIG);
     }
-  }, [hasLocalChanges, tasks]);
+  }, [hasLocalChanges]);
   
   // Synchroniser périodiquement ou avant la navigation
   useEffect(() => {

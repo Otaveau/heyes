@@ -9,8 +9,8 @@ import { DateUtils } from '../../utils/dateUtils';
 const transformTaskForServer = (taskData) => {
     return {
         title: taskData.title.trim(),
-        startDate: new Date(taskData.start).toISOString(),
-        endDate: new Date(taskData.end).toISOString(),
+        startDate: taskData.start ? new Date(taskData.start).toISOString() : null,
+        endDate: taskData.end ? new Date(taskData.end).toISOString() : null,
         description: taskData.description?.trim() || '',
         ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
         statusId: taskData.statusId ? parseInt(taskData.statusId, 10) : null
@@ -24,8 +24,8 @@ const transformServerResponseToTask = (serverResponse) => {
     return {
         id: serverResponse.id,
         title: serverResponse.title,
-        start: serverResponse.start_Date,
-        end: serverResponse.end_Date,
+        start: serverResponse.start_Date || null,
+        end: serverResponse.end_Date || null,
         resourceId: (serverResponse.owner_id || serverResponse.ownerId)?.toString(),
         allDay: true,
         extendedProps: {
@@ -38,10 +38,11 @@ const transformServerResponseToTask = (serverResponse) => {
 
 // Validateurs de données
 const validateTaskData = (taskData) => {
+
+    console.log('taskData ;', taskData);
+
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
-    if (!taskData.start) throw new Error(ERROR_MESSAGES.START_DATE_REQUIRED);
-    if (!taskData.end) throw new Error(ERROR_MESSAGES.END_DATE_REQUIRED);
     if (taskData.endDate < taskData.startDate) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
 };
 
@@ -77,6 +78,9 @@ export const createTask = async (taskData) => {
 };
 
 export const updateTask = async (id, taskData) => {
+
+    console.log('updateTask taskData :', taskData);
+
     try {
         validateTaskData(taskData);
         const taskId = parseInt(id);

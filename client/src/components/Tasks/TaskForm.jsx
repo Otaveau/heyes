@@ -56,8 +56,6 @@ export const TaskForm = ({
         if (isOpen) {
             setFormData(getInitialFormData());
             setErrors({});
-            console.log('selectedTask :', selectedTask);
-            console.log('selectedDates :', selectedDates);
         }
     }, [getInitialFormData, isOpen, selectedDates, selectedTask]);
 

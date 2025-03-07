@@ -30,7 +30,7 @@ export const TaskBoard = ({
       if (onDeleteTask) {
         onDeleteTask(taskToDelete.id);
       } else {
-        console.log(`Suppression de la tâche ${taskToDelete.id}`);
+        //console.log(`Suppression de la tâche ${taskToDelete.id}`);
       }
     }
     closeDeleteModal();
