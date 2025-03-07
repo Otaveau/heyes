@@ -3,7 +3,6 @@ import { fetchTasks } from '../services/api/taskService';
 import { fetchOwners } from '../services/api/ownerService';
 import { fetchHolidays } from '../services/api/holidayService';
 import { fetchStatuses } from '../services/api/statusService';
-import { DateUtils } from '../utils/dateUtils';
 
 
 export const useCalendarData = () => {

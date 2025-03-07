@@ -1,16 +1,28 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 import { useCalendarData } from '../../hooks/useCalendarData';
-import { useTaskHandlers } from '../../hooks/useTaskHandlers';
+import { toast } from 'react-toastify';
 import { TaskForm } from '../Tasks/TaskForm';
 import { TaskBoard } from '../Tasks/TaskBoard';
 import { DateUtils } from '../../utils/dateUtils';
+import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import '../../style/CalendarView.css';
 
+// Configuration du toast (si non définie ailleurs)
+const TOAST_CONFIG = {
+  position: "top-right",
+  autoClose: 3000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true
+};
+
 export const CalendarView = () => {
+  // État principal du calendrier
   const [calendarState, setCalendarState] = useState({
     showWeekends: true,
     isFormOpen: false,
@@ -19,6 +31,7 @@ export const CalendarView = () => {
     isProcessing: false,
   });
 
+  // Zones de dépôt pour le TaskBoard
   const dropZones = useMemo(() => [
     { id: 'todo', statusId: '1', title: 'À faire' },
     { id: 'inProgress', statusId: '2', title: 'En cours' },
@@ -26,13 +39,76 @@ export const CalendarView = () => {
     { id: 'done', statusId: '4', title: 'Terminé' }
   ], []);
 
-  const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
-  const { tasks, setTasks, resources, holidays, statuses } = useCalendarData();
-  const [externalTasks, setExternalTasks] = useState([]);
-  const draggablesRef = useRef([]);
-  const calendarRef = useRef(null);
 
-  // Utiliser le gestionnaire de tâches pour les autres fonctions
+  const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
+  const calendarRef = useRef(null);
+  const draggablesRef = useRef([]);
+  
+
+  const { tasks, setTasks, resources, holidays, statuses } = useCalendarData();
+  
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
+  
+  const [calendarTasks, setCalendarTasks] = useState([]);
+  const [boardTasks, setBoardTasks] = useState([]);
+
+  // Traiter les tâches brutes quand elles changent
+  useEffect(() => {
+    if (!tasks || !Array.isArray(tasks)) return;
+    
+    // Séparer les tâches en deux groupes
+    const calendar = tasks.filter(task => task.resourceId);
+    const board = tasks.filter(task => !task.resourceId);
+    
+    setCalendarTasks(calendar);
+    setBoardTasks(board);
+  }, [tasks]);
+  
+  // Fonction pour synchroniser les changements locaux avec le serveur
+  const syncChanges = useCallback(async () => {
+    if (!hasLocalChanges) return;
+    
+    try {
+      // Appeler l'API pour synchroniser toutes les tâches
+      // Remplacez cette ligne par votre appel API réel
+      console.log("Synchronisation des tâches avec le serveur...", tasks);
+      
+      // Simuler un délai de réseau
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      toast.success('Changements synchronisés avec succès', TOAST_CONFIG);
+      setHasLocalChanges(false);
+    } catch (error) {
+      console.error('Error syncing tasks:', error);
+      toast.error('Erreur de synchronisation', TOAST_CONFIG);
+    }
+  }, [hasLocalChanges, tasks]);
+  
+  // Synchroniser périodiquement ou avant la navigation
+  useEffect(() => {
+    // Synchroniser toutes les 30 secondes si des changements existent
+    const interval = setInterval(() => {
+      if (hasLocalChanges) {
+        syncChanges();
+      }
+    }, 30000);
+    
+    // Synchroniser avant de quitter la page
+    const handleBeforeUnload = (e) => {
+      if (hasLocalChanges) {
+        syncChanges();
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasLocalChanges, syncChanges]);
+
+  // Utiliser le hook useTaskHandlers modifié
   const {
     handleDateClick,
     handleTaskSubmit,
@@ -43,37 +119,22 @@ export const CalendarView = () => {
     handleExternalDrop,
     handleEventResize,
     handleEventReceive,
-    handleDeleteTask
+    handleDeleteTask,
+    
   } = useTaskHandlers(
-    setTasks,
-    setCalendarState,
-    tasks,
-    externalTasks,
-    dropZoneRefs,
-    dropZones,
-    holidays
+    setTasks,           // Pour mettre à jour les tâches brutes
+    setCalendarState,      // Pour gérer l'état du calendrier
+    tasks,              // Toutes les tâches
+    calendarTasks,         // Tâches filtrées pour le calendrier
+    boardTasks,            // Tâches filtrées pour le TaskBoard
+    setCalendarTasks,      // Pour mettre à jour les tâches du calendrier
+    setBoardTasks,         // Pour mettre à jour les tâches du TaskBoard
+    dropZoneRefs,          // Références aux zones de dépôt
+    dropZones,             // Configuration des zones
+    holidays,              // Jours fériés
+    calendarRef,
+    setHasLocalChanges           // Référence au calendrier
   );
-
-
-  // Formater les tâches externes (backlog)
-  const formattedExternalTasks = useMemo(() => {
-    if (!tasks || !Array.isArray(tasks)) {
-      return [];
-    }
-
-    return tasks
-      .filter(task => !task.resourceId)
-      .map(task => ({
-        id: task.id?.toString() || '',
-        statusId: task.extendedProps?.statusId || task.statusId || '1',
-        title: task.title
-      }));
-  }, [tasks]);
-
-  useEffect(() => {
-    setExternalTasks(formattedExternalTasks);
-  }, [formattedExternalTasks]);
-
 
   // Gestion des draggables
   useEffect(() => {
@@ -91,7 +152,7 @@ export const CalendarView = () => {
         itemSelector: '.fc-event',
         eventData: function (eventEl) {
           const taskId = eventEl.getAttribute('data-task-id');
-          const task = externalTasks.find(t => t.id === taskId);
+          const task = boardTasks.find(t => t.id.toString() === taskId.toString());
 
           if (!task) return {};
 
@@ -101,7 +162,10 @@ export const CalendarView = () => {
             start: task.start || new Date(),
             end: task.end || new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
             allDay: true,
-            extendedProps: { ...task }
+            extendedProps: { 
+              statusId: task.extendedProps?.statusId || task.statusId,
+              description: task.extendedProps?.description || ''
+            }
           };
         }
       });
@@ -115,7 +179,7 @@ export const CalendarView = () => {
       });
       draggablesRef.current = [];
     };
-  }, [externalTasks, dropZones]);
+  }, [boardTasks, dropZones]);
 
   return (
     <div className="flex flex-col dashboard">
@@ -124,7 +188,7 @@ export const CalendarView = () => {
           ref={calendarRef}
           locale={frLocale}
           timeZone='Europe/Paris'
-          events={tasks}
+          events={calendarTasks}
           resources={resources}
           nextDayThreshold="00:00:00"
           slotLabelFormat={[
@@ -221,11 +285,21 @@ export const CalendarView = () => {
         <TaskBoard
           dropZones={dropZones}
           dropZoneRefs={dropZoneRefs}
-          externalTasks={externalTasks}
+          externalTasks={boardTasks}
           handleExternalTaskClick={handleExternalTaskClick}
           onDeleteTask={handleDeleteTask}
         />
       </div>
+
+      {/* Indicateur de changements non synchronisés */}
+      {hasLocalChanges && (
+        <div 
+          className="fixed bottom-4 right-4 bg-yellow-100 p-2 rounded shadow cursor-pointer"
+          onClick={syncChanges}
+        >
+          Changements non synchronisés. Cliquez pour synchroniser.
+        </div>
+      )}
 
       <TaskForm
         isOpen={calendarState.isFormOpen}

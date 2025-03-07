@@ -3,10 +3,10 @@ import { Trash2 } from 'lucide-react';
 
 export const TaskBoard = ({ 
   dropZones, 
-  dropZoneRefs, // Utilisez cette référence venant du parent
+  dropZoneRefs,
   externalTasks, 
   handleExternalTaskClick,
-  onDeleteTask // Fonction de suppression fournie par le parent
+  onDeleteTask
 }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
@@ -24,14 +24,12 @@ export const TaskBoard = ({
     setTaskToDelete(null);
   };
 
-  // Fonction pour confirmer et exécuter la suppression
+
   const confirmDelete = () => {
     if (taskToDelete) {
-      // Utiliser la fonction fournie par le parent
       if (onDeleteTask) {
         onDeleteTask(taskToDelete.id);
       } else {
-        // Fallback si onDeleteTask n'est pas fourni
         console.log(`Suppression de la tâche ${taskToDelete.id}`);
       }
     }
@@ -47,9 +45,10 @@ export const TaskBoard = ({
             return null;
           }
           
-          const zoneTasks = externalTasks.filter(task =>
-            task.statusId === zone.statusId
-          );
+          const zoneTasks = externalTasks.filter(task => {
+            const statusId = task.extendedProps?.statusId || task.statusId;
+            return statusId === zone.statusId;
+          });
           
           return (
             <div
@@ -78,6 +77,11 @@ export const TaskBoard = ({
                   </button>
                 </div>
               ))}
+              {zoneTasks.length === 0 && (
+                <div className="text-gray-400 text-center p-2">
+                  Pas de tâches
+                </div>
+              )}
             </div>
           );
         })}
