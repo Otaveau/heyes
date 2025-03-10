@@ -106,7 +106,7 @@ export const TaskBoard = ({
         if (draggable) draggable.destroy();
       });
     };
-  }, [externalTasks]);
+  }, [dropZoneRefs, externalTasks]);
 
   return (
     <>

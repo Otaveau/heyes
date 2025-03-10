@@ -115,6 +115,7 @@ export const CalendarView = () => {
     handleEventDragStop,
     handleEventDrop,
     handleExternalDrop,
+    handleEventDragStart,
     handleEventResize,
     handleEventReceive,
     handleDeleteTask,
@@ -280,6 +281,7 @@ export const CalendarView = () => {
 
             return classes;
           }}
+          eventDragStart={handleEventDragStart}
           eventDrop={handleEventDrop}
           drop={handleExternalDrop}
           select={handleDateClick}
@@ -287,6 +289,7 @@ export const CalendarView = () => {
           eventResize={handleEventResize}
           eventDragStop={handleEventDragStop}
           eventReceive={handleEventReceive}
+          
         />
       </div>
       

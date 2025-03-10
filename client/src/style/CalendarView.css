@@ -93,3 +93,21 @@
   outline: 2px dashed rgb(59, 130, 246);
   outline-offset: -2px;
 }
+
+.taskboard-highlight {
+  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
+  border-radius: 8px;
+  animation: pulse-border 1.5s infinite ease-in-out;
+  transition: all 0.15s ease-out; /* Transition plus rapide */
+}
+
+.dropzone-active {
+  background-color: rgba(74, 108, 247, 0.15) !important;
+  border: 2px dashed #4a6cf7 !important;
+  transform: scale(1.02);
+  transition: all 0.15s ease-out; /* Transition plus rapide */
+}
+
+.taskboard-highlight-intense {
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.7), 0 0 20px rgba(74, 108, 247, 0.6);
+}
