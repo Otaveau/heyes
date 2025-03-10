@@ -39,8 +39,6 @@ const transformServerResponseToTask = (serverResponse) => {
 // Validateurs de données
 const validateTaskData = (taskData) => {
 
-    console.log('taskData ;', taskData);
-
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
     if (taskData.endDate < taskData.startDate) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
@@ -51,7 +49,6 @@ export const fetchTasks = async () => {
         const response = await fetchWithTimeout(`${API_URL}/tasks`, {
             headers: getAuthHeaders()
         });
-
         return handleResponse(response);
     } catch (error) {
         console.error('Erreur lors de la récupération des tâches:', error);

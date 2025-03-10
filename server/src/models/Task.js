@@ -13,6 +13,19 @@ class Task {
     return result.rows[0];
   }
 
+  static async findAll(userId) {
+    const result = await pool.query(`
+        SELECT t.*, o.name as owner_name, s.status_type, team.name as team_name
+        FROM tasks t
+        LEFT JOIN owners o ON t.owner_id = o.owner_id
+        LEFT JOIN status s ON t.status_id = s.status_id
+        LEFT JOIN teams team ON o.team_id = team.team_id
+        WHERE t.user_id = $1
+        ORDER BY t.start_date
+      `, [userId]);
+    return result.rows;
+  }
+
   static async create(data, userId) {
     const { title, start_date, end_date, description, owner_id, status_id } = data;
 
@@ -42,19 +55,6 @@ class Task {
       [title, start_date, end_date, owner_id, status_id, description, id, user_id]
     );
     return result.rows[0];
-  }
-
-  static async findAll(userId) {
-    const result = await pool.query(`
-        SELECT t.*, o.name as owner_name, s.status_type, team.name as team_name
-        FROM tasks t
-        LEFT JOIN owners o ON t.owner_id = o.owner_id
-        LEFT JOIN status s ON t.status_id = s.status_id
-        LEFT JOIN teams team ON o.team_id = team.team_id
-        WHERE t.user_id = $1
-        ORDER BY t.start_date
-      `, [userId]);
-    return result.rows;
   }
 
   static async findByStatus(statusId, userId) {

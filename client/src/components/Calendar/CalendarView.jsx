@@ -55,6 +55,8 @@ export const CalendarView = () => {
   // Traiter les tâches brutes quand elles changent
   useEffect(() => {
     if (!tasks || !Array.isArray(tasks)) return;
+
+    console.log ('tasks :', tasks);
     
     // Séparer les tâches en deux groupes
     const calendar = tasks.filter(task => task.resourceId);

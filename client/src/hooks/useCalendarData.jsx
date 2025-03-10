@@ -59,7 +59,8 @@ export const useCalendarData = () => {
         extendedProps: {
           statusId: (task.status_id || task.statusId)?.toString(),
           userId: task.user_id || task.userId,
-          description: task.description || ''
+          description: task.description || '',
+          team: task.team_name,
         }
       }
     });
@@ -80,7 +81,12 @@ export const useCalendarData = () => {
       setHolidays(formatHolidays(holidayDates));
       setResources(formatResources(ownersData));
       setStatuses(statusesData);
+
+      console.table('tasksData :', tasksData);
+
       const formattedTasks = formatTasksForCalendar(tasksData, statusesData);
+
+      console.table('formattedTasks :', formattedTasks);
 
       setTasks(formattedTasks);
     } catch (err) {

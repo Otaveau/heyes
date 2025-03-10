@@ -442,8 +442,6 @@ export const useTaskHandlers = (
           title: task.title
         };
         
-        // Appliquer les mises à jour localement directement au niveau du setTasks
-        // sans passer par updateTaskStatus
         setTasks(prevTasks => {
           const updatedTasks = prevTasks.map(t => {
             if (t.id.toString() === taskId.toString()) {
