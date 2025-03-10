@@ -214,6 +214,16 @@ export const CalendarView = () => {
           selectMirror={true}
           droppable={true}
           resourceAreaWidth="15%"
+          resourceGroupField="team" // Activer le regroupement par le champ parentId
+          resourcesInitiallyExpanded={true} // Les groupes sont développés par défaut
+          resourceLabelDidMount={(info) => {
+            if (!info.resource.extendedProps?.team) {
+              info.el.style.fontWeight = 'bold';
+              info.el.style.backgroundColor = '#f3f4f6';
+              info.el.style.borderBottom = '1px solid #e5e7eb';
+              info.el.style.color = '#4b5563';
+            }
+          }}
           slotDuration={{ days: 1 }}
           selectConstraint={{
             start: '00:00',

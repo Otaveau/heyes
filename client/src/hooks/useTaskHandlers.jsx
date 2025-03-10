@@ -5,26 +5,26 @@ import { createTask, updateTask, deleteTask } from '../services/api/taskService'
 import { DateUtils } from '../utils/dateUtils';
 
 export const useTaskHandlers = (
-  setTasks,         
+  setTasks,
   setCalendarState,
-  tasks,             
-  calendarTasks,         
-  boardTasks,         
-  setCalendarTasks, 
+  tasks,
+  calendarTasks,
+  boardTasks,
+  setCalendarTasks,
   setBoardTasks,
   dropZoneRefs,
   dropZones,
   holidays,
   calendarRef,
-  setHasLocalChanges 
+  setHasLocalChanges
 ) => {
 
   const updateTaskStatus = useCallback((taskId, updates) => {
-    
+
     setTasks(prevTasks => {
       const updatedTasks = prevTasks.map(task => {
         if (task.id.toString() === taskId.toString()) {
-          const updatedTask = { 
+          const updatedTask = {
             ...task,
             ...updates,
             extendedProps: {
@@ -34,31 +34,31 @@ export const useTaskHandlers = (
           };
 
           console.log('updatedTask :', updatedTask);
-          
+
           // if (updates.statusId) {
           //   updatedTask.extendedProps.statusId = updates.statusId;
           // }
-          
+
           return updatedTask;
         }
         return task;
       });
-      
+
       // Mettre à jour les listes filtrées
       setTimeout(() => {
         const calendar = updatedTasks.filter(task => task.resourceId);
         const board = updatedTasks.filter(task => !task.resourceId);
-        
+
         setCalendarTasks(calendar);
         setBoardTasks(board);
       }, 0);
-      
+
       return updatedTasks;
     });
-    
+
     // Indiquer que des changements locaux ont été effectués
     setHasLocalChanges(true);
-    
+
     // Rafraîchir le calendrier si la référence existe
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
@@ -158,7 +158,7 @@ export const useTaskHandlers = (
       return;
     }
 
-     const updates = {
+    const updates = {
       start: startDate,
       end: endDate,
       resourceId: event._def.resourceIds[0],
@@ -238,17 +238,17 @@ export const useTaskHandlers = (
           ...taskData,
           allDay: true
         };
-        
+
         // Ajouter à l'état brut
         setTasks(prevTasks => [...prevTasks, newTask]);
-        
+
         // Mettre à jour la liste appropriée
         if (newTask.resourceId) {
           setCalendarTasks(prev => [...prev, newTask]);
         } else {
           setBoardTasks(prev => [...prev, newTask]);
         }
-        
+
         taskId = tempId;
       }
 
@@ -258,24 +258,24 @@ export const useTaskHandlers = (
         updatedTask = await updateTask(taskId, taskData);
       } else {
         updatedTask = await createTask(taskData);
-        
+
         // Si c'était un ID temporaire, mettre à jour avec l'ID réel
         if (taskId.toString().startsWith('temp-')) {
           // Remplacer la tâche avec ID temporaire par celle avec ID réel
           setTasks(prevTasks => {
-            const updatedTasks = prevTasks.map(task => 
+            const updatedTasks = prevTasks.map(task =>
               task.id === taskId ? { ...task, id: updatedTask.id } : task
             );
-            
+
             // Mettre à jour les listes filtrées
             setTimeout(() => {
               const calendar = updatedTasks.filter(task => task.resourceId);
               const board = updatedTasks.filter(task => !task.resourceId);
-              
+
               setCalendarTasks(calendar);
               setBoardTasks(board);
             }, 0);
-            
+
             return updatedTasks;
           });
         }
@@ -289,7 +289,7 @@ export const useTaskHandlers = (
 
       // Réinitialiser le flag des changements locaux puisque tout est synchronisé
       setHasLocalChanges(false);
-      
+
       toast.success(taskId && !taskId.toString().startsWith('temp-') ? 'Tâche mise à jour' : 'Tâche créée', TOAST_CONFIG);
     } catch (error) {
       toast.error(taskId ? ERROR_MESSAGES.UPDATE_FAILED : ERROR_MESSAGES.CREATE_FAILED, TOAST_CONFIG);
@@ -347,50 +347,80 @@ export const useTaskHandlers = (
 
   // Dépôt d'une tâche externe sur le calendrier
   const handleExternalDrop = useCallback(async (info) => {
-    console.log('handleExternalDrop');
+
+    if (info.draggedEl) {
+      info.draggedEl.style.opacity = '0';
+    }
+
+
+    if (info.draggedEl.dataset.processed === 'true') {
+      return;
+    }
+
+    if (info.draggedEl) {
+      info.draggedEl.style.opacity = '0';
+    }
+
+    info.draggedEl.dataset.processed = 'true';
+
+    // Nettoyer le flag après un court délai
+    setTimeout(() => {
+      if (info.draggedEl && info.draggedEl.dataset) {
+        delete info.draggedEl.dataset.processed;
+      }
+    }, 100);
+
     if (!info.draggedEl.parentNode) return;
 
     const startDate = info.date;
-    // Vérifier si la date tombe sur un jour non ouvré
+
     if (DateUtils.isHolidayOrWeekend(startDate, holidays)) {
       toast.warning('Impossible de planifier sur un jour non ouvré', TOAST_CONFIG);
       return;
     }
 
-       // Récupérer les infos de l'événement externe
+    // Récupérer les infos de l'événement externe
     const taskId = info.draggedEl.getAttribute('data-task-id');
     const externalTask = boardTasks.find(task => task.id.toString() === taskId.toString());
-    
+
     if (!externalTask) return false;
 
-      const endDate = new Date(startDate.getTime() + 86400000); // +1 jour
+    const endDate = new Date(startDate.getTime() + 86400000); // +1 jour
 
-      const updates = {
-        title: externalTask.title,
-        description: externalTask.extendedProps?.description || '',
-        start: startDate,
-        end: endDate,
-        resourceId: info.resource?.id ? parseInt(info.resource.id) : null,
-        extendedProps: {
-          statusId: '2' // En cours
-        }
-      };
+    const updates = {
+      title: externalTask.title,
+      description: externalTask.extendedProps?.description || '',
+      start: startDate,
+      end: endDate,
+      resourceId: info.resource?.id ? parseInt(info.resource.id) : null,
+      extendedProps: {
+        statusId: '2' // En cours
+      }
+    };
 
-      updateTaskStatus(taskId, updates);
-    
+    updateTaskStatus(taskId, updates);
+
     // Le déplacer du board vers le calendrier
-    setBoardTasks(prev => prev.filter(t => t.id.toString() !== taskId.toString()));
-    
+    setTimeout(() => {
+      setBoardTasks(prev => prev.filter(t => t.id.toString() !== taskId.toString()));
+    }, 50);
+
+    setTimeout(() => {
+      if (info.draggedEl) {
+        info.draggedEl.style.opacity = '1';
+      }
+    }, 100);
+
     // Mettre à jour sur le serveur
     await handleTaskUpdate(
       taskId,
       updates,
       {
-        successMessage: `Tâche "${externalTask.title}" déplacée vers le calendrier`,
+        successMessage: `Tâche "${externalTask.title}" droppée vers le calendrier`,
         skipApiCall: false // Appeler l'API pour synchroniser
       }
     );
-    
+
     return true;
   }, [holidays, boardTasks, updateTaskStatus, setBoardTasks, handleTaskUpdate]);
 
@@ -401,29 +431,29 @@ export const useTaskHandlers = (
       console.warn('dropZoneRefs.current is undefined');
       return;
     }
-  
+
     const eventRect = info.jsEvent.target.getBoundingClientRect();
     let dropFound = false;
-  
+
     // Vérifier chaque zone de dépôt
     for (let index = 0; index < dropZoneRefs.current.length; index++) {
       const ref = dropZoneRefs.current[index];
       if (!ref?.current) continue;
-  
+
       const dropZoneEl = ref.current;
       const dropZoneRect = dropZoneEl.getBoundingClientRect();
-  
+
       const isWithinDropZone =
         eventRect.left >= dropZoneRect.left &&
         eventRect.right <= dropZoneRect.right &&
         eventRect.top >= dropZoneRect.top &&
         eventRect.bottom <= dropZoneRect.bottom;
-  
+
       if (isWithinDropZone) {
         dropFound = true;
         const taskId = info.event.id;
         const task = tasks.find(t => t.id.toString() === taskId.toString());
-  
+
         if (!task) {
           console.warn(`Task with id ${taskId} not found`);
           continue;
@@ -432,7 +462,7 @@ export const useTaskHandlers = (
         info.event.remove();
 
         console.log('task :', task);
-  
+
         const updates = {
           resourceId: null,
           statusId: dropZones[index].statusId,  // Important: retirer du calendrier
@@ -441,7 +471,7 @@ export const useTaskHandlers = (
           },
           title: task.title
         };
-        
+
         setTasks(prevTasks => {
           const updatedTasks = prevTasks.map(t => {
             if (t.id.toString() === taskId.toString()) {
@@ -456,55 +486,55 @@ export const useTaskHandlers = (
             }
             return t;
           });
-          
+
           // Mettre à jour les listes filtrées
           setTimeout(() => {
             const calendar = updatedTasks.filter(task => task.resourceId);
             const board = updatedTasks.filter(task => !task.resourceId);
-            
+
             setCalendarTasks(calendar);
             setBoardTasks(board);
           }, 0);
-          
+
           return updatedTasks;
         });
-        
+
         // Indiquer que des changements locaux ont été effectués
         setHasLocalChanges(true);
-        
+
         // Mettre à jour sur le serveur sans passer par updateTaskStatus
         try {
           // Appel API pour mise à jour
           await updateTask(taskId, updates);
-          
+
           // Afficher un toast de succès
           toast.success(`Tâche déplacée vers ${dropZones[index].title}`, TOAST_CONFIG);
-          
+
           // Réinitialiser le flag de changements locaux
           setHasLocalChanges(false);
         } catch (error) {
           console.error('Erreur lors de la mise à jour de la tâche:', error);
           toast.error(ERROR_MESSAGES.UPDATE_FAILED, TOAST_CONFIG);
         }
-        
+
         break;
       }
     }
-  
+
     // Si aucune zone de dépôt n'a été trouvée, on peut revenir à l'état initial
     if (!dropFound && info.revert) {
       info.revert();
     }
   }, [dropZoneRefs, tasks, dropZones, setTasks, setCalendarTasks, setBoardTasks, setHasLocalChanges]);
 
-  
+
   // Clic sur une tâche externe
- const handleExternalTaskClick = useCallback((task) => {
+  const handleExternalTaskClick = useCallback((task) => {
     // Utiliser boardTasks pour trouver la tâche complète
     const fullTask = boardTasks.find(t => t.id.toString() === task.id.toString());
-    
+
     if (!fullTask) return;
-    
+
     setCalendarState(prev => ({
       ...prev,
       isFormOpen: true,
@@ -528,7 +558,7 @@ export const useTaskHandlers = (
 
 
   // Suppression d'une tâche
- const handleDeleteTask = useCallback(async (taskId) => {
+  const handleDeleteTask = useCallback(async (taskId) => {
     try {
       setCalendarState(prev => ({ ...prev, isProcessing: true }));
 
@@ -536,7 +566,7 @@ export const useTaskHandlers = (
       setTasks(prevTasks => prevTasks.filter(task => task.id.toString() !== taskId.toString()));
       setCalendarTasks(prev => prev.filter(t => t.id.toString() !== taskId.toString()));
       setBoardTasks(prev => prev.filter(t => t.id.toString() !== taskId.toString()));
-      
+
       // Indiquer des changements locaux
       setHasLocalChanges(true);
 
@@ -545,7 +575,7 @@ export const useTaskHandlers = (
 
       // Réinitialiser le flag des changements locaux
       setHasLocalChanges(false);
-      
+
       toast.success('Tâche supprimée', TOAST_CONFIG);
       return true;
     } catch (error) {

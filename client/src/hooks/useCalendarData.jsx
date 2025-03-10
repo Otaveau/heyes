@@ -29,11 +29,13 @@ export const useCalendarData = () => {
 
 
   const formatResources = useCallback((ownersData) => {
+
+    console.log('ownersData :', ownersData);
     return ownersData.map(owner => ({
       id: owner.ownerId,
       title: owner.name,
       email: owner.email,
-      team: owner.teamId
+      team: owner.teamId   
     }));
   }, []);
 
