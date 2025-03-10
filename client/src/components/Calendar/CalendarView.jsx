@@ -74,7 +74,7 @@ export const CalendarView = () => {
       // Simuler un délai de réseau
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      toast.success('Changements synchronisés avec succès', TOAST_CONFIG);
+      //toast.success('Changements synchronisés avec succès', TOAST_CONFIG);
       setHasLocalChanges(false);
     } catch (error) {
       console.error('Error syncing tasks:', error);

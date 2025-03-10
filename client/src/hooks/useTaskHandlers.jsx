@@ -554,6 +554,14 @@ export const useTaskHandlers = (
   // Réception d'un événement externe
   const handleEventReceive = useCallback(async (info) => {
     console.log('Event received:', info.event);
+  
+    if (info.event.extendedProps.processed) {
+      console.log('Événement déjà traité, ignorer');
+      return;
+    }
+    info.event.setExtendedProp('processed', true);
+    info.event.remove();
+
   }, []);
 
 
