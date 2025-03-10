@@ -116,6 +116,7 @@ export const CalendarView = () => {
     handleEventResize,
     handleEventReceive,
     handleDeleteTask,
+    updateTaskStatus
     
   } = useTaskHandlers(
     setTasks,           // Pour mettre à jour les tâches brutes
@@ -284,6 +285,7 @@ export const CalendarView = () => {
           externalTasks={boardTasks}
           handleExternalTaskClick={handleExternalTaskClick}
           onDeleteTask={handleDeleteTask}
+          updateTaskStatus={updateTaskStatus}
         />
       </div>
 
