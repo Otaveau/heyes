@@ -1,10 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { CalendarView } from './components/Calendar/CalendarView';
-import Login from './components/Auth/Login';
-import Register from './components/Auth/Register';
-import OwnerManagement from './components/Management/OwnerManagement';
-import TeamManagement from './components/Management/TeamManagement';
+import { CalendarView } from './components/calendar/CalendarView';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
+import { OwnerManagement } from './components/management/OwnerManagement';
+import { TeamManagement } from './components/Management/TeamManagement';
 import Navigation from './components/ui/navigation';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';

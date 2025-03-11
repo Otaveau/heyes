@@ -33,5 +33,12 @@ export const handleResponse = async (response) => {
         throw new ApiError(errorMessage, response.status);
     }
 
-    return response.json();
+    // Vérifier si la réponse a du contenu avant d'essayer de parser du JSON
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+        return response.json();
+    }
+    
+    // Pour les réponses vides ou non-JSON (comme pour DELETE)
+    return { success: true };
 };

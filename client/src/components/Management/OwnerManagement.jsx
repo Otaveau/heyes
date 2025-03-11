@@ -7,7 +7,7 @@ import { fetchOwners } from '../../services/api/ownerService';
 import { fetchTeams} from '../../services/api/teamService';
 
 
-const OwnerManagement = () => {
+export const OwnerManagement = () => {
   const [owners, setOwners] = useState([]);
   const [newOwner, setNewOwner] = useState({
     name: '',
@@ -162,5 +162,3 @@ const OwnerManagement = () => {
     </div>
   );
 };
-
-export default OwnerManagement;
