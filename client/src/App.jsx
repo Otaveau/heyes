@@ -4,7 +4,7 @@ import { CalendarView } from './components/calendar/CalendarView';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import { OwnerManagement } from './components/management/OwnerManagement';
-import { TeamManagement } from './components/Management/TeamManagement';
+import { TeamManagement } from './components/management/TeamManagement';
 import Navigation from './components/ui/navigation';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
