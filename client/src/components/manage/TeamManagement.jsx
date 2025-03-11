@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
-import { Trash2, Plus, Loader2 } from 'lucide-react';
-import { fetchTeams, deleteTeam, createTeam } from '../../services/api/teamService';
+import { Trash2, Plus, Loader2, Save, X } from 'lucide-react';
+import { fetchTeams, deleteTeam, createTeam, updateTeam } from '../../services/api/teamService';
 import ConfirmationModal from '../common/ConfirmationModal';
 
 export const TeamManagement = () => {
@@ -14,6 +14,9 @@ export const TeamManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editedTeam, setEditedTeam] = useState({ name: '' });
 
   const loadTeams = async () => {
     setIsLoading(true);
@@ -41,18 +44,15 @@ export const TeamManagement = () => {
     setError(null);
     
     try {
-      // Utilisation du service createTeam
       await createTeam(newTeam);
       await loadTeams();
       setNewTeam({ name: '' });
     } catch (error) {
       console.error('Error creating team:', error);
       
-      // Gestion spécifique des erreurs de validation
       if (error.message && error.message.includes('validation')) {
         setError(error.message);
       } else if (error.status === 401) {
-        // Redirection en cas d'authentification expirée
         window.location.href = '/login';
         return;
       } else {
@@ -63,7 +63,8 @@ export const TeamManagement = () => {
     }
   };
 
-  const openDeleteModal = (team) => {
+  const openDeleteModal = (team, e) => {
+    e.stopPropagation(); // Empêche le clic de sélectionner l'équipe
     setTeamToDelete(team);
     setDeleteModalOpen(true);
   };
@@ -81,6 +82,13 @@ export const TeamManagement = () => {
     
     try {
       await deleteTeam(teamToDelete.team_id);
+      
+      // Si l'équipe supprimée était sélectionnée, désélectionner
+      if (selectedTeam && selectedTeam.team_id === teamToDelete.team_id) {
+        setSelectedTeam(null);
+        setEditMode(false);
+      }
+      
       await loadTeams();
     } catch (error) {
       console.error('Error deleting team:', error);
@@ -91,10 +99,71 @@ export const TeamManagement = () => {
     }
   };
 
+  const handleTeamSelect = (team) => {
+    // Si on clique sur l'équipe déjà sélectionnée, on désélectionne
+    if (selectedTeam && selectedTeam.team_id === team.team_id) {
+      setSelectedTeam(null);
+      setEditMode(false);
+    } else {
+      setSelectedTeam(team);
+      setEditedTeam({ ...team });
+      setEditMode(false); // On commence par juste sélectionner, pas éditer
+    }
+  };
+
+  const handleEditMode = (e) => {
+    e.preventDefault();
+    setEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    // Remettre les valeurs originales
+    setEditedTeam({ ...selectedTeam });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editedTeam.name.trim()) return;
+    
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      // Utilisation du service updateTeam
+      const updatedTeam = await updateTeam(editedTeam.team_id, {
+        name: editedTeam.name.trim()
+      });
+      
+      // Mettre à jour la liste complète des équipes
+      await loadTeams();
+      
+      // Mettre à jour l'équipe sélectionnée avec les données mises à jour
+      setSelectedTeam(updatedTeam);
+      
+      // Sortir du mode édition
+      setEditMode(false);
+    } catch (error) {
+      console.error('Error updating team:', error);
+      
+      if (error.message && error.message.includes('validation')) {
+        setError(error.message);
+      } else if (error.status === 401) {
+        window.location.href = '/login';
+        return;
+      } else {
+        setError('Erreur lors de la mise à jour de l\'équipe. Veuillez réessayer.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">Gestion des équipes</h2>
 
+      {/* Formulaire d'ajout d'équipe */}
       <form onSubmit={handleSubmit} className="mb-8">
         <div className="flex gap-4">
           <Input
@@ -126,34 +195,120 @@ export const TeamManagement = () => {
         {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
       </form>
 
-      {isLoading && !isSubmitting ? (
-        <div className="flex justify-center items-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
-      ) : teams.length === 0 ? (
-        <div className="text-center py-10 text-gray-500">
-          Aucune équipe disponible. Créez votre première équipe.
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {teams.map(team => (
-            <Card key={team.team_id} className="p-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold">{team.name}</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => openDeleteModal(team)}
-                  className="text-red-500 hover:text-red-700"
-                  disabled={isLoading}
+      <div className="grid gap-8 grid-cols-1 md:grid-cols-2">
+        {/* Liste des équipes */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Liste des équipes</h3>
+          
+          {isLoading && !isSubmitting ? (
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+          ) : teams.length === 0 ? (
+            <div className="text-center py-10 text-gray-500">
+              Aucune équipe disponible. Créez votre première équipe.
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-1">
+              {teams.map(team => (
+                <Card 
+                  key={team.team_id} 
+                  className={`p-4 cursor-pointer transition-colors ${
+                    selectedTeam && selectedTeam.team_id === team.team_id 
+                      ? 'bg-blue-50 border-blue-300' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleTeamSelect(team)}
                 >
-                  <Trash2 className="h-5 w-5" />
-                </Button>
-              </div>
-            </Card>
-          ))}
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold">{team.name}</h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => openDeleteModal(team, e)}
+                      className="text-red-500 hover:text-red-700"
+                      disabled={isLoading}
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Détails de l'équipe sélectionnée */}
+        {selectedTeam && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Détails de l'équipe</h3>
+            <Card className="p-6">
+              {editMode ? (
+                <form onSubmit={handleSaveEdit} className="space-y-4">
+                  <div>
+                    <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Nom de l'équipe
+                    </label>
+                    <Input
+                      id="teamName"
+                      type="text"
+                      value={editedTeam.name}
+                      onChange={(e) => setEditedTeam({ ...editedTeam, name: e.target.value })}
+                      placeholder="Nom de l'équipe"
+                      required
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleCancelEdit}
+                      disabled={isSubmitting}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Annuler
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting || !editedTeam.name.trim()}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Enregistrement...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Enregistrer
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Nom</p>
+                    <p className="font-medium">{selectedTeam.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">ID</p>
+                    <p className="font-medium">{selectedTeam.team_id}</p>
+                  </div>
+                  {/* Ajouter d'autres détails si nécessaire */}
+                  <div className="pt-2">
+                    <Button onClick={handleEditMode}>
+                      Modifier
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+      </div>
 
       <ConfirmationModal 
         isOpen={deleteModalOpen}
