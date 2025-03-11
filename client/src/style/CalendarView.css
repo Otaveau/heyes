@@ -94,20 +94,84 @@
   outline-offset: -2px;
 }
 
+/* Transitions pour les éléments du TaskBoard */
+.fc-event {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Mise en surbrillance du TaskBoard */
 .taskboard-highlight {
   box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
   border-radius: 8px;
   animation: pulse-border 1.5s infinite ease-in-out;
-  transition: all 0.15s ease-out; /* Transition plus rapide */
+  transition: all 0.15s ease-out;
 }
 
+/* Surbrillance intense quand on survole une zone valide */
+.taskboard-highlight-intense {
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.7), 0 0 20px rgba(74, 108, 247, 0.6);
+}
+
+/* Mise en surbrillance des zones de dépôt actives */
 .dropzone-active {
   background-color: rgba(74, 108, 247, 0.15) !important;
   border: 2px dashed #4a6cf7 !important;
   transform: scale(1.02);
-  transition: all 0.15s ease-out; /* Transition plus rapide */
+  transition: all 0.15s ease-out;
 }
 
-.taskboard-highlight-intense {
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.7), 0 0 20px rgba(74, 108, 247, 0.6);
+/* Zone de dépôt potentielle */
+.potential-drop-target {
+  background-color: rgba(230, 230, 250, 0.3);
+  transition: background-color 0.3s ease;
+  border: 1px dashed #ccc;
+}
+
+/* Élément fantôme qui suit le curseur */
+.task-ghost-element {
+  font-weight: bold;
+  border: 2px solid rgba(74, 108, 247, 0.7);
+  transform-origin: center center;
+}
+
+/* Animation d'apparition après le dépôt */
+.task-added {
+  animation: taskAddedAnimation 0.5s ease-in-out;
+}
+
+/* Placeholder temporaire pendant la transition */
+.temporary-task-placeholder {
+  background-color: rgba(74, 108, 247, 0.2);
+  border: 2px dashed rgba(74, 108, 247, 0.7);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+/* Animation de pulsation de la bordure */
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(74, 108, 247, 0.6), 0 0 20px rgba(74, 108, 247, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
+  }
+}
+
+/* Animation d'apparition d'une tâche */
+@keyframes taskAddedAnimation {
+  0% {
+    transform: scale(1);
+    background-color: rgba(74, 108, 247, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    background-color: rgba(74, 108, 247, 0.6);
+  }
+  100% {
+    transform: scale(1);
+    background-color: inherit;
+  }
 }
