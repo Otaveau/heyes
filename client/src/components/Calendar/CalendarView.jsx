@@ -218,6 +218,7 @@ export const CalendarView = () => {
           resourceGroupField="team" // Activer le regroupement par le champ parentId
           resourcesInitiallyExpanded={true} // Les groupes sont développés par défaut
           resourceLabelDidMount={(info) => {
+            console.log('info.resource :', info.resource);
             if (!info.resource.extendedProps?.team) {
               info.el.style.fontWeight = 'bold';
               info.el.style.backgroundColor = '#f3f4f6';
