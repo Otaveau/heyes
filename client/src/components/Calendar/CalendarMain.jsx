@@ -73,8 +73,8 @@ export const CalendarMain = ({
         navContainer.className = 'fc-monthNav-container';
         
         // Ligne supérieure: Année avec navigation
-        const yearNavContainer = document.createElement('div');
-        yearNavContainer.className = 'fc-yearNav-container';
+        // const yearNavContainer = document.createElement('div');
+        // yearNavContainer.className = 'fc-yearNav-container';
         
         // Bouton année précédente
         const prevYearBtn = document.createElement('button');
@@ -98,9 +98,9 @@ export const CalendarMain = ({
         nextYearBtn.addEventListener('click', goToNextYear);
         
         // Assembler les éléments de navigation d'année
-        yearNavContainer.appendChild(prevYearBtn);
-        yearNavContainer.appendChild(yearDisplay);
-        yearNavContainer.appendChild(nextYearBtn);
+        // yearNavContainer.appendChild(prevYearBtn);
+        // yearNavContainer.appendChild(yearDisplay);
+        // yearNavContainer.appendChild(nextYearBtn);
         
         // Ligne inférieure: Boutons des mois
         const monthsContainer = document.createElement('div');
@@ -152,7 +152,7 @@ export const CalendarMain = ({
         });
         
         // Assembler le conteneur principal
-        navContainer.appendChild(yearNavContainer);
+        // navContainer.appendChild(yearNavContainer);
         navContainer.appendChild(monthsContainer);
         
         // Ajouter le conteneur à la barre d'outils centrale
@@ -273,7 +273,7 @@ export const CalendarMain = ({
       schedulerLicenseKey='GPL-My-Project-Is-Open-Source'
       initialView="resourceTimelineYear"
       headerToolbar={{
-        left: 'prev,next today',
+        left: 'prev next today title',
         right: 'resourceTimelineYear,resourceTimelineMonth,resourceTimelineWeek'
       }}
       editable={true}
@@ -406,15 +406,20 @@ function getCalendarStyles() {
       gap: 8px;
       width: 100%;
     }
+
+    .fc-header-toolbar .fc-toolbar-chunk:first-child {
+      width: 600px;
+      display: flex;
+    }
     
     /* Conteneur de navigation par année */
-    .fc-yearNav-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-      width: 100%;
-    }
+    // .fc-yearNav-container {
+    //   display: flex;
+    //   align-items: center;
+    //   justify-content: center;
+    //   margin-bottom: 8px;
+    //   width: 100%;
+    // }
     
     /* Affichage de l'année */
     .fc-year-display {

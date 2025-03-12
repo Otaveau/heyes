@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import logoImage from '../../assets/hays.png';
 import { 
   Calendar, 
   Users, 
@@ -8,8 +9,7 @@ import {
   LogOut, 
   Menu, 
   X,  
-  Settings,
-  Layers
+  Settings
 } from 'lucide-react';
 
 export const Toolbar = () => {
@@ -44,7 +44,7 @@ export const Toolbar = () => {
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
                 <Link to="/calendar" className="flex items-center">
-                  <Layers className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                  <img src={logoImage} alt="Heyes" className="h-8 w-auto" />
                   <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Heyes</span>
                 </Link>
               </div>
