@@ -21,6 +21,7 @@ export const CalendarView = () => {
     selectedDates: null,
     selectedTask: null,
     isProcessing: false,
+    currentView: 'resourceTimelineYear', // Ajout d'un état pour suivre la vue actuelle
   });
 
   // Zones de dépôt pour le TaskBoard
@@ -171,9 +172,140 @@ export const CalendarView = () => {
     };
   }, [boardTasks, dropZones]);
 
+  // Nouveaux mois en français pour les boutons
+  const months = [
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+  ];
+
+  // Fonction pour naviguer vers un mois spécifique
+  const navigateToMonth = (monthIndex) => {
+    if (!calendarRef.current) return;
+    
+    // Accéder directement à l'API du calendrier
+    const calendarApi = calendarRef.current.getApi();
+    
+    // Obtenir l'année courante
+    const today = new Date();
+    const year = today.getFullYear();
+    
+    // Créer la date cible pour le premier jour du mois sélectionné
+    const targetDate = new Date(year, monthIndex, 1);
+    
+    // Logs pour faciliter le débogage
+    console.log(`Navigating to: ${months[monthIndex]} ${year}`);
+    
+    try {
+      // Pour les vues timeline, cette méthode est plus efficace que gotoDate
+      // Elle fait défiler le calendrier jusqu'à la date/heure spécifiée
+      calendarApi.scrollToTime({ days: targetDate.getDate() - 1, months: targetDate.getMonth(), years: targetDate.getFullYear() - calendarApi.getDate().getFullYear() });
+      
+      // Force un rendu
+      setTimeout(() => {
+        // Nous pouvons également essayer de manipuler directement le DOM si nécessaire
+        const timelineBody = document.querySelector('.fc-timeline-body');
+        if (timelineBody) {
+          // Trouver tous les éléments d'en-tête de mois
+          const headers = document.querySelectorAll('.fc-timeline-slot[data-date]');
+          
+          // Trouver l'élément correspondant au mois sélectionné
+          let targetHeader = null;
+          headers.forEach(header => {
+            const headerDate = new Date(header.getAttribute('data-date'));
+            if (headerDate.getMonth() === monthIndex) {
+              targetHeader = header;
+            }
+          });
+          
+          // Si on a trouvé l'en-tête correspondant, faire défiler jusqu'à lui
+          if (targetHeader) {
+            const rect = targetHeader.getBoundingClientRect();
+            const containerRect = timelineBody.getBoundingClientRect();
+            
+            // Calculer la position de défilement pour centrer l'élément
+            const scrollLeft = rect.left + timelineBody.scrollLeft - containerRect.left - (containerRect.width / 2) + (rect.width / 2);
+            
+            // Animer le défilement
+            timelineBody.scrollTo({
+              left: scrollLeft,
+              behavior: 'smooth'
+            });
+            
+            console.log(`Scrolling to position: ${scrollLeft}`);
+          }
+        }
+      }, 50);
+    } catch (error) {
+      console.error("Navigation error:", error);
+      
+      // Méthode de secours
+      try {
+        calendarApi.gotoDate(targetDate);
+        console.log("Fallback navigation attempt");
+      } catch (fallbackError) {
+        console.error("Fallback navigation error:", fallbackError);
+      }
+    }
+  };
+
+  // Écouteur de changement de vue
+  const handleViewChange = (viewInfo) => {
+    setCalendarState(prev => ({ ...prev, currentView: viewInfo.view.type }));
+  };
+
+  // Ajouter un style pour le mois sélectionné
+  useEffect(() => {
+    // Ajouter une règle CSS pour la surbrillance des mois
+    const style = document.createElement('style');
+    style.textContent = `
+      .highlighted-month {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        box-shadow: inset 0 0 0 2px #3b82f6 !important;
+      }
+      
+      .month-button {
+        transition: all 0.2s ease;
+      }
+      
+      .month-button:hover {
+        background-color: #e0e7ff;
+        transform: translateY(-1px);
+      }
+      
+      .month-button:active {
+        transform: translateY(1px);
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col dashboard">
+      {/* Nouveaux boutons de navigation par mois - toujours visibles */}
+      {true && (
+        <div className="month-navigation flex flex-wrap justify-center gap-2 mb-4 p-3 bg-gray-100 rounded shadow-sm">
+          {months.map((month, index) => {
+            // Déterminer si c'est le mois courant
+            const today = new Date();
+            const isCurrentMonth = today.getMonth() === index;
+            
+            return (
+              <button
+                key={month}
+                className={`month-button px-3 py-1 text-sm ${isCurrentMonth ? 'bg-blue-100 border-blue-400 text-blue-800' : 'bg-white border-gray-300 text-gray-700'} border rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
+                onClick={() => navigateToMonth(index)}
+              >
+                {month}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      
       <div className="w-full p-4 calendar">
         <FullCalendar
           ref={calendarRef}
@@ -212,9 +344,13 @@ export const CalendarView = () => {
             end: '24:00'
           }}
           weekends={true}
-
           resourceOrder="title"
           resourcesInitiallyExpanded={true}
+          viewDidMount={handleViewChange}
+          datesSet={(info) => {
+            // Met à jour la vue actuelle quand les dates ou la vue changent
+            setCalendarState(prev => ({ ...prev, currentView: info.view.type }));
+          }}
           
           resourceLabelDidMount={(info) => {
             // Style pour les en-têtes de groupe (équipes)
@@ -310,7 +446,6 @@ export const CalendarView = () => {
           eventResize={handleEventResize}
           eventDragStop={handleEventDragStop}
           eventReceive={handleEventReceive}
-          
         />
       </div>
       
