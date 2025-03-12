@@ -405,7 +405,6 @@ function getCalendarStyles() {
       margin: 0 auto;
       gap: 8px;
       width: 100%;
-      max-width: 600px;
     }
     
     /* Conteneur de navigation par année */
@@ -481,7 +480,6 @@ function getCalendarStyles() {
       left: 25%;
       width: 50%;
       height: 3px;
-      background-color: white;
       border-radius: 3px;
     }
     
