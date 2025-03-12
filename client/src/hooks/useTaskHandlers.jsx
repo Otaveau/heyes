@@ -5,15 +5,9 @@ import { createTask, updateTask, deleteTask } from '../services/api/taskService'
 import { DateUtils } from '../utils/dateUtils';
 import { 
   applyDragDropStyles, 
-  cleanupDragDropStyles,
-  highlightTaskBoard,
   cleanupAllHighlights
 } from '../utils/dndUtils';
 
-
-/**
- * Hook principal pour la gestion des tâches dans le calendrier et le TaskBoard
- */
 export const useTaskHandlers = (
   setTasks,
   setCalendarState,
@@ -46,7 +40,7 @@ export const useTaskHandlers = (
         ghostElementRef.current = null;
       }
     };
-  }, [cleanupAllHighlights, dropZoneRefs]);
+  }, [dropZoneRefs]);
 
   // Gérer l'annulation du drag par touche Echap ou clic en dehors
   useEffect(() => {
@@ -83,7 +77,7 @@ export const useTaskHandlers = (
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [cleanupAllHighlights, dropZoneRefs]);
+  }, [dropZoneRefs]);
 
   
 

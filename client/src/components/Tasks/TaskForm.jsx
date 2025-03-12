@@ -25,9 +25,10 @@ export const TaskForm = ({
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return ''; // Date invalide
             
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
+            // Utiliser les méthodes UTC pour extraire année, mois et jour
+            const year = date.getUTCFullYear();
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(date.getUTCDate()).padStart(2, '0');
             
             return `${year}-${month}-${day}`;
         } catch (e) {
@@ -36,21 +37,71 @@ export const TaskForm = ({
         }
     }, []);
 
+    // Obtenir la date du jour formatée
+    const getTodayFormatted = useCallback(() => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }, []);
 
-    const getInitialFormData = useMemo(() => () => ({
-        title: selectedTask?.title || '',
-        description: selectedTask?.description || '',
-        startDate: formatDateForInput(selectedDates?.start) || selectedTask?.start || '',
-        endDate: formatDateForInput(selectedDates?.end) || selectedTask?.end || '',
-        resourceId: selectedDates?.resourceId || selectedTask?.resourceId || '',
-        statusId: selectedTask?.statusId || (selectedDates?.resourceId ? '2' : ''),
-        isConge: selectedTask?.isConge || false
-    }), [selectedDates, selectedTask, formatDateForInput]);
+    const getInitialFormData = useCallback(() => {
+        // Si une tâche est sélectionnée depuis le calendrier (avec selectedDates)
+        if (selectedTask && selectedDates) {
+            return {
+                title: selectedTask.title || '',
+                description: selectedTask.description || '',
+                startDate: formatDateForInput(selectedDates.start),
+                endDate: formatDateForInput(selectedDates.end),
+                resourceId: selectedTask.resourceId || selectedDates.resourceId || '',
+                statusId: selectedTask.statusId || '2',
+                isConge: selectedTask.isConge || false
+            };
+        }
+        
+        // Si une tâche est sélectionnée depuis le TaskBoard (sans selectedDates)
+        if (selectedTask && !selectedDates) {
+            return {
+                title: selectedTask.title || '',
+                description: selectedTask.description || '',
+                startDate: formatDateForInput(selectedTask.start) || getTodayFormatted(),
+                endDate: formatDateForInput(selectedTask.end) || getTodayFormatted(),
+                resourceId: selectedTask.resourceId || '',
+                statusId: selectedTask.statusId || '',
+                isConge: selectedTask.isConge || false
+            };
+        }
+        
+        // Si on crée une nouvelle tâche depuis le calendrier
+        if (selectedDates && !selectedTask) {
+            return {
+                title: '',
+                description: '',
+                startDate: formatDateForInput(selectedDates.start),
+                endDate: formatDateForInput(selectedDates.end),
+                resourceId: selectedDates.resourceId || '',
+                statusId: selectedDates.resourceId ? '2' : '',
+                isConge: false
+            };
+        }
+        
+        // Cas par défaut (nouvelle tâche sans contexte)
+        const today = getTodayFormatted();
+        return {
+            title: '',
+            description: '',
+            startDate: today,
+            endDate: today,
+            resourceId: '',
+            statusId: '',
+            isConge: false
+        };
+    }, [selectedDates, selectedTask, formatDateForInput, getTodayFormatted]);
 
     const [formData, setFormData] = useState(getInitialFormData());
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-
 
     useEffect(() => {
         if (isOpen) {
@@ -58,7 +109,6 @@ export const TaskForm = ({
             setErrors({});
         }
     }, [getInitialFormData, isOpen, selectedDates, selectedTask]);
-
 
     const handleChange = useCallback((e) => {
         if (!e || !e.target) return;
@@ -94,7 +144,6 @@ export const TaskForm = ({
         }
     }, [errors]);
 
-
     const validateForm = useCallback(() => {
         const newErrors = {};
 
@@ -127,7 +176,6 @@ export const TaskForm = ({
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
-
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -138,7 +186,30 @@ export const TaskForm = ({
 
         setIsSubmitting(true);
         try {
-            await handleTaskSubmit(formData, selectedTask?.id);
+            // Convertir les dates du format YYYY-MM-DD en dates ISO
+            // en s'assurant qu'elles sont interprétées en UTC et non en local
+            let startISO, endISO;
+            
+            if (formData.startDate) {
+                // Crée une date UTC à partir de la chaîne YYYY-MM-DD
+                const [startYear, startMonth, startDay] = formData.startDate.split('-').map(Number);
+                const startDate = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+                startISO = startDate.toISOString();
+            }
+            
+            if (formData.endDate) {
+                // Pour la date de fin, nous ajoutons un jour car FullCalendar l'interprète comme exclusive
+                const [endYear, endMonth, endDay] = formData.endDate.split('-').map(Number);
+                const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay + 1));
+                endISO = endDate.toISOString();
+            }
+            
+            await handleTaskSubmit({
+                ...formData,
+                id: selectedTask?.id,
+                start: startISO,
+                end: endISO
+            });
             onClose();
         } catch (error) {
             console.error('Error submitting form:', error);
@@ -150,7 +221,6 @@ export const TaskForm = ({
             setIsSubmitting(false);
         }
     }, [formData, handleTaskSubmit, onClose, selectedTask?.id, validateForm]);
-
 
     const handleBackdropClick = useCallback((e) => {
         if (e.target === e.currentTarget) {
