@@ -761,8 +761,30 @@ export const useTaskHandlers = (
     
     const startDate = info.date;
     
+    // Vérifier si c'est un jour férié ou un weekend
     if (DateUtils.isHolidayOrWeekend(startDate, holidays)) {
       toast.warning('Impossible de planifier sur un jour non ouvré', TOAST_CONFIG);
+      if (info.draggedEl) {
+        info.draggedEl.style.opacity = '1';
+      }
+      return;
+    }
+    
+    // Vérifier si la ressource cible est une équipe
+    if (info.resource && info.resource.extendedProps && info.resource.extendedProps.isTeam) {
+      toast.warning('Impossible de planifier directement sur une équipe', TOAST_CONFIG);
+      if (info.draggedEl) {
+        info.draggedEl.style.opacity = '1';
+      }
+      return;
+    }
+    
+    // Vérifier si l'ID de la ressource commence par "team_"
+    if (info.resource && typeof info.resource.id === 'string' && info.resource.id.startsWith('team_')) {
+      toast.warning('Impossible de planifier directement sur une équipe', TOAST_CONFIG);
+      if (info.draggedEl) {
+        info.draggedEl.style.opacity = '1';
+      }
       return;
     }
     
@@ -804,6 +826,7 @@ export const useTaskHandlers = (
     
     return true;
   }, [holidays, boardTasks, updateTaskStatus, setBoardTasks, handleTaskUpdate]);
+  
 
   // Réception d'un événement externe
   const handleEventReceive = useCallback((info) => {

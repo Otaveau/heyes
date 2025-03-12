@@ -4,6 +4,8 @@ const getTeams = async (req, res) => {
   try {
     const teams = await Team.findAll(req.user.id);
     res.json(teams);
+    console.log('teams :', teams);
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -175,3 +175,42 @@
     background-color: inherit;
   }
 }
+
+/* Ajouter ces styles à votre fichier CalendarView.css ou équivalent */
+
+/* Style pour les lignes d'équipes */
+.fc-timeline-lane.team-resource-lane {
+  background-color: #f3f4f6 !important; /* Gris clair */
+  cursor: not-allowed !important;
+}
+
+/* Empêcher visuellement le dépôt sur les équipes */
+.fc-timeline-lane.team-resource-lane.fc-highlight {
+  background-color: #fee2e2 !important; /* Rouge clair pour indiquer qu'on ne peut pas déposer */
+}
+
+/* Coloration spéciale pendant le survol pour indiquer la non-droppabilité */
+.fc-timeline-lane.team-resource-lane:hover {
+  background-color: #f3f4f6 !important; /* Reste la même couleur */
+}
+
+/* Style pour les cellules de jours fériés et weekends */
+.holiday-column {
+  background-color: #fef3c7 !important; /* Jaune pâle */
+}
+
+.weekend-column {
+  background-color: #f3f4f6 !important; /* Gris très clair */
+}
+
+/* Renforcer les styles pour les en-têtes d'équipe */
+.fc-datagrid-cell.team-header {
+  font-weight: bold !important;
+  background-color: #e5e7eb !important;
+  border-bottom: 1px solid #d1d5db !important;
+}
+
+/* Style pour propriétaires (enfants des équipes) */
+.fc-datagrid-cell.owner-cell {
+  padding-left: 20px !important;
+}

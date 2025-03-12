@@ -5,7 +5,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import { OwnerManagement } from './components/manage/OwnerManagement';
 import { TeamManagement } from './components/manage/TeamManagement';
-import Toolbar from './components/ui/toolbar';
+import { Toolbar } from './components/ui/toolbar';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

@@ -7,34 +7,16 @@ import {
   UserCircle, 
   LogOut, 
   Menu, 
-  X, 
-  Sun, 
-  Moon, 
+  X,  
   Settings,
   Layers
 } from 'lucide-react';
-import { Button } from '../ui/button';
 
-const Toolbar = () => {
+export const Toolbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark' || 
-      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  });
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { state, logout } = useAuth();
   const location = useLocation();
-
-  useEffect(() => {
-    // Appliquer le thème
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
 
   // Fermer les menus quand on change de page
   useEffect(() => {
@@ -44,10 +26,6 @@ const Toolbar = () => {
 
   const handleLogout = () => {
     logout();
-  };
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
   };
 
   const navItems = [
@@ -67,7 +45,7 @@ const Toolbar = () => {
               <div className="flex-shrink-0 flex items-center">
                 <Link to="/calendar" className="flex items-center">
                   <Layers className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-                  <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">HeyesApp</span>
+                  <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Heyes</span>
                 </Link>
               </div>
 
@@ -227,5 +205,3 @@ const Toolbar = () => {
     </div>
   );
 };
-
-export default Toolbar;

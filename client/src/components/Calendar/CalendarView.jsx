@@ -5,21 +5,13 @@ import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { toast } from 'react-toastify';
+import { TOAST_CONFIG } from '../../constants/constants';
 import { TaskForm } from '../tasks/TaskForm';
 import { TaskBoard } from '../tasks/TaskBoard';
 import { DateUtils } from '../../utils/dateUtils';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import '../../style/CalendarView.css';
 
-// Configuration du toast (si non définie ailleurs)
-const TOAST_CONFIG = {
-  position: "top-right",
-  autoClose: 3000,
-  hideProgressBar: false,
-  closeOnClick: true,
-  pauseOnHover: true,
-  draggable: true
-};
 
 export const CalendarView = () => {
   // État principal du calendrier
@@ -56,16 +48,14 @@ export const CalendarView = () => {
   useEffect(() => {
     if (!tasks || !Array.isArray(tasks)) return;
 
-    console.log ('tasks :', tasks);
-    
-    // Séparer les tâches en deux groupes
     const calendar = tasks.filter(task => task.resourceId);
     const board = tasks.filter(task => !task.resourceId);
     
     setCalendarTasks(calendar);
     setBoardTasks(board);
   }, [tasks]);
-  
+
+
   // Fonction pour synchroniser les changements locaux avec le serveur
   const syncChanges = useCallback(async () => {
     if (!hasLocalChanges) return;
@@ -122,18 +112,18 @@ export const CalendarView = () => {
     updateTaskStatus
     
   } = useTaskHandlers(
-    setTasks,           // Pour mettre à jour les tâches brutes
-    setCalendarState,      // Pour gérer l'état du calendrier
-    tasks,              // Toutes les tâches
-    calendarTasks,         // Tâches filtrées pour le calendrier
-    boardTasks,            // Tâches filtrées pour le TaskBoard
-    setCalendarTasks,      // Pour mettre à jour les tâches du calendrier
-    setBoardTasks,         // Pour mettre à jour les tâches du TaskBoard
-    dropZoneRefs,          // Références aux zones de dépôt
-    dropZones,             // Configuration des zones
-    holidays,              // Jours fériés
+    setTasks,           
+    setCalendarState,
+    tasks,
+    calendarTasks,
+    boardTasks,
+    setCalendarTasks,
+    setBoardTasks,
+    dropZoneRefs,
+    dropZones,
+    holidays,
     calendarRef,
-    setHasLocalChanges           // Référence au calendrier
+    setHasLocalChanges
   );
 
   // Gestion des draggables
@@ -181,6 +171,7 @@ export const CalendarView = () => {
     };
   }, [boardTasks, dropZones]);
 
+
   return (
     <div className="flex flex-col dashboard">
       <div className="w-full p-4 calendar">
@@ -215,24 +206,54 @@ export const CalendarView = () => {
           selectMirror={true}
           droppable={true}
           resourceAreaWidth="15%"
-          resourceGroupField="team" // Activer le regroupement par le champ parentId
-          resourcesInitiallyExpanded={true} // Les groupes sont développés par défaut
-          resourceLabelDidMount={(info) => {
-            console.log('info.resource :', info.resource);
-            if (!info.resource.extendedProps?.team) {
-              info.el.style.fontWeight = 'bold';
-              info.el.style.backgroundColor = '#f3f4f6';
-              info.el.style.borderBottom = '1px solid #e5e7eb';
-              info.el.style.color = '#4b5563';
-            }
-          }}
           slotDuration={{ days: 1 }}
           selectConstraint={{
             start: '00:00',
             end: '24:00'
           }}
           weekends={true}
-          eventAllow={(dropInfo) => {
+
+          resourceOrder="title"
+          resourcesInitiallyExpanded={true}
+          
+          resourceLabelDidMount={(info) => {
+            // Style pour les en-têtes de groupe (équipes)
+            if (info.resource.extendedProps?.isTeam) {
+              info.el.style.fontWeight = 'bold';
+              info.el.style.backgroundColor = '#e5e7eb';
+              info.el.style.borderBottom = '1px solid #d1d5db';
+              info.el.style.color = '#1f2937';
+              info.el.style.fontSize = '0.95rem';
+            } else {
+              // Style pour les membres de l'équipe
+              info.el.style.paddingLeft = '20px';
+              info.el.style.borderBottom = '1px solid #e5e7eb';
+              info.el.style.color = '#4b5563';
+            }
+          }}
+
+          // Appliquer un style différent aux lignes d'équipe
+          resourceLaneDidMount={(info) => {
+            if (info.resource.extendedProps?.isTeam) {
+              // Griser la ligne entière de l'équipe
+              info.el.style.backgroundColor = '#f3f4f6';
+              info.el.style.cursor = 'not-allowed';
+            }
+          }}
+
+          // Empêcher le dépôt sur les lignes d'équipe
+          eventAllow={(dropInfo, draggedEvent) => {
+            // Vérifier si la cible de dépôt est une équipe
+            const resourceId = dropInfo.resource ? dropInfo.resource.id : null;
+            const resource = resourceId ? 
+              resources.find(r => r.id === resourceId) : null;
+            
+            // Si c'est une équipe, ne pas autoriser le dépôt
+            if (resource && resource.extendedProps?.isTeam) {
+              return false;
+            }
+            
+            // Vérifier si c'est un jour férié ou un weekend
             const startDate = new Date(dropInfo.start);
             const endDate = new Date(dropInfo.end);
             endDate.setDate(endDate.getDate() - 1);
@@ -244,6 +265,8 @@ export const CalendarView = () => {
 
             return true;
           }}
+
+
           slotLabelClassNames={(arg) => {
             if (!arg?.date) return [];
             const classes = [];
@@ -271,15 +294,12 @@ export const CalendarView = () => {
           dayCellClassNames={(arg) => {
             if (!arg?.date) return [];
             const classes = [];
-
             if (DateUtils.isWeekend(arg.date)) {
               classes.push('weekend-cell');
             }
-
             if (DateUtils.isHoliday(arg.date, holidays)) {
               classes.push('holiday-cell');
             }
-
             return classes;
           }}
           eventDragStart={handleEventDragStart}
