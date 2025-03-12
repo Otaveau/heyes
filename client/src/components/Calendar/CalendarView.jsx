@@ -24,6 +24,9 @@ export const CalendarView = () => {
     currentView: 'resourceTimelineYear', // Ajout d'un état pour suivre la vue actuelle
   });
 
+  // Année actuellement sélectionnée dans le calendrier
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
   // Zones de dépôt pour le TaskBoard
   const dropZones = useMemo(() => [
     { id: 'todo', statusId: '1', title: 'À faire' },
@@ -173,21 +176,20 @@ export const CalendarView = () => {
   }, [boardTasks, dropZones]);
 
   // Nouveaux mois en français pour les boutons
-  const months = [
+  const months = useMemo(() => [
     'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-  ];
+  ], []);
 
   // Fonction pour naviguer vers un mois spécifique
-  const navigateToMonth = (monthIndex) => {
+  const navigateToMonth = useCallback((monthIndex) => {
     if (!calendarRef.current) return;
     
     // Accéder directement à l'API du calendrier
     const calendarApi = calendarRef.current.getApi();
     
-    // Obtenir l'année courante
-    const today = new Date();
-    const year = today.getFullYear();
+    // Obtenir l'année courante (utiliser l'année sélectionnée)
+    const year = selectedYear;
     
     // Créer la date cible pour le premier jour du mois sélectionné
     const targetDate = new Date(year, monthIndex, 1);
@@ -246,34 +248,194 @@ export const CalendarView = () => {
         console.error("Fallback navigation error:", fallbackError);
       }
     }
-  };
+  }, [calendarRef, selectedYear, months]);
+
+  // Fonctions pour la navigation entre les années
+  const goToPreviousYear = useCallback(() => {
+    setSelectedYear(prev => prev - 1);
+    
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      const currentDate = calendarApi.getDate();
+      const newDate = new Date(currentDate);
+      newDate.setFullYear(currentDate.getFullYear() - 1);
+      calendarApi.gotoDate(newDate);
+    }
+  }, [calendarRef]);
+  
+  const goToNextYear = useCallback(() => {
+    setSelectedYear(prev => prev + 1);
+    
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      const currentDate = calendarApi.getDate();
+      const newDate = new Date(currentDate);
+      newDate.setFullYear(currentDate.getFullYear() + 1);
+      calendarApi.gotoDate(newDate);
+    }
+  }, [calendarRef]);
 
   // Écouteur de changement de vue
-  const handleViewChange = (viewInfo) => {
+  const handleViewChange = useCallback((viewInfo) => {
     setCalendarState(prev => ({ ...prev, currentView: viewInfo.view.type }));
-  };
-
-  // Ajouter un style pour le mois sélectionné
+  }, []);
+  
+  // Style pour les boutons de mois et la navigation dans la barre d'outils
   useEffect(() => {
-    // Ajouter une règle CSS pour la surbrillance des mois
     const style = document.createElement('style');
     style.textContent = `
-      .highlighted-month {
-        background-color: rgba(59, 130, 246, 0.1) !important;
-        box-shadow: inset 0 0 0 2px #3b82f6 !important;
+      /* Conteneur principal de navigation */
+      .fc-monthNav-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 auto;
+        gap: 8px;
+        width: 100%;
+        max-width: 600px;
       }
       
-      .month-button {
+      /* Conteneur de navigation par année */
+      .fc-yearNav-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+        width: 100%;
+      }
+      
+      /* Affichage de l'année */
+      .fc-year-display {
+        margin: 0 16px;
+        font-weight: bold;
+        font-size: 1.4rem;
+        min-width: 80px;
+        text-align: center;
+        color: #1d4ed8;
+        user-select: none;
+      }
+      
+      /* Conteneur des boutons de mois */
+      .fc-months-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+      }
+      
+      /* Boutons des mois */
+      .fc-months-container .fc-button {
+        font-size: 0.9rem;
+        padding: 8px 12px !important;
+        margin: 0;
+        min-width: 90px;
+        text-align: center;
+        border-radius: 6px;
         transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
       }
       
-      .month-button:hover {
-        background-color: #e0e7ff;
+      /* Gestion des versions abrégées/complètes des noms de mois */
+      .fc-months-container .fc-button .month-full {
+        display: inline;
+      }
+      
+      .fc-months-container .fc-button .month-abbr {
+        display: none;
+      }
+      
+      /* Effets de survol et d'état actif */
+      .fc-months-container .fc-button:hover {
+        background-color: #2563eb !important;
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+      }
+      
+      .fc-months-container .fc-button-active {
+        background-color: #1d4ed8 !important;
+        font-weight: bold;
+        box-shadow: 0 4px 8px rgba(29, 78, 216, 0.3);
         transform: translateY(-1px);
       }
       
-      .month-button:active {
-        transform: translateY(1px);
+      /* Style pour ajouter un indicateur sous le mois actif */
+      .fc-months-container .fc-button-active::after {
+        content: '';
+        position: absolute;
+        bottom: 2px;
+        left: 25%;
+        width: 50%;
+        height: 3px;
+        background-color: white;
+        border-radius: 3px;
+      }
+      
+      /* Boutons de navigation par année */
+      .fc-yearNav-container .fc-button {
+        font-size: 1rem;
+        padding: 6px 14px !important;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      
+      .fc-yearNav-container .fc-button:hover {
+        background-color: #2563eb !important;
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+      }
+      
+      /* Styles responsifs */
+      @media (max-width: 768px) {
+        .fc-months-container .fc-button {
+          min-width: 70px;
+          padding: 6px 8px !important;
+          font-size: 0.85rem;
+        }
+        
+        .fc-year-display {
+          font-size: 1.2rem;
+          margin: 0 10px;
+        }
+        
+        .fc-yearNav-container .fc-button {
+          font-size: 0.9rem;
+          padding: 4px 10px !important;
+        }
+      }
+      
+      @media (max-width: 640px) {
+        .fc-months-container .fc-button .month-full {
+          display: none;
+        }
+        
+        .fc-months-container .fc-button .month-abbr {
+          display: inline;
+        }
+        
+        .fc-months-container .fc-button {
+          min-width: 50px;
+          padding: 5px 7px !important;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .fc-months-container .fc-button {
+          font-size: 0.75rem;
+          padding: 4px 5px !important;
+          min-width: 40px;
+        }
+        
+        .fc-monthNav-container {
+          gap: 4px;
+        }
+        
+        .fc-yearNav-container .fc-button {
+          font-size: 0.8rem;
+          padding: 3px 8px !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -283,29 +445,249 @@ export const CalendarView = () => {
     };
   }, []);
 
+  // Création des boutons de mois personnalisés pour le headerToolbar
+  useEffect(() => {
+    if (!calendarRef.current) return;
+    
+    // Variable pour suivre si l'initialisation a été effectuée
+    let initialized = false;
+    
+    // Fonction pour mettre à jour l'affichage de l'année
+    const updateYearDisplay = () => {
+      const yearDisplay = document.querySelector('.fc-year-display');
+      if (yearDisplay) {
+        yearDisplay.textContent = selectedYear;
+      }
+    };
+    
+    // Fonction pour créer et ajouter les boutons
+    const initializeMonthButtons = () => {
+      if (initialized) return;
+      
+      try {
+        // Cibler la partie centrale de la barre d'outils
+        const toolbarCenter = document.querySelector('.fc-header-toolbar .fc-center') || 
+                             document.querySelector('.fc-toolbar .fc-center') ||
+                             document.querySelector('.fc-toolbar-chunk:nth-child(2)');
+        
+        if (!toolbarCenter) {
+          console.warn("Partie centrale de la barre d'outils non trouvée, réessai plus tard...");
+          return false;
+        }
+        
+        // Vérifier si les boutons existent déjà pour éviter les doublons
+        if (document.querySelector('.fc-monthNav-container')) {
+          updateYearDisplay(); // Mettre à jour l'année si les boutons existent déjà
+          return true;
+        }
+        
+        // Vider le contenu actuel de la partie centrale
+        toolbarCenter.innerHTML = '';
+        
+        // Créer un conteneur pour l'année et les boutons des mois
+        const navContainer = document.createElement('div');
+        navContainer.className = 'fc-monthNav-container';
+        navContainer.style.display = 'flex';
+        navContainer.style.flexDirection = 'column';
+        navContainer.style.alignItems = 'center';
+        navContainer.style.gap = '5px';
+
+        
+        // Ligne supérieure: Année avec navigation
+        const yearNavContainer = document.createElement('div');
+        yearNavContainer.className = 'fc-yearNav-container';
+        yearNavContainer.style.display = 'flex';
+        yearNavContainer.style.alignItems = 'center';
+        yearNavContainer.style.marginBottom = '5px';
+        
+        // Bouton année précédente
+        const prevYearBtn = document.createElement('button');
+        prevYearBtn.type = 'button';
+        prevYearBtn.className = 'fc-button fc-button-primary';
+        prevYearBtn.style.fontSize = '0.75rem';
+        prevYearBtn.style.padding = '2px 8px';
+        prevYearBtn.innerHTML = '&laquo;'; // Double flèche gauche
+        prevYearBtn.title = 'Année précédente';
+        prevYearBtn.addEventListener('click', goToPreviousYear);
+        
+        // Affichage de l'année courante
+        const yearDisplay = document.createElement('span');
+        yearDisplay.className = 'fc-year-display';
+        yearDisplay.style.margin = '0 12px';
+        yearDisplay.style.fontWeight = 'bold';
+        yearDisplay.style.fontSize = '1.2rem';
+        yearDisplay.textContent = selectedYear;
+        
+        // Bouton année suivante
+        const nextYearBtn = document.createElement('button');
+        nextYearBtn.type = 'button';
+        nextYearBtn.className = 'fc-button fc-button-primary';
+        nextYearBtn.style.fontSize = '0.75rem';
+        nextYearBtn.style.padding = '2px 8px';
+        nextYearBtn.innerHTML = '&raquo;'; // Double flèche droite
+        nextYearBtn.title = 'Année suivante';
+        nextYearBtn.addEventListener('click', goToNextYear);
+        
+        // Assembler les éléments de navigation d'année
+        yearNavContainer.appendChild(prevYearBtn);
+        yearNavContainer.appendChild(yearDisplay);
+        yearNavContainer.appendChild(nextYearBtn);
+        
+        // Ligne inférieure: Boutons des mois
+        const monthsContainer = document.createElement('div');
+        monthsContainer.className = 'fc-months-container';
+        monthsContainer.style.display = 'flex';
+        monthsContainer.style.flexWrap = 'wrap';
+        monthsContainer.style.justifyContent = 'center';
+        monthsContainer.style.gap = '3px';
+        monthsContainer.style.width = '1500px';
+        
+                  // Ajouter les boutons de mois
+        months.forEach((month, index) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'fc-button fc-button-primary';
+          
+          // Déterminer si ce mois doit être actif
+          const today = new Date();
+          const currentMonth = today.getMonth();
+          const currentYear = today.getFullYear();
+          const isCurrentMonth = currentMonth === index && currentYear === selectedYear;
+          
+          // Pour le texte du bouton, utiliser le mois complet pour les grands écrans et l'abréviation pour les petits
+          const monthAbbr = month.substring(0, 3);
+          // Utilisez des spans pour appliquer des styles différents
+          button.innerHTML = `
+            <span class="month-full">${month}</span>
+            <span class="month-abbr">${monthAbbr}</span>
+          `;
+          
+          // Mise en évidence du mois actuel
+          if (isCurrentMonth) {
+            button.classList.add('fc-button-active');
+          }
+          
+          // Ajouter un attribut data-month pour faciliter la sélection CSS
+          button.setAttribute('data-month', index);
+          
+          // Gestionnaire d'événement pour la navigation
+          button.addEventListener('click', () => {
+            // Supprimer la classe active de tous les boutons
+            document.querySelectorAll('.fc-months-container .fc-button').forEach(btn => {
+              btn.classList.remove('fc-button-active');
+            });
+            
+            // Ajouter la classe active au bouton cliqué
+            button.classList.add('fc-button-active');
+            
+            // Naviguer vers le mois
+            navigateToMonth(index);
+          });
+          
+          monthsContainer.appendChild(button);
+        });
+        
+        // Assembler le conteneur principal
+        navContainer.appendChild(yearNavContainer);
+        navContainer.appendChild(monthsContainer);
+        
+        // Ajouter le conteneur à la barre d'outils centrale
+        toolbarCenter.appendChild(navContainer);
+        
+        console.log("Navigation par année et mois ajoutée avec succès à la barre d'outils centrale");
+        return true;
+      } catch (error) {
+        console.error("Erreur lors de l'ajout des boutons de navigation:", error);
+        return false;
+      }
+    };
+    
+    // Tentatives multiples avec intervalles croissants
+    const attempts = [200, 500, 1000, 2000];
+    let attemptCount = 0;
+    
+    const tryInitialize = () => {
+      if (initialized || attemptCount >= attempts.length) return;
+      
+      const result = initializeMonthButtons();
+      
+      if (result) {
+        initialized = true;
+      } else {
+        // Programmer la prochaine tentative
+        setTimeout(tryInitialize, attempts[attemptCount]);
+        attemptCount++;
+      }
+    };
+    
+    // Première tentative
+    tryInitialize();
+    
+    // Fonction pour réinitialiser les boutons après les changements de vue
+    const resetButtons = () => {
+      // Supprimer les boutons existants
+      const container = document.querySelector('.fc-monthNav-container');
+      if (container) {
+        container.remove();
+      }
+      
+      // Réinitialiser le flag pour permettre une nouvelle initialisation
+      initialized = false;
+      attemptCount = 0;
+      
+      // Retenter l'initialisation
+      setTimeout(tryInitialize, 200);
+    };
+    
+    // Attacher les gestionnaires d'événements pour les changements de vue
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.on('viewDidMount', resetButtons);
+      
+      // Aussi réinitialiser lors des changements de date
+      const handleDatesSet = (info) => {
+        // Mettre à jour l'année sélectionnée en fonction de la date du calendrier
+        const calendarDate = calendarApi.getDate();
+        const calendarYear = calendarDate.getFullYear();
+        
+        if (calendarYear !== selectedYear) {
+          setSelectedYear(calendarYear);
+        }
+        
+        // Mettre à jour l'affichage de l'année
+        updateYearDisplay();
+      };
+      
+      calendarApi.on('datesSet', handleDatesSet);
+      
+      return () => {
+        // Nettoyage
+        const container = document.querySelector('.fc-monthNav-container');
+        if (container) {
+          container.remove();
+        }
+        
+        // Détacher les gestionnaires d'événements
+        try {
+          calendarApi.off('viewDidMount', resetButtons);
+          calendarApi.off('datesSet', handleDatesSet);
+        } catch (e) {
+          console.error("Erreur lors du nettoyage des événements:", e);
+        }
+      };
+    }
+    
+    return () => {
+      // Nettoyage de secours si calendarRef.current n'était pas disponible au moment de l'initialisation
+      const container = document.querySelector('.fc-monthNav-container');
+      if (container) {
+        container.remove();
+      }
+    };
+  }, [selectedYear, navigateToMonth, goToPreviousYear, goToNextYear, months]);
+
   return (
     <div className="flex flex-col dashboard">
-      {/* Nouveaux boutons de navigation par mois - toujours visibles */}
-      {true && (
-        <div className="month-navigation flex flex-wrap justify-center gap-2 mb-4 p-3 bg-gray-100 rounded shadow-sm">
-          {months.map((month, index) => {
-            // Déterminer si c'est le mois courant
-            const today = new Date();
-            const isCurrentMonth = today.getMonth() === index;
-            
-            return (
-              <button
-                key={month}
-                className={`month-button px-3 py-1 text-sm ${isCurrentMonth ? 'bg-blue-100 border-blue-400 text-blue-800' : 'bg-white border-gray-300 text-gray-700'} border rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50`}
-                onClick={() => navigateToMonth(index)}
-              >
-                {month}
-              </button>
-            );
-          })}
-        </div>
-      )}
-      
       <div className="w-full p-4 calendar">
         <FullCalendar
           ref={calendarRef}
@@ -330,7 +712,6 @@ export const CalendarView = () => {
           initialView="resourceTimelineYear"
           headerToolbar={{
             left: 'prev,next today',
-            center: 'title',
             right: 'resourceTimelineYear,resourceTimelineMonth,resourceTimelineWeek'
           }}
           editable={true}
