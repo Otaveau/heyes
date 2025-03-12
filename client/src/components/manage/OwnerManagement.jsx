@@ -30,7 +30,6 @@ export const OwnerManagement = () => {
   useEffect(() => {
     // Afficher les détails du propriétaire sélectionné dans la console
     if (selectedOwner && selectedOwner !== previousSelectedOwner.current) {
-      console.log('Propriétaire sélectionné:', selectedOwner);
       previousSelectedOwner.current = selectedOwner;
     }
   }, [selectedOwner]);
@@ -223,12 +222,8 @@ export const OwnerManagement = () => {
         email: editedOwner.email.trim(),
         teamId: editedOwner.teamId ? parseInt(editedOwner.teamId, 10) : null
       };
-
-      // Utilisation du service updateOwner avec l'ID correct
-      console.log('ID utilisé pour la mise à jour:', ownerId);
       
       const updatedOwner = await updateOwner(ownerId, sanitizedOwner);
-      console.log('Propriétaire mis à jour:', updatedOwner);
 
       // Récupérer le nom de l'équipe pour l'ajouter aux informations du propriétaire
       const teamId = updatedOwner.teamId || updatedOwner.team_id;
@@ -242,9 +237,7 @@ export const OwnerManagement = () => {
         teamId: teamId,
         teamName: teamName
       };
-      
-      console.log('Propriétaire normalisé:', normalizedOwner);
-      
+
       // Mettre à jour le propriétaire sélectionné
       setSelectedOwner(normalizedOwner);
       
@@ -480,7 +473,6 @@ export const OwnerManagement = () => {
                 </form>
               ) : (
                 <div className="space-y-4">
-                  {console.log('Affichage des détails du propriétaire:', selectedOwner)}
                   <div>
                     <p className="text-sm text-gray-500">Nom</p>
                     <p className="font-medium">{selectedOwner.name}</p>

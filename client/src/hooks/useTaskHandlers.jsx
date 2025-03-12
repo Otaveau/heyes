@@ -515,7 +515,6 @@ export const useTaskHandlers = (
             placeholderTask.parentNode.removeChild(placeholderTask);
           }
         } catch (e) {
-          console.log('Placeholder déjà supprimé par React');
         }
       }, 200);
     }, 180);
@@ -555,9 +554,7 @@ export const useTaskHandlers = (
 
   // Début du glisser-déposer
   const handleEventDragStart = useCallback((info) => {
-    console.log('Début du glisser-déposer:', info.event.title);
     
-    // Utiliser la fonction importée au lieu de la fonction locale
     highlightTaskBoard(true);
     
     createGhostElement(info);
@@ -826,12 +823,11 @@ export const useTaskHandlers = (
     
     return true;
   }, [holidays, boardTasks, updateTaskStatus, setBoardTasks, handleTaskUpdate]);
-  
+
 
   // Réception d'un événement externe
   const handleEventReceive = useCallback((info) => {
     if (info.event.extendedProps.processed) {
-      console.log('Événement déjà traité, ignorer');
       return;
     }
     info.event.setExtendedProp('processed', true);

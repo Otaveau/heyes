@@ -76,8 +76,6 @@ export const createTask = async (taskData) => {
 
 export const updateTask = async (id, taskData) => {
 
-    console.log('updateTask taskData :', taskData);
-
     try {
         validateTaskData(taskData);
         const taskId = parseInt(id);
