@@ -53,14 +53,17 @@ export const CalendarMain = ({
         return;
       }
       
-      monthButtons.forEach(btn => {
-        btn.classList.remove('fc-button-active');
-      });
+      // Retirer la classe active de tous les boutons
+      // monthButtons.forEach(btn => {
+      //   btn.classList.remove('fc-button-active');
+      // });
       
-      const activeButton = document.querySelector(`.fc-month-button[data-month="${activeMonthIndex}"]`);
-      if (activeButton) {
-        activeButton.classList.add('fc-button-active');
-      }
+      // Ne pas ajouter la classe active au bouton sélectionné
+      // Supprimer ces deux lignes:
+      // const activeButton = document.querySelector(`.fc-month-button[data-month="${activeMonthIndex}"]`);
+      // if (activeButton) {
+      //   activeButton.classList.add('fc-button-active');
+      // }
     };
     
     // Fonction pour réinitialiser la navigation après les changements de vue
@@ -206,6 +209,8 @@ export const CalendarMain = ({
             button.className = 'fc-button fc-button-primary fc-month-button';
             button.setAttribute('data-month', index);
             
+            // Supprimez ou commentez ce bloc qui détermine si c'est le mois actuel
+            /*
             // Déterminer si c'est le mois actuel
             const today = new Date();
             const currentMonth = today.getMonth();
@@ -215,6 +220,7 @@ export const CalendarMain = ({
             if (isCurrentMonth) {
               button.classList.add('fc-button-active');
             }
+            */
             
             // Texte complet et abrégé pour responsive
             const monthAbbr = month.substring(0, 3);
@@ -225,7 +231,25 @@ export const CalendarMain = ({
             
             // Gestionnaire de clic pour naviguer vers le mois
             button.addEventListener('click', () => {
-              updateMonthButtons(index);
+              // Retirer les classes de tous les boutons
+              document.querySelectorAll('.fc-month-button').forEach(btn => {
+                btn.classList.remove('fc-button-active', 'fc-button-clicked');
+                btn.blur();
+              });
+              
+              // Ajouter une classe temporaire au bouton cliqué
+              button.classList.add('fc-button-clicked');
+              
+              // Retirer cette classe après un court délai
+              setTimeout(() => {
+                button.classList.remove('fc-button-clicked');
+                button.blur();
+              }, 300);
+              
+              // Ne plus appeler updateMonthButtons
+              // updateMonthButtons(index);
+              
+              // Naviguer vers le mois
               navigateToMonth(index);
             });
             

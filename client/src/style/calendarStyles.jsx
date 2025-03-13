@@ -399,6 +399,21 @@ export function getEnhancedCalendarStyles() {
       .fc-timeline-lane:nth-child(even) {
         background-color: #f8fafc;
       }
+        
+      .fc-month-button:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        }
+
+        /* Style pour l'effet temporaire */
+        .fc-month-button.fc-button-clicked {
+        background-color: #4a5568;
+        color: white;
+        transform: scale(0.98);
+        transition: all 0.2s ease;
+        outline: none !important;
+        box-shadow: none !important;
+        }
 
     `;
 }
