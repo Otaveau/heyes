@@ -52,24 +52,10 @@ export const CalendarMain = ({
       if (!monthButtons || monthButtons.length === 0) {
         return;
       }
-      
-      // Retirer la classe active de tous les boutons
-      // monthButtons.forEach(btn => {
-      //   btn.classList.remove('fc-button-active');
-      // });
-      
-      // Ne pas ajouter la classe active au bouton sélectionné
-      // Supprimer ces deux lignes:
-      // const activeButton = document.querySelector(`.fc-month-button[data-month="${activeMonthIndex}"]`);
-      // if (activeButton) {
-      //   activeButton.classList.add('fc-button-active');
-      // }
     };
     
     // Fonction pour réinitialiser la navigation après les changements de vue
-    const resetNavigation = () => {
-      console.log("Réinitialisation de la navigation...");
-      
+    const resetNavigation = () => {      
       // Supprimer le conteneur existant
       const container = document.querySelector('.fc-custom-nav-container');
       if (container) {

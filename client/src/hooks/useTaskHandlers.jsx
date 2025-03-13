@@ -670,6 +670,7 @@ export const useTaskHandlers = (
       start: startDate,
       end: endDate,
       resourceId,
+      statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId,
       extendedProps: {
         statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId
       }
@@ -785,6 +786,8 @@ export const useTaskHandlers = (
     if (!externalTask) return false;
     
     const endDate = new Date(startDate.getTime() + 86400000);
+
+    console.log('externalTask :', externalTask);
     
     const updates = {
       title: externalTask.title,
@@ -792,11 +795,9 @@ export const useTaskHandlers = (
       start: startDate,
       end: endDate,
       resourceId: info.resource?.id ? parseInt(info.resource.id) : null,
-      extendedProps: {
-        statusId: '2' // En cours
-      }
+      statusId: '2'
     };
-    
+
     updateTaskStatus(taskId, updates);
     
     setTimeout(() => {
