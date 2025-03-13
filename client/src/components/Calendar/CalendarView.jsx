@@ -111,6 +111,7 @@ export const CalendarView = () => {
         if (task.id.toString() === taskId.toString()) {
           return {
             ...task,
+            resourceId: null,
             extendedProps: {
               ...task.extendedProps,
               statusId: newStatusId

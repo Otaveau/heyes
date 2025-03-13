@@ -64,6 +64,26 @@ export const TaskBoard = ({
     return null;
   };
 
+  // Gérer le déplacement d'une tâche depuis le taskboard 2 vers un autre taskboard
+  // const handleTaskMoveFromZone2 = (taskId, targetZoneStatusId) => {
+  //   const task = externalTasks.find(t => t.id.toString() === taskId.toString());
+  //   if (!task) return;
+
+  //   // Préparer les mises à jour pour la tâche
+  //   const updates = {
+  //     resourceId: null, // Supprimer l'assignation de ressource
+  //     extendedProps: {
+  //       ...task.extendedProps,
+  //       statusId: targetZoneStatusId // Mettre à jour le statusId
+  //     }
+  //   };
+
+  //   // Appeler la fonction de mise à jour
+  //   if (updateTaskStatus) {
+  //     updateTaskStatus(taskId, updates);
+  //   }
+  // };
+
   // Initialisation des draggables FullCalendar pour le calendrier
   useEffect(() => {
     // S'assurer que les refs sont initialisées
@@ -155,7 +175,7 @@ export const TaskBoard = ({
               data-zone-id={zone.id}
             >
               <h3 className={`mb-4 font-bold ${isInProgressZone ? 'text-blue-700' : ''}`}>
-                {zone.title} {isInProgressZone }
+                {zone.title} {isInProgressZone && '(Lecture seule)'}
               </h3>
               {zoneTasks.map(task => {
                 const currentStatusId = task.extendedProps?.statusId || task.statusId;
@@ -177,12 +197,13 @@ export const TaskBoard = ({
                       </div>
                     )}
                     
-                    {/* Actions de tâche - aucune flèche de navigation pour les tâches dans la zone "En cours" */}
+                    {/* Actions de tâche - flèches pour toutes les zones */}
                     <div className="flex justify-end mt-2 pt-2 border-t">
-                      {!isInProgressZone && prevZone && (
+                      {prevZone && (
                         <button
                           className="mr-2 text-gray-400 hover:text-blue-500 focus:outline-none"
                           onClick={(e) => {
+                            
                             e.stopPropagation();
                             updateTaskStatus && updateTaskStatus(task.id, prevZone.statusId);
                           }}
@@ -200,7 +221,7 @@ export const TaskBoard = ({
                         <Trash2 size={16} />
                       </button>
                       
-                      {!isInProgressZone && nextZone && (
+                      {nextZone && (
                         <button
                           className="ml-2 text-gray-400 hover:text-blue-500 focus:outline-none"
                           onClick={(e) => {
