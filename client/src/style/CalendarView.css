@@ -214,3 +214,9 @@
 .fc-datagrid-cell.owner-cell {
   padding-left: 20px !important;
 }
+
+.fc-day-today {
+  background-color: rgba(59, 130, 246, 0.05) !important;
+  border-left: 2px solid #3b82f6 !important;
+  border-right: 2px solid #3b82f6 !important;
+}

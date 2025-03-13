@@ -399,5 +399,6 @@ export function getEnhancedCalendarStyles() {
       .fc-timeline-lane:nth-child(even) {
         background-color: #f8fafc;
       }
+
     `;
-  }
+}
