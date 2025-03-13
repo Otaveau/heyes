@@ -18,7 +18,7 @@ export const CalendarMain = ({
   goToNextYear,
   navigateToMonth
 }) => {
-  // Initialisation des styles pour les boutons de navigation
+
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = getCalendarStyles();
@@ -29,7 +29,6 @@ export const CalendarMain = ({
     };
   }, []);
 
-  // Initialisation de l'interface utilisateur personnalisée (boutons de mois)
   useEffect(() => {
     if (!calendarRef.current) return;
     
@@ -73,8 +72,8 @@ export const CalendarMain = ({
         navContainer.className = 'fc-monthNav-container';
         
         // Ligne supérieure: Année avec navigation
-        // const yearNavContainer = document.createElement('div');
-        // yearNavContainer.className = 'fc-yearNav-container';
+        const yearNavContainer = document.createElement('div');
+        yearNavContainer.className = 'fc-yearNav-container';
         
         // Bouton année précédente
         const prevYearBtn = document.createElement('button');
@@ -98,9 +97,9 @@ export const CalendarMain = ({
         nextYearBtn.addEventListener('click', goToNextYear);
         
         // Assembler les éléments de navigation d'année
-        // yearNavContainer.appendChild(prevYearBtn);
-        // yearNavContainer.appendChild(yearDisplay);
-        // yearNavContainer.appendChild(nextYearBtn);
+        yearNavContainer.appendChild(prevYearBtn);
+        yearNavContainer.appendChild(yearDisplay);
+        yearNavContainer.appendChild(nextYearBtn);
         
         // Ligne inférieure: Boutons des mois
         const monthsContainer = document.createElement('div');
@@ -152,7 +151,7 @@ export const CalendarMain = ({
         });
         
         // Assembler le conteneur principal
-        // navContainer.appendChild(yearNavContainer);
+        navContainer.appendChild(yearNavContainer);
         navContainer.appendChild(monthsContainer);
         
         // Ajouter le conteneur à la barre d'outils centrale
@@ -273,7 +272,6 @@ export const CalendarMain = ({
       schedulerLicenseKey='GPL-My-Project-Is-Open-Source'
       initialView="resourceTimelineYear"
       headerToolbar={{
-        left: 'prev next today title',
         right: 'resourceTimelineYear,resourceTimelineMonth,resourceTimelineWeek'
       }}
       editable={true}
@@ -291,7 +289,6 @@ export const CalendarMain = ({
       resourcesInitiallyExpanded={true}
       viewDidMount={handleViewChange}
       datesSet={(info) => {
-        // Cette fonction serait mieux gérée dans le hook useCalendarNavigation
         handleViewChange(info);
       }}
       

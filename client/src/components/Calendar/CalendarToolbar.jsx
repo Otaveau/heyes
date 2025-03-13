@@ -10,7 +10,7 @@ export const CalendarToolbar = memo(({
 }) => {
   return (
     <div className="fc-monthNav-container">
-      {/* <div className="fc-yearNav-container">
+      <div className="fc-yearNav-container">
         <button
           type="button"
           className="fc-button fc-button-primary"
@@ -28,7 +28,7 @@ export const CalendarToolbar = memo(({
         >
           &raquo;
         </button>
-      </div> */}
+      </div>
       
       <div className="fc-months-container">
         {months.map((month, index) => (
