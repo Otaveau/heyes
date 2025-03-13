@@ -89,7 +89,7 @@ export const CalendarView = () => {
 
   return (
     <div className="flex flex-col dashboard">
-      <div className="w-full p-4 calendar">
+      <div className="w-full mt-20 p-4 calendar">
         <CalendarMain
           calendarRef={calendarRef}
           calendarTasks={calendarTasks}
