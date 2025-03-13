@@ -12,7 +12,7 @@ import {
   Settings
 } from 'lucide-react';
 
-export const Toolbar = () => {
+export const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { state, logout } = useAuth();

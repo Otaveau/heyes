@@ -5,7 +5,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import { OwnerManagement } from './components/manage/OwnerManagement';
 import { TeamManagement } from './components/manage/TeamManagement';
-import { Toolbar } from './components/ui/toolbar';
+import { Navigation } from './components/common/Navigation';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -61,7 +61,7 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
-      {state.isAuthenticated && <Toolbar />}
+      {state.isAuthenticated && <Navigation />}
       <div className="mainContainer mx-auto px-4 pt-5 transition-colors duration-200 dark:bg-gray-900 min-h-screen">
         <Routes>
           <Route path="/" element={<RootRedirect />} />
