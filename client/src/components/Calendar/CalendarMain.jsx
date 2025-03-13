@@ -98,28 +98,50 @@ export const CalendarMain = ({
         nextYearBtn.title = 'Année suivante';
         nextYearBtn.addEventListener('click', goToNextYear);
         
-        // // Bouton aujourd'hui
-        // const todayBtn = document.createElement('button');
-        // todayBtn.type = 'button';
-        // todayBtn.className = 'fc-button fc-button-primary fc-today-button';
-        // todayBtn.textContent = "Aujourd'hui";
-        // todayBtn.title = "Aller à aujourd'hui";
-        // todayBtn.addEventListener('click', () => {
-        //   if (calendarRef.current) {
-        //     const api = calendarRef.current.getApi();
-        //     api.today();
+        // Bouton aujourd'hui
+        const todayBtn = document.createElement('button');
+        todayBtn.type = 'button';
+        todayBtn.className = 'fc-button fc-button-primary fc-today-button';
+        todayBtn.textContent = "Aujourd'hui";
+        todayBtn.title = "Aller à aujourd'hui";
+        todayBtn.addEventListener('click', () => {
+          if (calendarRef.current) {
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
             
-        //     // Mise à jour des boutons de mois
-        //     const today = new Date();
-        //     updateMonthButtons(today.getMonth());
-        //   }
-        // });
+            // Naviguer directement vers le mois actuel plutôt que d'utiliser l'API directement
+            // Cela garantit que notre logique de navigation personnalisée est utilisée
+            navigateToMonth(currentMonth);
+            
+            // Mettre à jour l'affichage de l'année si nécessaire
+            if (currentYear !== parseInt(selectedYear)) {
+              // Si l'année est différente, nous devons utiliser les callbacks pour changer l'année
+              if (currentYear > parseInt(selectedYear)) {
+                // Naviguer vers l'année suivante autant de fois que nécessaire
+                const yearsToAdvance = currentYear - parseInt(selectedYear);
+                for (let i = 0; i < yearsToAdvance; i++) {
+                  setTimeout(() => goToNextYear(), i * 50);
+                }
+              } else {
+                // Naviguer vers l'année précédente autant de fois que nécessaire
+                const yearsToGoBack = parseInt(selectedYear) - currentYear;
+                for (let i = 0; i < yearsToGoBack; i++) {
+                  setTimeout(() => goToPreviousYear(), i * 50);
+                }
+              }
+            }
+            
+            // Mise à jour des boutons de mois
+            updateMonthButtons(currentMonth);
+          }
+        });
         
         // Assembler la navigation par année
         yearNav.appendChild(prevYearBtn);
         yearNav.appendChild(yearDisplay);
         yearNav.appendChild(nextYearBtn);
-        // yearNav.appendChild(todayBtn);
+        yearNav.appendChild(todayBtn);
         
         // -- Section de navigation par mois --
         const monthsNav = document.createElement('div');
@@ -184,6 +206,12 @@ export const CalendarMain = ({
     // Fonction pour mettre à jour les boutons de mois actifs
     const updateMonthButtons = (activeMonthIndex) => {
       const monthButtons = document.querySelectorAll('.fc-month-button');
+      if (!monthButtons || monthButtons.length === 0) {
+        // Si les boutons n'existent pas encore, on ne fait rien
+        // Ils seront mis à jour quand ils seront créés
+        return;
+      }
+      
       monthButtons.forEach(btn => {
         btn.classList.remove('fc-button-active');
       });
@@ -216,15 +244,24 @@ export const CalendarMain = ({
     
     // Fonction pour réinitialiser la navigation après les changements de vue
     const resetNavigation = () => {
+      console.log("Réinitialisation de la navigation...");
+      
+      // Supprimer le conteneur existant
       const container = document.querySelector('.fc-custom-nav-container');
       if (container) {
         container.remove();
       }
       
+      // Réinitialiser l'état
       initialized = false;
       attemptCount = 0;
       
+      // Tenter de réinitialiser immédiatement puis avec des délais croissants
+      // pour s'assurer que la navigation est bien rétablie
+      tryInitialize();
       setTimeout(tryInitialize, 100);
+      setTimeout(tryInitialize, 300);
+      setTimeout(tryInitialize, 500);
     };
     
     // Attacher les gestionnaires d'événements pour les changements de vue
@@ -237,6 +274,7 @@ export const CalendarMain = ({
       // Gérer les changements de date
       const handleDatesSet = (info) => {
         const calendarDate = calendarApi.getDate();
+        const calendarYear = calendarDate.getFullYear();
         const calendarMonth = calendarDate.getMonth();
         
         // Mettre à jour l'affichage de l'année

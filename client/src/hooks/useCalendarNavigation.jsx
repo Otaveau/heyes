@@ -1,4 +1,3 @@
-// hooks/useCalendarNavigation.js
 import { useCallback, useMemo } from 'react';
 
 export const useCalendarNavigation = (calendarRef, selectedYear, setSelectedYear) => {
