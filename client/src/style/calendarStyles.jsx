@@ -1,4 +1,5 @@
 // calendarStyles.js
+
 export function getEnhancedCalendarStyles() {
     return `
       /* Styles généraux pour la headerToolbar */
@@ -71,6 +72,12 @@ export function getEnhancedCalendarStyles() {
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         border: 1px solid #e2e8f0;
+        animation: fadeIn 0.3s ease;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
       }
       
       .fc-nav-row {
@@ -144,6 +151,7 @@ export function getEnhancedCalendarStyles() {
         align-items: center;
         gap: 5px;
         flex-grow: 1;
+        transition: opacity 0.3s ease, height 0.3s ease;
       }
       
       /* Boutons des mois */
@@ -207,6 +215,32 @@ export function getEnhancedCalendarStyles() {
         letter-spacing: 0.025em;
         font-weight: 500;
         font-size: 0.85rem;
+      }
+      
+      /* Indicateur visuel pour le bouton de vue active */
+      .fc-button-active.fc-resourceTimelineYear-button,
+      .fc-button-active.fc-resourceTimelineMonth-button,
+      .fc-button-active.fc-resourceTimelineWeek-button {
+        position: relative;
+      }
+      
+      .fc-button-active.fc-resourceTimelineYear-button::after,
+      .fc-button-active.fc-resourceTimelineMonth-button::after,
+      .fc-button-active.fc-resourceTimelineWeek-button::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 25%;
+        width: 50%;
+        height: 3px;
+        border-radius: 3px;
+        background-color: #1d4ed8;
+      }
+      
+      /* Animation lors du clic sur un bouton */
+      .fc-button-clicked {
+        transform: scale(0.95);
+        transition: transform 0.2s ease;
       }
       
       /* Amélioration du conteneur principal du calendrier */

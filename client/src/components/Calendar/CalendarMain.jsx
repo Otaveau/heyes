@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -6,20 +6,23 @@ import frLocale from '@fullcalendar/core/locales/fr';
 import { DateUtils } from '../../utils/dateUtils';
 import { getEnhancedCalendarStyles } from '../../style/calendarStyles';
 
-export const CalendarMain = ({
+export const CalendarMain = ({ 
   calendarRef,
   calendarTasks,
   resources,
   holidays,
   taskHandlers,
-  handleViewChange,
+  handleViewChange: externalHandleViewChange,
   months,
   selectedYear,
   goToPreviousYear,
   goToNextYear,
   navigateToMonth
 }) => {
-
+  // État pour suivre la vue actuelle
+  const [currentView, setCurrentView] = useState('resourceTimelineYear');
+  
+  // Appliquer les styles améliorés
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = getEnhancedCalendarStyles();
@@ -35,12 +38,57 @@ export const CalendarMain = ({
     
     let initialized = false;
     
+    // Fonction pour mettre à jour l'affichage de l'année
+    const updateYearDisplay = () => {
+      const yearDisplay = document.querySelector('.fc-year-display');
+      if (yearDisplay) {
+        yearDisplay.textContent = selectedYear;
+      }
+    };
+    
+    // Fonction pour mettre à jour les boutons de mois actifs
+    const updateMonthButtons = (activeMonthIndex) => {
+      const monthButtons = document.querySelectorAll('.fc-month-button');
+      if (!monthButtons || monthButtons.length === 0) {
+        return;
+      }
+      
+      monthButtons.forEach(btn => {
+        btn.classList.remove('fc-button-active');
+      });
+      
+      const activeButton = document.querySelector(`.fc-month-button[data-month="${activeMonthIndex}"]`);
+      if (activeButton) {
+        activeButton.classList.add('fc-button-active');
+      }
+    };
+    
+    // Fonction pour réinitialiser la navigation après les changements de vue
+    const resetNavigation = () => {
+      console.log("Réinitialisation de la navigation...");
+      
+      // Supprimer le conteneur existant
+      const container = document.querySelector('.fc-custom-nav-container');
+      if (container) {
+        container.remove();
+      }
+      
+      // Réinitialiser l'état
+      initialized = false;
+      attemptCount = 0;
+      
+      // Tenter de réinitialiser immédiatement puis avec des délais croissants
+      tryInitialize();
+      setTimeout(tryInitialize, 100);
+      setTimeout(tryInitialize, 300);
+    };
+    
     // Fonction principale pour initialiser les boutons de navigation
     const initializeCustomNavigation = () => {
       if (initialized) return;
       
       try {
-        // Cibler la partie gauche de la barre d'outils (pour tout regrouper)
+        // Cibler la partie gauche de la barre d'outils
         const toolbarLeft = document.querySelector('.fc-header-toolbar .fc-left') || 
                            document.querySelector('.fc-toolbar .fc-left') ||
                            document.querySelector('.fc-toolbar-chunk:first-child');
@@ -111,13 +159,11 @@ export const CalendarMain = ({
             const currentMonth = today.getMonth();
             const currentYear = today.getFullYear();
             
-            // Naviguer directement vers le mois actuel plutôt que d'utiliser l'API directement
-            // Cela garantit que notre logique de navigation personnalisée est utilisée
+            // Naviguer directement vers le mois actuel
             navigateToMonth(currentMonth);
             
             // Mettre à jour l'affichage de l'année si nécessaire
             if (currentYear !== parseInt(selectedYear)) {
-              // Si l'année est différente, nous devons utiliser les callbacks pour changer l'année
               if (currentYear > parseInt(selectedYear)) {
                 // Naviguer vers l'année suivante autant de fois que nécessaire
                 const yearsToAdvance = currentYear - parseInt(selectedYear);
@@ -144,82 +190,63 @@ export const CalendarMain = ({
         yearNav.appendChild(nextYearBtn);
         yearNav.appendChild(todayBtn);
         
-        // -- Section de navigation par mois --
-        const monthsNav = document.createElement('div');
-        monthsNav.className = 'fc-months-nav';
+        // Ajouter la section d'année à la ligne de navigation
+        navRow.appendChild(yearNav);
         
-        // Ajouter les boutons de mois
-        months.forEach((month, index) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'fc-button fc-button-primary fc-month-button';
-          button.setAttribute('data-month', index);
+        // -- Section de navigation par mois --
+        // Ne l'afficher que pour la vue "année"
+        if (currentView === 'resourceTimelineYear') {
+          const monthsNav = document.createElement('div');
+          monthsNav.className = 'fc-months-nav';
           
-          // Déterminer si c'est le mois actuel
-          const today = new Date();
-          const currentMonth = today.getMonth();
-          const currentYear = today.getFullYear();
-          const isCurrentMonth = currentMonth === index && currentYear === parseInt(selectedYear);
-          
-          if (isCurrentMonth) {
-            button.classList.add('fc-button-active');
-          }
-          
-          // Texte complet et abrégé pour responsive
-          const monthAbbr = month.substring(0, 3);
-          button.innerHTML = `
-            <span class="month-full">${month}</span>
-            <span class="month-abbr">${monthAbbr}</span>
-          `;
-          
-          // Gestionnaire de clic pour naviguer vers le mois
-          button.addEventListener('click', () => {
-            updateMonthButtons(index);
-            navigateToMonth(index);
+          // Ajouter les boutons de mois
+          months.forEach((month, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'fc-button fc-button-primary fc-month-button';
+            button.setAttribute('data-month', index);
+            
+            // Déterminer si c'est le mois actuel
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const isCurrentMonth = currentMonth === index && currentYear === parseInt(selectedYear);
+            
+            if (isCurrentMonth) {
+              button.classList.add('fc-button-active');
+            }
+            
+            // Texte complet et abrégé pour responsive
+            const monthAbbr = month.substring(0, 3);
+            button.innerHTML = `
+              <span class="month-full">${month}</span>
+              <span class="month-abbr">${monthAbbr}</span>
+            `;
+            
+            // Gestionnaire de clic pour naviguer vers le mois
+            button.addEventListener('click', () => {
+              updateMonthButtons(index);
+              navigateToMonth(index);
+            });
+            
+            monthsNav.appendChild(button);
           });
           
-          monthsNav.appendChild(button);
-        });
+          // Ajouter la section des mois à la ligne de navigation
+          navRow.appendChild(monthsNav);
+        }
         
         // Assembler le tout
-        navRow.appendChild(yearNav);
-        navRow.appendChild(monthsNav);
         customNavContainer.appendChild(navRow);
         
         // Insérer au début de la barre d'outils gauche
         toolbarLeft.insertBefore(customNavContainer, toolbarLeft.firstChild);
         
+        initialized = true;
         return true;
       } catch (error) {
         console.error("Erreur lors de l'initialisation de la navigation personnalisée:", error);
         return false;
-      }
-    };
-    
-    // Fonction pour mettre à jour l'affichage de l'année
-    const updateYearDisplay = () => {
-      const yearDisplay = document.querySelector('.fc-year-display');
-      if (yearDisplay) {
-        yearDisplay.textContent = selectedYear;
-      }
-    };
-    
-    // Fonction pour mettre à jour les boutons de mois actifs
-    const updateMonthButtons = (activeMonthIndex) => {
-      const monthButtons = document.querySelectorAll('.fc-month-button');
-      if (!monthButtons || monthButtons.length === 0) {
-        // Si les boutons n'existent pas encore, on ne fait rien
-        // Ils seront mis à jour quand ils seront créés
-        return;
-      }
-      
-      monthButtons.forEach(btn => {
-        btn.classList.remove('fc-button-active');
-      });
-      
-      const activeButton = document.querySelector(`.fc-month-button[data-month="${activeMonthIndex}"]`);
-      if (activeButton) {
-        activeButton.classList.add('fc-button-active');
       }
     };
     
@@ -243,39 +270,13 @@ export const CalendarMain = ({
     // Première tentative
     tryInitialize();
     
-    // Fonction pour réinitialiser la navigation après les changements de vue
-    const resetNavigation = () => {
-      console.log("Réinitialisation de la navigation...");
-      
-      // Supprimer le conteneur existant
-      const container = document.querySelector('.fc-custom-nav-container');
-      if (container) {
-        container.remove();
-      }
-      
-      // Réinitialiser l'état
-      initialized = false;
-      attemptCount = 0;
-      
-      // Tenter de réinitialiser immédiatement puis avec des délais croissants
-      // pour s'assurer que la navigation est bien rétablie
-      tryInitialize();
-      setTimeout(tryInitialize, 100);
-      setTimeout(tryInitialize, 300);
-      setTimeout(tryInitialize, 500);
-    };
-    
     // Attacher les gestionnaires d'événements pour les changements de vue
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
       
-      // Réinitialiser lors des changements de vue
-      calendarApi.on('viewDidMount', resetNavigation);
-      
-      // Gérer les changements de date
+      // Gestionnaire pour les changements de date
       const handleDatesSet = (info) => {
         const calendarDate = calendarApi.getDate();
-        const calendarYear = calendarDate.getFullYear();
         const calendarMonth = calendarDate.getMonth();
         
         // Mettre à jour l'affichage de l'année
@@ -283,6 +284,11 @@ export const CalendarMain = ({
         
         // Mettre à jour les boutons de mois
         updateMonthButtons(calendarMonth);
+        
+        // Force la réinitialisation complète si nécessaire
+        if (!document.querySelector('.fc-month-button.fc-button-active') && currentView === 'resourceTimelineYear') {
+          setTimeout(resetNavigation, 100);
+        }
       };
       
       calendarApi.on('datesSet', handleDatesSet);
@@ -295,7 +301,6 @@ export const CalendarMain = ({
         }
         
         try {
-          calendarApi.off('viewDidMount', resetNavigation);
           calendarApi.off('datesSet', handleDatesSet);
         } catch (e) {
           console.error("Erreur lors du nettoyage des événements:", e);
@@ -310,7 +315,17 @@ export const CalendarMain = ({
         container.remove();
       }
     };
-  }, [calendarRef, selectedYear, navigateToMonth, goToPreviousYear, goToNextYear, months]);
+  }, [calendarRef, selectedYear, navigateToMonth, goToPreviousYear, goToNextYear, months, currentView]); // Ajout de currentView aux dépendances
+  
+  // Gestionnaire de changement de vue
+  const internalHandleViewChange = (info) => {
+    setCurrentView(info.view.type);
+    
+    // Appeler le gestionnaire externe si fourni
+    if (externalHandleViewChange) {
+      externalHandleViewChange(info);
+    }
+  };
 
   return (
     <FullCalendar
@@ -352,9 +367,9 @@ export const CalendarMain = ({
       weekends={true}
       resourceOrder="title"
       resourcesInitiallyExpanded={true}
-      viewDidMount={handleViewChange}
+      viewDidMount={internalHandleViewChange}
       datesSet={(info) => {
-        handleViewChange(info);
+        internalHandleViewChange(info);
       }}
       
       resourceLabelDidMount={(info) => {
