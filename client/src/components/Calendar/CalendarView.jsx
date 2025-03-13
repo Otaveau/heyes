@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { useCalendarNavigation } from '../../hooks/useCalendarNavigation';
-import { CalendarMain } from './CalendarMain';
+import { CalendarMain } from '../calendar/CalendarMain';
 import { TaskBoard } from '../tasks/TaskBoard';
 import { TaskForm } from '../tasks/TaskForm';
 import { useSyncChanges } from '../../hooks/useSyncChanges';
