@@ -1,4 +1,4 @@
-// CalendarView.jsx
+// CalendarView.jsx avec références restaurées
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
@@ -6,7 +6,6 @@ import { useCalendarNavigation } from '../../hooks/useCalendarNavigation';
 import { CalendarMain } from './CalendarMain';
 import { TaskBoard } from '../tasks/TaskBoard';
 import { TaskForm } from '../tasks/TaskForm';
-import { useDraggableSetup } from '../../hooks/useDraggableSetup';
 import { useSyncChanges } from '../../hooks/useSyncChanges';
 import '../../style/CalendarView.css';
 
@@ -19,6 +18,7 @@ export const CalendarView = () => {
     selectedTask: null,
     isProcessing: false,
     currentView: 'resourceTimelineYear',
+    taskboardDestination: null // Pour stocker la destination lors d'un déplacement
   });
 
   // Année actuellement sélectionnée dans le calendrier
@@ -28,11 +28,16 @@ export const CalendarView = () => {
   const dropZones = useMemo(() => [
     { id: 'todo', statusId: '1', title: 'À faire' },
     { id: 'inProgress', statusId: '2', title: 'En cours' },
-    { id: 'blocked', statusId: '3', title: 'Bloqué' },
-    { id: 'done', statusId: '4', title: 'Terminé' }
+    { id: 'blocked', statusId: '3', title: 'En attente' },
+    { id: 'done', statusId: '4', title: 'Done' }
   ], []);
 
-  const dropZoneRefs = useRef(dropZones.map(() => React.createRef()));
+  // Créer les références pour les zones de dépôt
+  // Utiliser useMemo pour que les références ne soient pas recréées à chaque rendu
+  const dropZoneRefs = useMemo(() => {
+    return { current: dropZones.map(() => React.createRef()) };
+  }, [dropZones]);
+
   const calendarRef = useRef(null);
   
   // Récupération des données du calendrier
@@ -59,6 +64,81 @@ export const CalendarView = () => {
   // Hook pour gérer la synchronisation des changements
   const { syncChanges } = useSyncChanges(hasLocalChanges, setHasLocalChanges);
 
+  // Fonction pour gérer le déplacement vers un taskboard (surtout pour le taskboard 2)
+  const handleMoveTaskToZone = (taskId, targetZoneStatusId) => {
+    // Récupérer la zone de destination
+    const targetZone = dropZones.find(zone => zone.statusId === targetZoneStatusId);
+    if (!targetZone) return;
+    
+    // Si le taskboard de destination a le statusId '2', ouvrir le formulaire d'édition
+    if (targetZone.statusId === '2') {
+      const taskToModify = [...calendarTasks, ...boardTasks].find(
+        task => task.id.toString() === taskId.toString()
+      );
+      
+      if (taskToModify) {
+        // Ouvrir le formulaire avec la tâche sélectionnée
+        setCalendarState((prev) => ({
+          ...prev,
+          isFormOpen: true,
+          selectedTask: taskToModify,
+          selectedDates: null,
+          taskboardDestination: targetZone.statusId
+        }));
+        return;
+      }
+    }
+    
+    // Pour les autres taskboards, mettre à jour immédiatement
+    if (taskHandlers && taskHandlers.updateTaskStatus) {
+      taskHandlers.updateTaskStatus(taskId, {
+        extendedProps: {
+          statusId: targetZone.statusId
+        }
+      });
+    }
+  };
+
+  // Gérer la fermeture du formulaire
+  const handleFormClose = () => {
+    setCalendarState((prev) => ({
+      ...prev,
+      isFormOpen: false,
+      selectedTask: null,
+      selectedDates: null,
+      taskboardDestination: null
+    }));
+  };
+
+  // Gérer la soumission du formulaire
+  const handleFormSubmit = (updatedTask) => {
+    // Si la tâche provient d'un déplacement vers le taskboard '2'
+    if (calendarState.taskboardDestination === '2') {
+      // S'assurer que le statusId est mis à jour correctement
+      updatedTask = {
+        ...updatedTask,
+        extendedProps: {
+          ...updatedTask.extendedProps,
+          statusId: '2'
+        }
+      };
+    }
+    
+    // Appeler le gestionnaire de soumission normal
+    if (taskHandlers && taskHandlers.handleTaskSubmit) {
+      taskHandlers.handleTaskSubmit(updatedTask);
+    }
+    
+    // Réinitialiser l'état du taskboard de destination
+    setCalendarState((prev) => ({
+      ...prev,
+      taskboardDestination: null,
+      isFormOpen: false,
+      selectedTask: null,
+      selectedDates: null
+    }));
+  };
+
   // Hook pour gérer les interactions avec les tâches
   const taskHandlers = useTaskHandlers(
     setTasks,           
@@ -75,9 +155,6 @@ export const CalendarView = () => {
     setHasLocalChanges
   );
 
-  // Hook pour configurer les éléments draggables
-  useDraggableSetup(dropZoneRefs, boardTasks, setHasLocalChanges);
-
   // Hook pour la navigation dans le calendrier
   const { 
     navigateToMonth, 
@@ -86,6 +163,13 @@ export const CalendarView = () => {
     handleViewChange,
     months
   } = useCalendarNavigation(calendarRef, selectedYear, setSelectedYear);
+
+  // Debugging
+  console.log("CalendarView render:", {
+    taskboardsCount: dropZones.length,
+    refsCount: dropZoneRefs.current?.length,
+    boardTasksCount: boardTasks.length
+  });
 
   return (
     <div className="flex flex-col dashboard">
@@ -112,7 +196,7 @@ export const CalendarView = () => {
           externalTasks={boardTasks}
           handleExternalTaskClick={taskHandlers.handleExternalTaskClick}
           onDeleteTask={taskHandlers.handleDeleteTask}
-          updateTaskStatus={taskHandlers.updateTaskStatus}
+          updateTaskStatus={handleMoveTaskToZone}
         />
       </div>
 
@@ -123,17 +207,12 @@ export const CalendarView = () => {
 
       <TaskForm
         isOpen={calendarState.isFormOpen}
-        onClose={() => setCalendarState((prev) => ({
-          ...prev,
-          isFormOpen: false,
-          selectedTask: null,
-          selectedDates: null,
-        }))}
+        onClose={handleFormClose}
         selectedDates={calendarState.selectedDates}
         selectedTask={calendarState.selectedTask}
         resources={resources}
         statuses={statuses}
-        onSubmit={taskHandlers.handleTaskSubmit}
+        onSubmit={handleFormSubmit}
         isProcessing={calendarState.isProcessing}
       />
     </div>

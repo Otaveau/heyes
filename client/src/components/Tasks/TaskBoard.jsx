@@ -3,9 +3,9 @@ import { Trash2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Draggable } from '@fullcalendar/interaction';
 
 export const TaskBoard = ({ 
-  dropZones, 
+  dropZones = [], 
   dropZoneRefs,
-  externalTasks, 
+  externalTasks = [], 
   handleExternalTaskClick,
   onDeleteTask,
   updateTaskStatus
@@ -14,9 +14,22 @@ export const TaskBoard = ({
   const [taskToDelete, setTaskToDelete] = useState(null);
   const draggablesRef = useRef([]);
   
+  // Créer des références locales si aucune n'est fournie
+  const internalRefs = useRef([]);
+  
+  // Initialiser les références internes si nécessaire
+  useEffect(() => {
+    if (!internalRefs.current.length) {
+      internalRefs.current = dropZones.map(() => React.createRef());
+    }
+  }, [dropZones]);
+  
+  // Utiliser les références externes si disponibles, sinon utiliser les références internes
+  const effectiveRefs = dropZoneRefs || internalRefs;
+  
   // Fonction pour ouvrir la modal de confirmation
   const openDeleteModal = (e, task) => {
-    e.stopPropagation(); // Empêche le déclenchement du onClick du parent
+    e.stopPropagation();
     setTaskToDelete(task);
     setDeleteModalOpen(true);
   };
@@ -28,21 +41,10 @@ export const TaskBoard = ({
   };
 
   const confirmDelete = () => {
-    if (taskToDelete) {
-      if (onDeleteTask) {
-        onDeleteTask(taskToDelete.id);
-      }
+    if (taskToDelete && onDeleteTask) {
+      onDeleteTask(taskToDelete.id);
     }
     closeDeleteModal();
-  };
-
-  // Fonction pour déplacer une tâche vers une autre zone
-  const moveTaskToZone = (taskId, targetZoneStatusId) => {
-    updateTaskStatus(taskId, {
-      extendedProps: {
-        statusId: targetZoneStatusId
-      }
-    });
   };
 
   // Fonction pour obtenir la prochaine/précédente zone
@@ -64,6 +66,12 @@ export const TaskBoard = ({
 
   // Initialisation des draggables FullCalendar pour le calendrier
   useEffect(() => {
+    // S'assurer que les refs sont initialisées
+    if (!effectiveRefs.current || effectiveRefs.current.length === 0) {
+      console.warn("Les références ne sont pas disponibles pour les draggables");
+      return;
+    }
+    
     // Nettoyage des anciens draggables
     draggablesRef.current.forEach(draggable => {
       if (draggable) draggable.destroy();
@@ -71,33 +79,41 @@ export const TaskBoard = ({
     draggablesRef.current = [];
 
     // Configuration des draggables FullCalendar
-    dropZoneRefs.current.forEach((ref, index) => {
-      if (!ref.current) return;
+    effectiveRefs.current.forEach((ref, index) => {
+      if (!ref || !ref.current) {
+        console.warn(`Référence ${index} non disponible`);
+        return;
+      }
 
-      // Créer un draggable pour chaque zone
-      const draggable = new Draggable(ref.current, {
-        itemSelector: '.fc-event',
-        eventData: function(eventEl) {
-          const taskId = eventEl.getAttribute('data-task-id');
-          const task = externalTasks.find(t => t.id.toString() === taskId.toString());
-          
-          if (!task) return {};
-          
-          return {
-            id: task.id,
-            title: task.title,
-            start: task.start || new Date(),
-            end: task.end || new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
-            allDay: true,
-            extendedProps: { 
-              statusId: task.extendedProps?.statusId || task.statusId,
-              description: task.extendedProps?.description || ''
-            }
-          };
-        }
-      });
-      
-      draggablesRef.current[index] = draggable;
+      try {
+        // Créer un draggable pour chaque zone
+        const draggable = new Draggable(ref.current, {
+          itemSelector: '.fc-event',
+          eventData: function(eventEl) {
+            const taskId = eventEl.getAttribute('data-task-id');
+            const task = externalTasks.find(t => t.id.toString() === taskId.toString());
+            
+            if (!task) return {};
+            
+            return {
+              id: task.id,
+              title: task.title,
+              start: task.start || new Date(),
+              end: task.end || new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
+              allDay: true,
+              extendedProps: { 
+                statusId: task.extendedProps?.statusId || task.statusId,
+                description: task.extendedProps?.description || ''
+              }
+            };
+          }
+        });
+        
+        draggablesRef.current[index] = draggable;
+        console.log(`Draggable créé pour la zone ${index}`);
+      } catch (error) {
+        console.error(`Erreur lors de la création du draggable pour la zone ${index}:`, error);
+      }
     });
 
     return () => {
@@ -106,15 +122,22 @@ export const TaskBoard = ({
         if (draggable) draggable.destroy();
       });
     };
-  }, [dropZoneRefs, externalTasks]);
+  }, [effectiveRefs, externalTasks, dropZones]);
+
+  // Log de débogage
+  console.log("TaskBoard render", { 
+    zonesCount: dropZones.length, 
+    refsCount: effectiveRefs.current.length,
+    tasksCount: externalTasks.length 
+  });
 
   return (
     <>
       <div className="flex w-full space-x-4 backlogs">
         {dropZones.map((zone, index) => {
-          if (!dropZoneRefs?.current?.[index]) {
-            console.warn(`Ref for zone ${index} is not properly initialized`);
-            return null;
+          // S'assurer que les refs sont initialisées
+          if (!effectiveRefs.current[index]) {
+            effectiveRefs.current[index] = React.createRef();
           }
           
           const zoneTasks = externalTasks.filter(task => {
@@ -125,7 +148,7 @@ export const TaskBoard = ({
           return (
             <div
               key={zone.id}
-              ref={dropZoneRefs.current[index]}
+              ref={effectiveRefs.current[index]}
               className="flex-1 w-1/4 p-4 bg-gray-100 rounded mt-4 dropzone"
               data-status-id={zone.statusId}
               data-zone-id={zone.id}
@@ -141,7 +164,7 @@ export const TaskBoard = ({
                     key={task.id}
                     data-task-id={task.id}
                     className="fc-event p-2 mb-2 bg-white border rounded hover:bg-gray-50 relative"
-                    onClick={() => handleExternalTaskClick(task)}
+                    onClick={() => handleExternalTaskClick && handleExternalTaskClick(task)}
                   >
                     <div className="font-medium">{task.title}</div>
                     <div className="text-xs text-gray-500">ID: {task.id}</div>
@@ -153,11 +176,11 @@ export const TaskBoard = ({
                           className="mr-2 text-gray-400 hover:text-blue-500 focus:outline-none"
                           onClick={(e) => {
                             e.stopPropagation();
-                            moveTaskToZone(task.id, prevZone.statusId);
+                            updateTaskStatus && updateTaskStatus(task.id, prevZone.statusId);
                           }}
                           title={`Déplacer vers ${prevZone.title}`}
                         >
-                          <ArrowLeft size={16} />
+                          <ArrowLeft size={24} className="transition-transform hover:scale-110" />
                         </button>
                       )}
                       
@@ -174,11 +197,11 @@ export const TaskBoard = ({
                           className="ml-2 text-gray-400 hover:text-blue-500 focus:outline-none"
                           onClick={(e) => {
                             e.stopPropagation();
-                            moveTaskToZone(task.id, nextZone.statusId);
+                            updateTaskStatus && updateTaskStatus(task.id, nextZone.statusId);
                           }}
                           title={`Déplacer vers ${nextZone.title}`}
                         >
-                          <ArrowRight size={16} />
+                          <ArrowRight size={24} className="transition-transform hover:scale-110" />
                         </button>
                       )}
                     </div>
