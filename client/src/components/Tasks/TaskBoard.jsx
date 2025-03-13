@@ -78,15 +78,21 @@ export const TaskBoard = ({
     });
     draggablesRef.current = [];
 
-    // Configuration des draggables FullCalendar
+    // Configuration des draggables FullCalendar seulement pour les zones qui ne sont pas statusId '2'
     effectiveRefs.current.forEach((ref, index) => {
       if (!ref || !ref.current) {
         console.warn(`Référence ${index} non disponible`);
         return;
       }
+      
+      // Ne pas créer de draggable pour la zone avec statusId '2'
+      const zone = dropZones[index];
+      if (zone && zone.statusId === '2') {
+        return;
+      }
 
       try {
-        // Créer un draggable pour chaque zone
+        // Créer un draggable pour chaque zone (sauf la zone '2')
         const draggable = new Draggable(ref.current, {
           itemSelector: '.fc-event',
           eventData: function(eventEl) {
@@ -110,7 +116,6 @@ export const TaskBoard = ({
         });
         
         draggablesRef.current[index] = draggable;
-        console.log(`Draggable créé pour la zone ${index}`);
       } catch (error) {
         console.error(`Erreur lors de la création du draggable pour la zone ${index}:`, error);
       }
@@ -123,13 +128,6 @@ export const TaskBoard = ({
       });
     };
   }, [effectiveRefs, externalTasks, dropZones]);
-
-  // Log de débogage
-  console.log("TaskBoard render", { 
-    zonesCount: dropZones.length, 
-    refsCount: effectiveRefs.current.length,
-    tasksCount: externalTasks.length 
-  });
 
   return (
     <>
@@ -145,15 +143,20 @@ export const TaskBoard = ({
             return statusId === zone.statusId;
           });
           
+          // Déterminer si cette zone est la zone "En cours" (statusId '2')
+          const isInProgressZone = zone.statusId === '2';
+          
           return (
             <div
               key={zone.id}
               ref={effectiveRefs.current[index]}
-              className="flex-1 w-1/4 p-4 bg-gray-100 rounded mt-4 dropzone"
+              className={`flex-1 w-1/4 p-4 rounded mt-4 ${isInProgressZone ? 'bg-blue-50' : 'bg-gray-100 dropzone'}`}
               data-status-id={zone.statusId}
               data-zone-id={zone.id}
             >
-              <h3 className="mb-4 font-bold">{zone.title}</h3>
+              <h3 className={`mb-4 font-bold ${isInProgressZone ? 'text-blue-700' : ''}`}>
+                {zone.title} {isInProgressZone }
+              </h3>
               {zoneTasks.map(task => {
                 const currentStatusId = task.extendedProps?.statusId || task.statusId;
                 const nextZone = getNextZone(currentStatusId);
@@ -163,15 +166,20 @@ export const TaskBoard = ({
                   <div
                     key={task.id}
                     data-task-id={task.id}
-                    className="fc-event p-2 mb-2 bg-white border rounded hover:bg-gray-50 relative"
+                    className={`${isInProgressZone ? '' : 'fc-event'} p-2 mb-2 bg-white border rounded hover:bg-gray-50 relative ${isInProgressZone ? 'border-blue-200' : ''}`}
                     onClick={() => handleExternalTaskClick && handleExternalTaskClick(task)}
                   >
                     <div className="font-medium">{task.title}</div>
                     <div className="text-xs text-gray-500">ID: {task.id}</div>
+                    {task.resourceId && (
+                      <div className="text-xs text-blue-600 mt-1">
+                        Assigné: {task.resourceId}
+                      </div>
+                    )}
                     
-                    {/* Actions de tâche */}
+                    {/* Actions de tâche - aucune flèche de navigation pour les tâches dans la zone "En cours" */}
                     <div className="flex justify-end mt-2 pt-2 border-t">
-                      {prevZone && (
+                      {!isInProgressZone && prevZone && (
                         <button
                           className="mr-2 text-gray-400 hover:text-blue-500 focus:outline-none"
                           onClick={(e) => {
@@ -192,7 +200,7 @@ export const TaskBoard = ({
                         <Trash2 size={16} />
                       </button>
                       
-                      {nextZone && (
+                      {!isInProgressZone && nextZone && (
                         <button
                           className="ml-2 text-gray-400 hover:text-blue-500 focus:outline-none"
                           onClick={(e) => {

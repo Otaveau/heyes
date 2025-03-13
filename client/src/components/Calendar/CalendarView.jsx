@@ -1,4 +1,4 @@
-// CalendarView.jsx avec références restaurées
+// CalendarView.jsx avec support d'affichage des tâches à la fois dans le calendrier et taskboard 2
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
@@ -18,7 +18,8 @@ export const CalendarView = () => {
     selectedTask: null,
     isProcessing: false,
     currentView: 'resourceTimelineYear',
-    taskboardDestination: null // Pour stocker la destination lors d'un déplacement
+    taskboardDestination: null,
+    taskOriginId: null
   });
 
   // Année actuellement sélectionnée dans le calendrier
@@ -33,7 +34,6 @@ export const CalendarView = () => {
   ], []);
 
   // Créer les références pour les zones de dépôt
-  // Utiliser useMemo pour que les références ne soient pas recréées à chaque rendu
   const dropZoneRefs = useMemo(() => {
     return { current: dropZones.map(() => React.createRef()) };
   }, [dropZones]);
@@ -55,58 +55,85 @@ export const CalendarView = () => {
     if (!tasks || !Array.isArray(tasks)) return;
 
     const calendar = tasks.filter(task => task.resourceId);
-    const board = tasks.filter(task => !task.resourceId);
+    
+    // Pour le board, on inclut les tâches sans resourceId
+    // ET les tâches qui ont le statusId '2' (même si elles ont un resourceId)
+    const board = tasks.filter(task => {
+      const statusId = task.extendedProps?.statusId || task.statusId;
+      return !task.resourceId || statusId === '2';
+    });
     
     setCalendarTasks(calendar);
     setBoardTasks(board);
+    
   }, [tasks]);
 
   // Hook pour gérer la synchronisation des changements
   const { syncChanges } = useSyncChanges(hasLocalChanges, setHasLocalChanges);
 
-  // Fonction pour gérer le déplacement vers un taskboard (surtout pour le taskboard 2)
+  // Fonction pour gérer le déplacement vers un taskboard
   const handleMoveTaskToZone = (taskId, targetZoneStatusId) => {
     // Récupérer la zone de destination
     const targetZone = dropZones.find(zone => zone.statusId === targetZoneStatusId);
     if (!targetZone) return;
     
-    // Si le taskboard de destination a le statusId '2', ouvrir le formulaire d'édition
-    if (targetZone.statusId === '2') {
-      const taskToModify = [...calendarTasks, ...boardTasks].find(
-        task => task.id.toString() === taskId.toString()
-      );
-      
-      if (taskToModify) {
-        // Ouvrir le formulaire avec la tâche sélectionnée
-        setCalendarState((prev) => ({
-          ...prev,
-          isFormOpen: true,
-          selectedTask: taskToModify,
-          selectedDates: null,
-          taskboardDestination: targetZone.statusId
-        }));
-        return;
-      }
+    // Trouver la tâche à déplacer
+    const allTasks = [...calendarTasks, ...boardTasks];
+    const taskToModify = allTasks.find(task => task.id.toString() === taskId.toString());
+    
+    if (!taskToModify) {
+      console.error(`Tâche non trouvée: ${taskId}`);
+      return;
     }
     
-    // Pour les autres taskboards, mettre à jour immédiatement
+    // Si le taskboard de destination a le statusId '2', ouvrir le formulaire d'édition
+    if (targetZone.statusId === '2') {
+      // Ouvrir le formulaire avec la tâche sélectionnée
+      setCalendarState(prev => ({
+        ...prev,
+        isFormOpen: true,
+        selectedTask: taskToModify,
+        selectedDates: null,
+        taskboardDestination: targetZone.statusId,
+        taskOriginId: taskId
+      }));
+    } else {
+      // Pour les autres taskboards, mettre à jour immédiatement
+      updateTaskDirectly(taskId, targetZoneStatusId);
+    }
+  };
+  
+  // Fonction pour mettre à jour directement une tâche
+  const updateTaskDirectly = (taskId, newStatusId) => {
     if (taskHandlers && taskHandlers.updateTaskStatus) {
-      taskHandlers.updateTaskStatus(taskId, {
-        extendedProps: {
-          statusId: targetZone.statusId
+      // Mettre à jour l'état global des tâches
+      const updatedTasks = tasks.map(task => {
+        if (task.id.toString() === taskId.toString()) {
+          return {
+            ...task,
+            extendedProps: {
+              ...task.extendedProps,
+              statusId: newStatusId
+            }
+          };
         }
+        return task;
       });
+      
+      setTasks(updatedTasks);
+      setHasLocalChanges(true);
     }
   };
 
   // Gérer la fermeture du formulaire
   const handleFormClose = () => {
-    setCalendarState((prev) => ({
+    setCalendarState(prev => ({
       ...prev,
       isFormOpen: false,
       selectedTask: null,
       selectedDates: null,
-      taskboardDestination: null
+      taskboardDestination: null,
+      taskOriginId: null
     }));
   };
 
@@ -115,24 +142,37 @@ export const CalendarView = () => {
     // Si la tâche provient d'un déplacement vers le taskboard '2'
     if (calendarState.taskboardDestination === '2') {
       // S'assurer que le statusId est mis à jour correctement
+      // Mais on conserve la tâche visible dans le taskboard 2
       updatedTask = {
         ...updatedTask,
         extendedProps: {
           ...updatedTask.extendedProps,
-          statusId: '2'
+          statusId: '2' // Conserver le statusId '2' pour qu'elle reste visible dans le taskboard
         }
       };
+      
+      // Mettre à jour directement l'état des tâches
+      const updatedTasks = tasks.map(task => {
+        if (task.id.toString() === updatedTask.id.toString()) {
+          return updatedTask;
+        }
+        return task;
+      });
+      
+      setTasks(updatedTasks);
+      setHasLocalChanges(true);
+    } else {
+      // Pour les autres cas, utiliser le gestionnaire normal
+      if (taskHandlers && taskHandlers.handleTaskSubmit) {
+        taskHandlers.handleTaskSubmit(updatedTask);
+      }
     }
     
-    // Appeler le gestionnaire de soumission normal
-    if (taskHandlers && taskHandlers.handleTaskSubmit) {
-      taskHandlers.handleTaskSubmit(updatedTask);
-    }
-    
-    // Réinitialiser l'état du taskboard de destination
-    setCalendarState((prev) => ({
+    // Réinitialiser l'état
+    setCalendarState(prev => ({
       ...prev,
       taskboardDestination: null,
+      taskOriginId: null,
       isFormOpen: false,
       selectedTask: null,
       selectedDates: null
@@ -163,13 +203,6 @@ export const CalendarView = () => {
     handleViewChange,
     months
   } = useCalendarNavigation(calendarRef, selectedYear, setSelectedYear);
-
-  // Debugging
-  console.log("CalendarView render:", {
-    taskboardsCount: dropZones.length,
-    refsCount: dropZoneRefs.current?.length,
-    boardTasksCount: boardTasks.length
-  });
 
   return (
     <div className="flex flex-col dashboard">

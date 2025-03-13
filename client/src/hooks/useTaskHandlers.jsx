@@ -786,7 +786,7 @@ export const useTaskHandlers = (
     if (!externalTask) return false;
     
     const endDate = new Date(startDate.getTime() + 86400000);
-
+  
     console.log('externalTask :', externalTask);
     
     const updates = {
@@ -795,13 +795,40 @@ export const useTaskHandlers = (
       start: startDate,
       end: endDate,
       resourceId: info.resource?.id ? parseInt(info.resource.id) : null,
-      statusId: '2'
+      extendedProps: {
+        ...externalTask.extendedProps,
+        statusId: '2' // S'assurer que statusId est dans extendedProps
+      },
+      statusId: '2' // Garder aussi au niveau racine pour compatibilité
     };
-
+  
+    // Mettre à jour la tâche avec les nouvelles propriétés
     updateTaskStatus(taskId, updates);
     
+    // *** MODIFICATION IMPORTANTE ***
+    // Ne pas supprimer la tâche du tableau boardTasks
+    // mais seulement la rendre invisible dans la zone de départ
     setTimeout(() => {
-      setBoardTasks(prev => prev.filter(t => t.id.toString() !== taskId.toString()));
+      // Au lieu de filtrer et supprimer la tâche, on va mettre à jour son affichage
+      setBoardTasks(prev => {
+        return prev.map(t => {
+          if (t.id.toString() === taskId.toString()) {
+            // On garde la tâche mais on met à jour son statusId
+            return {
+              ...t,
+              resourceId: info.resource?.id ? parseInt(info.resource.id) : null,
+              start: startDate,
+              end: endDate,
+              extendedProps: {
+                ...t.extendedProps,
+                statusId: '2'
+              }
+            };
+          }
+          return t;
+        });
+      });
+      
       if (info.draggedEl) {
         info.draggedEl.style.opacity = '1';
       }
