@@ -8,7 +8,8 @@ export const TaskBoard = ({
   externalTasks = [], 
   handleExternalTaskClick,
   onDeleteTask,
-  updateTaskStatus
+  updateTaskStatus,
+  resources = []
 }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
@@ -47,7 +48,6 @@ export const TaskBoard = ({
     closeDeleteModal();
   };
 
-  // Fonction pour obtenir la prochaine/précédente zone
   const getNextZone = (currentStatusId) => {
     const currentIndex = dropZones.findIndex(zone => zone.statusId === currentStatusId);
     if (currentIndex < dropZones.length - 1) {
@@ -64,25 +64,29 @@ export const TaskBoard = ({
     return null;
   };
 
-  // Gérer le déplacement d'une tâche depuis le taskboard 2 vers un autre taskboard
-  // const handleTaskMoveFromZone2 = (taskId, targetZoneStatusId) => {
-  //   const task = externalTasks.find(t => t.id.toString() === taskId.toString());
-  //   if (!task) return;
+  // Fonction pour formater une date en format lisible
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Non définie';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Date invalide';
+      
+      // Format: JJ/MM/YYYY
+      return date.toLocaleDateString();
+    } catch (e) {
+      console.error('Erreur de formatage de date:', e);
+      return 'Date invalide';
+    }
+  };
 
-  //   // Préparer les mises à jour pour la tâche
-  //   const updates = {
-  //     resourceId: null, // Supprimer l'assignation de ressource
-  //     extendedProps: {
-  //       ...task.extendedProps,
-  //       statusId: targetZoneStatusId // Mettre à jour le statusId
-  //     }
-  //   };
-
-  //   // Appeler la fonction de mise à jour
-  //   if (updateTaskStatus) {
-  //     updateTaskStatus(taskId, updates);
-  //   }
-  // };
+  // Fonction pour obtenir le nom d'une ressource à partir de son ID
+  const getResourceName = (resourceId) => {
+    if (!resourceId) return 'Non assigné';
+    
+    const resource = resources.find(r => r.id.toString() === resourceId.toString());
+    return resource ? resource.title : `ID: ${resourceId}`;
+  };
 
   // Initialisation des draggables FullCalendar pour le calendrier
   useEffect(() => {
@@ -190,11 +194,39 @@ export const TaskBoard = ({
                     onClick={() => handleExternalTaskClick && handleExternalTaskClick(task)}
                   >
                     <div className="font-medium">{task.title}</div>
-                    <div className="text-xs text-gray-500">ID: {task.id}</div>
-                    {task.resourceId && (
-                      <div className="text-xs text-blue-600 mt-1">
-                        Assigné: {task.resourceId}
-                      </div>
+                    
+                     {/* Affichage amélioré pour le taskboard 2 */}
+                     {isInProgressZone ? (
+                      <>
+                        {task.resourceId && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            <span className="font-medium">Assigné à:</span> {getResourceName(task.resourceId)}
+                          </div>
+                        )}
+                        
+                        {/* Dates de la tâche */}
+                        <div className="text-xs text-gray-600 mt-1">
+                          <div><span className="font-medium">Début:</span> {formatDate(task.start)}</div>
+                          <div><span className="font-medium">Fin:</span> 
+                            {/* Ajuster la date de fin pour l'affichage */}
+                            {(() => {
+                              const endDate = new Date(task.end);
+                              endDate.setDate(endDate.getDate() - 2); // Soustraire 2 jours
+                              return formatDate(endDate);
+                            })()}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Affichage standard pour les autres taskboards */}
+                        <div className="text-xs text-gray-500">ID: {task.id}</div>
+                        {task.resourceId && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            Assigné: {task.resourceId}
+                          </div>
+                        )}
+                      </>
                     )}
                     
                     {/* Actions de tâche - flèches pour toutes les zones */}

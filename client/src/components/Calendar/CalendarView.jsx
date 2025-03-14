@@ -231,6 +231,7 @@ export const CalendarView = () => {
           handleExternalTaskClick={taskHandlers.handleExternalTaskClick}
           onDeleteTask={taskHandlers.handleDeleteTask}
           updateTaskStatus={handleMoveTaskToZone}
+          resources={resources}
         />
       </div>
 
