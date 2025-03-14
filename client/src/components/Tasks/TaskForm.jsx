@@ -47,29 +47,26 @@ export const TaskForm = ({
     }, []);
 
     const getInitialFormData = useCallback(() => {
-        // Si une tâche est sélectionnée depuis le calendrier (avec selectedDates)
-        if (selectedTask && selectedDates) {
+        console.log('selectedTask :', selectedTask);
+        console.log('selectedDates :', selectedDates);
+    
+        // Si une tâche est sélectionnée (quelle que soit sa source)
+        if (selectedTask) {
+            // Si la tâche a des propriétés start et end, elle vient probablement du calendrier
+            const isFromCalendar = selectedTask.start && selectedTask.end;
+            
             return {
                 title: selectedTask.title || '',
-                description: selectedTask.description || '',
-                startDate: formatDateForInput(selectedDates.start),
-                endDate: formatDateForInput(selectedDates.end),
-                resourceId: selectedTask.resourceId || selectedDates.resourceId || '',
-                statusId: selectedTask.statusId || '2',
-                isConge: selectedTask.isConge || false
-            };
-        }
-        
-        // Si une tâche est sélectionnée depuis le TaskBoard (sans selectedDates)
-        if (selectedTask && !selectedDates) {
-            return {
-                title: selectedTask.title || '',
-                description: selectedTask.description || '',
-                startDate: formatDateForInput(selectedTask.start) || getTodayFormatted(),
-                endDate: formatDateForInput(selectedTask.end) || getTodayFormatted(),
-                resourceId: selectedTask.resourceId || '',
-                statusId: selectedTask.statusId || '',
-                isConge: selectedTask.isConge || false
+                description: selectedTask.description || selectedTask.extendedProps?.description || '',
+                startDate: isFromCalendar 
+                    ? formatDateForInput(selectedTask.start) 
+                    : (selectedDates ? formatDateForInput(selectedDates.start) : getTodayFormatted()),
+                endDate: isFromCalendar 
+                    ? formatDateForInput(selectedTask.end) 
+                    : (selectedDates ? formatDateForInput(selectedDates.end) : getTodayFormatted()),
+                resourceId: selectedTask.resourceId || (selectedDates ? selectedDates.resourceId : '') || '',
+                statusId: selectedTask.statusId || selectedTask.extendedProps?.statusId || '2',
+                isConge: selectedTask.isConge || selectedTask.title === 'CONGE' || false
             };
         }
         

@@ -3,8 +3,8 @@ import { ERROR_MESSAGES, TOAST_CONFIG } from '../constants/constants';
 import { toast } from 'react-toastify';
 import { createTask, updateTask, deleteTask } from '../services/api/taskService';
 import { DateUtils } from '../utils/dateUtils';
-import { 
-  applyDragDropStyles, 
+import {
+  applyDragDropStyles,
   cleanupAllHighlights
 } from '../utils/dndUtils';
 
@@ -31,7 +31,7 @@ export const useTaskHandlers = (
   useEffect(() => {
     // Injecter les styles CSS
     applyDragDropStyles();
-    
+
     // Nettoyage au démontage
     return () => {
       cleanupAllHighlights(dropZoneRefs);
@@ -57,11 +57,11 @@ export const useTaskHandlers = (
         }
       }
     };
-    
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') handleDragCancel();
     };
-    
+
     const handleMouseUp = () => {
       setTimeout(() => {
         if (ghostElementRef.current) {
@@ -69,17 +69,17 @@ export const useTaskHandlers = (
         }
       }, 100);
     };
-    
+
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('mouseup', handleMouseUp);
-    
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [dropZoneRefs]);
 
-  
+
 
   // Mise à jour des listes de tâches filtrées
   const updateFilteredTasks = useCallback((updatedTasks) => {
@@ -87,7 +87,7 @@ export const useTaskHandlers = (
     const board = updatedTasks.filter(task => !task.resourceId);
     setCalendarTasks(calendar);
     setBoardTasks(board);
-    
+
     // Rafraîchir le calendrier si nécessaire
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
@@ -99,16 +99,16 @@ export const useTaskHandlers = (
   // Fonction principale de mise à jour d'une tâche
   const updateTaskStatus = useCallback((taskId, updates) => {
     setTasks(prevTasks => {
-      const updatedTasks = prevTasks.map(task => 
-        task.id.toString() === taskId.toString() 
+      const updatedTasks = prevTasks.map(task =>
+        task.id.toString() === taskId.toString()
           ? {
-              ...task,
-              ...updates,
-              extendedProps: {
-                ...task.extendedProps,
-                ...(updates.extendedProps || {})
-              }
+            ...task,
+            ...updates,
+            extendedProps: {
+              ...task.extendedProps,
+              ...(updates.extendedProps || {})
             }
+          }
           : task
       );
 
@@ -164,14 +164,16 @@ export const useTaskHandlers = (
 
 
   // Soumission du formulaire de tâche (création/modification)
-  const handleTaskSubmit = useCallback(async (formData, taskId) => {
+  const handleTaskSubmit = useCallback(async (formData) => {
     if (!formData?.title) {
       toast.error(ERROR_MESSAGES.TITLE_REQUIRED, TOAST_CONFIG);
       return;
     }
 
-    const startDate = formData.startDate;
-    const endDate = formData.endDate;
+    const startDate = formData.start;
+    const endDate = formData.end;
+
+    console.log('formData :', formData);
 
     // Validation des dates
     if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
@@ -192,43 +194,43 @@ export const useTaskHandlers = (
         }
       };
 
-      // Modification ou création
+      // Extraire l'ID de la tâche depuis formData
+      const taskId = formData.id;
+      console.log('ID de tâche pour la soumission:', taskId);
+
+      let updatedTask;
+
+      // Cas de mise à jour d'une tâche existante
       if (taskId) {
+        console.log('Mise à jour de la tâche existante:', taskId);
+
+        // Mettre à jour localement d'abord
         updateTaskStatus(taskId, taskData);
-      } else {
-        // Création avec ID temporaire
-        const tempId = `temp-${Date.now()}`;
-        const newTask = { id: tempId, ...taskData, allDay: true };
-        
+
+        // Puis appel API
+        updatedTask = await updateTask(taskId, taskData);
+        toast.success('Tâche mise à jour', TOAST_CONFIG);
+      }
+      // Cas de création d'une nouvelle tâche
+      else {
+        console.log('Création d\'une nouvelle tâche');
+
+        // Appel API pour créer la tâche
+        updatedTask = await createTask(taskData);
+
+        // Ajouter la tâche avec son ID réel aux collections
+        const newTask = { id: updatedTask.id, ...taskData, allDay: true };
+
         setTasks(prevTasks => [...prevTasks, newTask]);
-        
+
+        // Mettre à jour la collection appropriée
         if (newTask.resourceId) {
           setCalendarTasks(prev => [...prev, newTask]);
         } else {
           setBoardTasks(prev => [...prev, newTask]);
         }
-        
-        taskId = tempId;
-      }
 
-      // Appel API
-      let updatedTask;
-      if (taskId && !taskId.toString().startsWith('temp-')) {
-        updatedTask = await updateTask(taskId, taskData);
-      } else {
-        updatedTask = await createTask(taskData);
-        
-        // Mise à jour de l'ID temporaire
-        if (taskId.toString().startsWith('temp-')) {
-          setTasks(prevTasks => {
-            const updatedTasks = prevTasks.map(task =>
-              task.id === taskId ? { ...task, id: updatedTask.id } : task
-            );
-            
-            setTimeout(() => updateFilteredTasks(updatedTasks), 0);
-            return updatedTasks;
-          });
-        }
+        toast.success('Tâche créée', TOAST_CONFIG);
       }
 
       // Terminer et réinitialiser
@@ -237,34 +239,36 @@ export const useTaskHandlers = (
         isFormOpen: false,
         selectedTask: null,
       }));
-      
+
       setHasLocalChanges(false);
-      toast.success(taskId && !taskId.toString().startsWith('temp-') ? 'Tâche mise à jour' : 'Tâche créée', TOAST_CONFIG);
+
+      return updatedTask;
     } catch (error) {
-      toast.error(taskId ? ERROR_MESSAGES.UPDATE_FAILED : ERROR_MESSAGES.CREATE_FAILED, TOAST_CONFIG);
+      toast.error(formData.id ? ERROR_MESSAGES.UPDATE_FAILED : ERROR_MESSAGES.CREATE_FAILED, TOAST_CONFIG);
       console.error('Erreur lors de la soumission de la tâche:', error);
+      return null;
     } finally {
       setCalendarState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [holidays, setCalendarState, updateTaskStatus, setCalendarTasks, setBoardTasks, setTasks, setHasLocalChanges, updateFilteredTasks]);
+  }, [holidays, setCalendarState, updateTaskStatus, setCalendarTasks, setBoardTasks, setTasks, setHasLocalChanges]);
 
 
   // Suppression d'une tâche
   const handleDeleteTask = useCallback(async (taskId) => {
     try {
       setCalendarState(prev => ({ ...prev, isProcessing: true }));
-      
+
       // Mise à jour locale d'abord
       setTasks(prevTasks => prevTasks.filter(task => task.id.toString() !== taskId.toString()));
       setCalendarTasks(prev => prev.filter(t => t.id.toString() !== taskId.toString()));
       setBoardTasks(prev => prev.filter(t => t.id.toString() !== taskId.toString()));
-      
+
       setHasLocalChanges(true);
-      
+
       // Appel API
       await deleteTask(taskId);
       setHasLocalChanges(false);
-      
+
       toast.success('Tâche supprimée', TOAST_CONFIG);
       return true;
     } catch (error) {
@@ -287,6 +291,11 @@ export const useTaskHandlers = (
     setCalendarState(prev => ({
       ...prev,
       selectedTask: taskData,
+      selectedDates: {
+        start: taskData.start,
+        end: taskData.end,
+        resourceId: taskData.resourceId
+      },
       isFormOpen: true,
     }));
   }, [setCalendarState]);
@@ -296,6 +305,8 @@ export const useTaskHandlers = (
   const handleCalendarEventClick = useCallback((clickInfo) => {
     const eventId = clickInfo.event.id;
     const task = calendarTasks.find((t) => t.id.toString() === eventId.toString());
+
+    console.log('task :', task);
 
     if (task) {
       handleTaskSelection(task);
@@ -308,7 +319,7 @@ export const useTaskHandlers = (
   // Sélection d'une date sur le calendrier
   const handleDateClick = useCallback((selectInfo) => {
     const startDate = selectInfo.start;
-    
+
     setCalendarState(prev => ({
       ...prev,
       selectedDates: {
@@ -360,24 +371,24 @@ export const useTaskHandlers = (
   // Mettre à jour la surbrillance des zones de dépôt pendant le déplacement
   const highlightDropZonesOnDrag = useCallback((event) => {
     if (!ghostElementRef.current) return;
-    
+
     const mouseX = event.clientX;
     const mouseY = event.clientY;
     let foundMatch = false;
-    
+
     if (dropZoneRefs?.current) {
       dropZoneRefs.current.forEach(ref => {
         if (!ref?.current) return;
-        
+
         const dropZoneEl = ref.current;
         const rect = dropZoneEl.getBoundingClientRect();
-        
-        const isOver = 
-          mouseX >= rect.left && 
-          mouseX <= rect.right && 
-          mouseY >= rect.top && 
+
+        const isOver =
+          mouseX >= rect.left &&
+          mouseX <= rect.right &&
+          mouseY >= rect.top &&
           mouseY <= rect.bottom;
-        
+
         if (isOver) {
           dropZoneEl.classList.add('dropzone-active');
           foundMatch = true;
@@ -386,7 +397,7 @@ export const useTaskHandlers = (
         }
       });
     }
-    
+
     const taskBoardContainer = document.querySelector('.taskboard-container');
     if (taskBoardContainer && foundMatch) {
       taskBoardContainer.classList.add('taskboard-highlight-intense');
@@ -395,7 +406,7 @@ export const useTaskHandlers = (
     }
   }, [dropZoneRefs]);
 
-  
+
   // Créer l'élément fantôme pour le glisser-déposer
   const createGhostElement = useCallback((info) => {
     if (ghostElementRef.current) {
@@ -404,10 +415,10 @@ export const useTaskHandlers = (
 
     const ghostEl = document.createElement('div');
     ghostEl.className = 'task-ghost-element';
-    
+
     const originalRect = info.el.getBoundingClientRect();
     const computedStyle = window.getComputedStyle(info.el);
-    
+
     ghostEl.innerHTML = `<div class="ghost-title">${info.event.title}</div>`;
     ghostEl.style.position = 'fixed';
     ghostEl.style.zIndex = '9999';
@@ -429,22 +440,22 @@ export const useTaskHandlers = (
     ghostEl.style.overflow = 'hidden';
     ghostEl.style.textOverflow = 'ellipsis';
     ghostEl.style.whiteSpace = 'nowrap';
-    
+
     ghostEl.style.left = `${info.jsEvent.clientX + 15}px`;
     ghostEl.style.top = `${info.jsEvent.clientY + 15}px`;
-    
+
     document.body.appendChild(ghostEl);
     ghostElementRef.current = ghostEl;
-    
+
     const updateGhostPosition = (e) => {
       if (ghostElementRef.current) {
         ghostElementRef.current.style.left = `${e.clientX + 15}px`;
         ghostElementRef.current.style.top = `${e.clientY + 15}px`;
-        
+
         highlightDropZonesOnDrag(e);
-        
+
         ghostElementRef.current.style.transform = 'scale(1.05)';
-        
+
         clearTimeout(dropTimeoutRef.current);
         dropTimeoutRef.current = setTimeout(() => {
           if (ghostElementRef.current) {
@@ -453,10 +464,10 @@ export const useTaskHandlers = (
         }, 50);
       }
     };
-    
+
     document.addEventListener('mousemove', updateGhostPosition);
     window.ghostMoveHandler = updateGhostPosition;
-    
+
     return updateGhostPosition;
   }, [highlightDropZonesOnDrag]);
 
@@ -464,23 +475,23 @@ export const useTaskHandlers = (
   const simulateImmediateAppearance = useCallback((taskId, targetDropZone) => {
     const dropZoneIndex = dropZones.findIndex(dz => dz.id === targetDropZone.id);
     const dropZoneRef = dropZoneRefs.current[dropZoneIndex];
-    
+
     if (!dropZoneRef || !dropZoneRef.current || !ghostElementRef.current) return;
-    
+
     const dropZoneRect = dropZoneRef.current.getBoundingClientRect();
     const ghostRect = ghostElementRef.current.getBoundingClientRect();
-    
+
     const ghost = ghostElementRef.current;
-    
+
     // Position cible centrée dans la zone
     const targetX = dropZoneRect.left + (dropZoneRect.width / 2) - (ghostRect.width / 2);
-    const targetY = dropZoneRect.top + 10; 
-    
+    const targetY = dropZoneRect.top + 10;
+
     ghost.style.transition = 'left 0.2s ease, top 0.2s ease, opacity 0.2s ease, transform 0.2s ease';
     ghost.style.left = `${targetX}px`;
     ghost.style.top = `${targetY}px`;
     ghost.style.transform = 'scale(0.9)';
-    
+
     // Créer un placeholder temporaire
     const placeholderTask = document.createElement('div');
     placeholderTask.className = 'fc-event temporary-task-placeholder';
@@ -490,20 +501,20 @@ export const useTaskHandlers = (
     placeholderTask.style.margin = '8px 0';
     placeholderTask.style.transition = 'opacity 0.2s ease';
     placeholderTask.innerText = ghostElementRef.current.innerText;
-    
+
     dropZoneRef.current.appendChild(placeholderTask);
-    
+
     setTimeout(() => placeholderTask.style.opacity = '1', 50);
-    
+
     setTimeout(() => {
       ghost.style.opacity = '0';
-      
+
       setTimeout(() => {
         if (ghostElementRef.current) {
           document.body.removeChild(ghostElementRef.current);
           ghostElementRef.current = null;
         }
-        
+
         try {
           if (placeholderTask.parentNode) {
             placeholderTask.parentNode.removeChild(placeholderTask);
@@ -518,45 +529,45 @@ export const useTaskHandlers = (
   // Vérifier si un événement est au-dessus d'une zone de dépôt
   const isEventOverDropZone = useCallback((eventPosition) => {
     if (!dropZoneRefs?.current) return null;
-    
+
     // Réinitialiser les styles de toutes les zones
     dropZoneRefs.current.forEach(ref => {
       if (ref?.current) ref.current.classList.remove('active-drop-target');
     });
-    
+
     // Vérifier chaque zone
     for (let index = 0; index < dropZoneRefs.current.length; index++) {
       const ref = dropZoneRefs.current[index];
       if (!ref?.current) continue;
-      
+
       const dropZoneEl = ref.current;
       const rect = dropZoneEl.getBoundingClientRect();
-      
-      if (eventPosition.x >= rect.left && 
-          eventPosition.x <= rect.right && 
-          eventPosition.y >= rect.top && 
-          eventPosition.y <= rect.bottom) {
-        
+
+      if (eventPosition.x >= rect.left &&
+        eventPosition.x <= rect.right &&
+        eventPosition.y >= rect.top &&
+        eventPosition.y <= rect.bottom) {
+
         dropZoneEl.classList.add('active-drop-target');
         return { dropZone: dropZones[index] };
       }
     }
-    
+
     return null;
   }, [dropZoneRefs, dropZones]);
 
 
   // Début du glisser-déposer
   const handleEventDragStart = useCallback((info) => {
-    
+
     highlightTaskBoard(true);
-    
+
     createGhostElement(info);
-    
+
     if (info.el) {
       info.el.style.opacity = '0';
     }
-    
+
     if (dropZoneRefs?.current) {
       dropZoneRefs.current.forEach(ref => {
         if (ref?.current) {
@@ -572,50 +583,50 @@ export const useTaskHandlers = (
     return { statusId: targetDropZone.statusId };
   }, []);
 
-  
+
   // Fin du glisser-déposer
   const handleEventDragStop = useCallback(async (info) => {
     // Nettoyer tous les effets visuels
     highlightTaskBoard(false);
     cleanupAllHighlights(dropZoneRefs);
-    
+
     if (window.ghostMoveHandler) {
       document.removeEventListener('mousemove', window.ghostMoveHandler);
       window.ghostMoveHandler = null;
     }
-    
+
     if (info.el) {
       info.el.classList.remove('dragging-event');
       info.el.style.opacity = '1';
     }
-    
+
     // Vérifier si l'événement est sur une zone de dépôt
     const eventPosition = {
       x: info.jsEvent.clientX,
       y: info.jsEvent.clientY
     };
-    
+
     const dropTarget = isEventOverDropZone(eventPosition);
-    
+
     if (dropTarget) {
       const { dropZone } = dropTarget;
       const taskId = info.event.id;
       const task = tasks.find(t => t.id.toString() === taskId.toString());
-      
+
       if (!task) {
         console.warn(`Task with id ${taskId} not found`);
         return;
       }
-      
+
       // Préparer l'événement et cacher l'original
       const customUpdates = prepareEventForTaskBoard(info.event, dropZone);
-      
+
       if (info.el) info.el.style.display = 'none';
       info.event.remove();
-      
+
       // Animer la transition vers le TaskBoard
       simulateImmediateAppearance(taskId, dropZone);
-      
+
       // Préparer les mises à jour
       const updates = {
         resourceId: null,
@@ -626,10 +637,10 @@ export const useTaskHandlers = (
         },
         title: task.title
       };
-      
+
       // Mettre à jour l'état
       updateTaskStatus(taskId, updates);
-      
+
       // Mise à jour sur le serveur
       try {
         await updateTask(taskId, updates);
@@ -648,23 +659,23 @@ export const useTaskHandlers = (
     const { event } = dropInfo;
     const startDate = event.start;
     const endDate = event.end || new Date(startDate.getTime() + 86400000);
-    
+
     // Validation des dates
     if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
       dropInfo.revert();
       toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
       return;
     }
-    
+
     const taskId = event.id;
     const existingTask = tasks.find(t => t.id.toString() === taskId.toString());
-    
+
     if (!existingTask) {
       console.warn(`Tâche avec l'ID ${taskId} introuvable`);
       dropInfo.revert();
       return;
     }
-    
+
     const resourceId = event._def.resourceIds[0];
     const updates = {
       start: startDate,
@@ -675,7 +686,7 @@ export const useTaskHandlers = (
         statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId
       }
     };
-    
+
     await handleTaskUpdate(
       taskId,
       updates,
@@ -692,25 +703,25 @@ export const useTaskHandlers = (
       info.revert();
       return;
     }
-    
+
     const { event } = info;
     const startDate = event.start;
     const endDate = event.end;
-    
+
     // Validation des dates
     if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
       info.revert();
       toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
       return;
     }
-    
+
     const existingTask = tasks.find(task => task.id.toString() === event.id.toString());
     if (!existingTask) {
       console.warn(`Tâche avec l'ID ${event.id} introuvable`);
       info.revert();
       return;
     }
-    
+
     const updates = {
       start: startDate,
       end: endDate,
@@ -720,7 +731,7 @@ export const useTaskHandlers = (
         description: event._def.extendedProps.description || existingTask.extendedProps?.description
       }
     };
-    
+
     await handleTaskUpdate(
       event.id,
       updates,
@@ -736,23 +747,23 @@ export const useTaskHandlers = (
     if (info.draggedEl) {
       info.draggedEl.style.opacity = '0';
     }
-    
+
     if (info.draggedEl.dataset.processed === 'true') {
       return;
     }
-    
+
     info.draggedEl.dataset.processed = 'true';
-    
+
     setTimeout(() => {
       if (info.draggedEl && info.draggedEl.dataset) {
         delete info.draggedEl.dataset.processed;
       }
     }, 100);
-    
+
     if (!info.draggedEl.parentNode) return;
-    
+
     const startDate = info.date;
-    
+
     // Vérifier si c'est un jour férié ou un weekend
     if (DateUtils.isHolidayOrWeekend(startDate, holidays)) {
       toast.warning('Impossible de planifier sur un jour non ouvré', TOAST_CONFIG);
@@ -761,7 +772,7 @@ export const useTaskHandlers = (
       }
       return;
     }
-    
+
     // Vérifier si la ressource cible est une équipe
     if (info.resource && info.resource.extendedProps && info.resource.extendedProps.isTeam) {
       toast.warning('Impossible de planifier directement sur une équipe', TOAST_CONFIG);
@@ -770,7 +781,7 @@ export const useTaskHandlers = (
       }
       return;
     }
-    
+
     // Vérifier si l'ID de la ressource commence par "team_"
     if (info.resource && typeof info.resource.id === 'string' && info.resource.id.startsWith('team_')) {
       toast.warning('Impossible de planifier directement sur une équipe', TOAST_CONFIG);
@@ -779,16 +790,16 @@ export const useTaskHandlers = (
       }
       return;
     }
-    
+
     const taskId = info.draggedEl.getAttribute('data-task-id');
     const externalTask = boardTasks.find(task => task.id.toString() === taskId.toString());
-    
+
     if (!externalTask) return false;
-    
+
     const endDate = new Date(startDate.getTime() + 86400000);
-  
+
     console.log('externalTask :', externalTask);
-    
+
     const updates = {
       title: externalTask.title,
       description: externalTask.extendedProps?.description || '',
@@ -801,10 +812,10 @@ export const useTaskHandlers = (
       },
       statusId: '2' // Garder aussi au niveau racine pour compatibilité
     };
-  
+
     // Mettre à jour la tâche avec les nouvelles propriétés
     updateTaskStatus(taskId, updates);
-    
+
     // *** MODIFICATION IMPORTANTE ***
     // Ne pas supprimer la tâche du tableau boardTasks
     // mais seulement la rendre invisible dans la zone de départ
@@ -828,12 +839,12 @@ export const useTaskHandlers = (
           return t;
         });
       });
-      
+
       if (info.draggedEl) {
         info.draggedEl.style.opacity = '1';
       }
     }, 50);
-    
+
     await handleTaskUpdate(
       taskId,
       updates,
@@ -842,7 +853,7 @@ export const useTaskHandlers = (
         skipApiCall: false
       }
     );
-    
+
     return true;
   }, [holidays, boardTasks, updateTaskStatus, setBoardTasks, handleTaskUpdate]);
 
