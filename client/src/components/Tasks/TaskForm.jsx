@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { ERROR_MESSAGES } from '../../constants/constants';
+import { DateUtils } from '../../utils/dateUtils';
 
 export const TaskForm = ({
     isOpen,
@@ -24,12 +25,12 @@ export const TaskForm = ({
         try {
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return ''; // Date invalide
-            
+
             // Utiliser les méthodes UTC pour extraire année, mois et jour
             const year = date.getUTCFullYear();
             const month = String(date.getUTCMonth() + 1).padStart(2, '0');
             const day = String(date.getUTCDate()).padStart(2, '0');
-            
+
             return `${year}-${month}-${day}`;
         } catch (e) {
             console.error('Erreur lors du formatage de la date:', e);
@@ -49,47 +50,50 @@ export const TaskForm = ({
     const getInitialFormData = useCallback(() => {
         console.log('selectedTask :', selectedTask);
         console.log('selectedDates :', selectedDates);
-    
+
         // Si une tâche est sélectionnée (quelle que soit sa source)
         if (selectedTask) {
             // Si la tâche a des propriétés start et end, elle vient probablement du calendrier
             const isFromCalendar = selectedTask.start && selectedTask.end;
-            
+
+            const endForForm = DateUtils.adjustEndDateForForm(selectedTask.end);
+
             return {
                 title: selectedTask.title || '',
                 description: selectedTask.description || selectedTask.extendedProps?.description || '',
-                startDate: isFromCalendar 
-                    ? formatDateForInput(selectedTask.start) 
+                startDate: isFromCalendar
+                    ? formatDateForInput(selectedTask.start)
                     : (selectedDates ? formatDateForInput(selectedDates.start) : getTodayFormatted()),
-                endDate: isFromCalendar 
-                    ? formatDateForInput(selectedTask.end) 
-                    : (selectedDates ? formatDateForInput(selectedDates.end) : getTodayFormatted()),
+                endDate: isFromCalendar
+                    ? formatDateForInput(endForForm)
+                    : (selectedDates ? formatDateForInput(endForForm) : getTodayFormatted()),
                 resourceId: selectedTask.resourceId || (selectedDates ? selectedDates.resourceId : '') || '',
                 statusId: selectedTask.statusId || selectedTask.extendedProps?.statusId || '2',
                 isConge: selectedTask.isConge || selectedTask.title === 'CONGE' || false
             };
         }
-        
+
         // Si on crée une nouvelle tâche depuis le calendrier
         if (selectedDates && !selectedTask) {
+            const endForForm = DateUtils.adjustEndDateForForm(selectedDates.end);
             return {
                 title: '',
                 description: '',
                 startDate: formatDateForInput(selectedDates.start),
-                endDate: formatDateForInput(selectedDates.end),
+                endDate: formatDateForInput(endForForm),
                 resourceId: selectedDates.resourceId || '',
                 statusId: selectedDates.resourceId ? '2' : '',
                 isConge: false
             };
         }
-        
+
         // Cas par défaut (nouvelle tâche sans contexte)
         const today = getTodayFormatted();
         return {
             title: '',
             description: '',
             startDate: today,
-            endDate: today,
+            endDate: DateUtils.adjustEndDateForForm(today),
             resourceId: '',
             statusId: '',
             isConge: false
@@ -109,7 +113,7 @@ export const TaskForm = ({
 
     const handleChange = useCallback((e) => {
         if (!e || !e.target) return;
-        
+
         const { name, value, type, checked } = e.target;
         setFormData(prev => {
             const newData = {
@@ -186,21 +190,21 @@ export const TaskForm = ({
             // Convertir les dates du format YYYY-MM-DD en dates ISO
             // en s'assurant qu'elles sont interprétées en UTC et non en local
             let startISO, endISO;
-            
+
             if (formData.startDate) {
                 // Crée une date UTC à partir de la chaîne YYYY-MM-DD
                 const [startYear, startMonth, startDay] = formData.startDate.split('-').map(Number);
                 const startDate = new Date(Date.UTC(startYear, startMonth - 1, startDay));
                 startISO = startDate.toISOString();
             }
-            
+
             if (formData.endDate) {
                 // Pour la date de fin, nous ajoutons un jour car FullCalendar l'interprète comme exclusive
                 const [endYear, endMonth, endDay] = formData.endDate.split('-').map(Number);
                 const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay + 1));
                 endISO = endDate.toISOString();
             }
-            
+
             await handleTaskSubmit({
                 ...formData,
                 id: selectedTask?.id,
@@ -230,7 +234,7 @@ export const TaskForm = ({
     if (!isOpen) return null;
 
     return (
-        <div 
+        <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             onClick={handleBackdropClick}
         >
@@ -303,11 +307,13 @@ export const TaskForm = ({
                                 required={formData.isConge}
                             >
                                 <option value="">Sélectionner une personne</option>
-                                {resources.map(resource => (
-                                    <option key={resource.id} value={resource.id}>
-                                        {resource.title}
-                                    </option>
-                                ))}
+                                {resources
+                                    .filter(resource => !resource.isTeam && !resource.id.toString().startsWith('team_'))
+                                    .map(resource => (
+                                        <option key={resource.id} value={resource.id}>
+                                            {resource.title}
+                                        </option>
+                                    ))}
                             </select>
                             {errors.resourceId && (
                                 <span className="text-red-500 text-sm">{errors.resourceId}</span>
