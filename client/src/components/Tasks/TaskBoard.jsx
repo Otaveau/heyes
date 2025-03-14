@@ -175,7 +175,7 @@ export const TaskBoard = ({
               data-zone-id={zone.id}
             >
               <h3 className={`mb-4 font-bold ${isInProgressZone ? 'text-blue-700' : ''}`}>
-                {zone.title} {isInProgressZone && '(Lecture seule)'}
+                {zone.title} {isInProgressZone}
               </h3>
               {zoneTasks.map(task => {
                 const currentStatusId = task.extendedProps?.statusId || task.statusId;

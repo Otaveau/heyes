@@ -22,6 +22,14 @@ export const CalendarMain = ({
   // État pour suivre la vue actuelle
   const [currentView, setCurrentView] = useState('resourceTimelineYear');
   
+  useEffect(() => {
+    if (calendarRef.current) {
+      const currentDate = new Date();
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.scrollToTime({ month: currentDate.getMonth() });
+    }
+  }, [calendarRef]);
+
   // Appliquer les styles améliorés
   useEffect(() => {
     const style = document.createElement('style');
@@ -43,6 +51,33 @@ export const CalendarMain = ({
       externalHandleViewChange(info);
     }
   };
+
+  // Fonction pour gérer le bouton "Aujourd'hui"
+  const handleTodayClick = () => {
+    if (calendarRef.current) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+
+      // Naviguer vers l'année courante
+      if (currentYear !== selectedYear) {
+        // Trouver la différence entre l'année actuelle et l'année sélectionnée
+        const yearDifference = currentYear - selectedYear;
+        
+        // Utiliser goToPreviousYear ou goToNextYear selon la différence
+        const navigationMethod = yearDifference < 0 ? goToPreviousYear : goToNextYear;
+        
+        // Répéter la navigation autant de fois que nécessaire
+        for (let i = 0; i < Math.abs(yearDifference); i++) {
+          navigationMethod();
+        }
+      }
+
+      // Naviguer vers le mois courant
+      navigateToMonth(currentMonth);
+    }
+  };
+
 
   // Rendu des boutons de navigation personnalisés
   const renderCustomNavigation = () => {
@@ -71,10 +106,7 @@ export const CalendarMain = ({
             <button
               type="button"
               className="fc-button fc-button-primary fc-today-button"
-              onClick={() => {
-                const today = new Date();
-                navigateToMonth(today.getMonth());
-              }}
+              onClick={handleTodayClick}
               title="Aujourd'hui"
             >
               Aujourd'hui
@@ -102,6 +134,7 @@ export const CalendarMain = ({
     );
   };
 
+
   return (
     <div className="calendar-container">
       {renderCustomNavigation()}
@@ -125,10 +158,11 @@ export const CalendarMain = ({
         plugins={[resourceTimelinePlugin, interactionPlugin]}
         height='auto'
         schedulerLicenseKey='GPL-My-Project-Is-Open-Source'
-        initialView="resourceTimelineYear"
+        initialView='resourceTimelineYear'
+        initialDate={new Date()}
         headerToolbar={{
-          left: '',  // On laisse vide pour notre navigation personnalisée
-          center: '', // On gère nos propres boutons de mois
+          left: '',
+          center: '',
           right: 'resourceTimelineYear,resourceTimelineMonth,resourceTimelineWeek'
         }}
         editable={true}
