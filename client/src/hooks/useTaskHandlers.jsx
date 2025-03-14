@@ -170,10 +170,10 @@ export const useTaskHandlers = (
       return;
     }
 
+    console.log('formData :', formData);
+
     const startDate = formData.start;
     const endDate = formData.end;
-
-    console.log('formData :', formData);
 
     // Validation des dates
     if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
@@ -189,21 +189,16 @@ export const useTaskHandlers = (
         start: startDate,
         end: endDate,
         resourceId: formData.resourceId ? parseInt(formData.resourceId, 10) : null,
-        extendedProps: {
-          statusId: formData.statusId ? formData.statusId : null
-        }
+        statusId: formData.statusId
       };
 
       // Extraire l'ID de la tâche depuis formData
       const taskId = formData.id;
-      console.log('ID de tâche pour la soumission:', taskId);
 
       let updatedTask;
 
       // Cas de mise à jour d'une tâche existante
       if (taskId) {
-        console.log('Mise à jour de la tâche existante:', taskId);
-
         // Mettre à jour localement d'abord
         updateTaskStatus(taskId, taskData);
 
@@ -213,7 +208,6 @@ export const useTaskHandlers = (
       }
       // Cas de création d'une nouvelle tâche
       else {
-        console.log('Création d\'une nouvelle tâche');
 
         // Appel API pour créer la tâche
         updatedTask = await createTask(taskData);
@@ -305,8 +299,6 @@ export const useTaskHandlers = (
   const handleCalendarEventClick = useCallback((clickInfo) => {
     const eventId = clickInfo.event.id;
     const task = calendarTasks.find((t) => t.id.toString() === eventId.toString());
-
-    console.log('task :', task);
 
     if (task) {
       handleTaskSelection(task);
@@ -580,7 +572,10 @@ export const useTaskHandlers = (
 
   // Préparation d'un événement pour le TaskBoard
   const prepareEventForTaskBoard = useCallback((event, targetDropZone) => {
-    return { statusId: targetDropZone.statusId };
+    return { 
+      statusId: targetDropZone.statusId,
+      ownerId: null,
+     };
   }, []);
 
 
@@ -797,8 +792,6 @@ export const useTaskHandlers = (
     if (!externalTask) return false;
 
     const endDate = new Date(startDate.getTime() + 86400000);
-
-    console.log('externalTask :', externalTask);
 
     const updates = {
       title: externalTask.title,

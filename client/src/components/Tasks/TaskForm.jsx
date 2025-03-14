@@ -48,9 +48,6 @@ export const TaskForm = ({
     }, []);
 
     const getInitialFormData = useCallback(() => {
-        console.log('selectedTask :', selectedTask);
-        console.log('selectedDates :', selectedDates);
-
         // Si une tâche est sélectionnée (quelle que soit sa source)
         if (selectedTask) {
             // Si la tâche a des propriétés start et end, elle vient probablement du calendrier
@@ -233,7 +230,7 @@ export const TaskForm = ({
                 ...formData,
                 id: selectedTask?.id,
                 start: startISO,
-                end: endISO
+                end: endISO,
             });
             onClose();
         } catch (error) {

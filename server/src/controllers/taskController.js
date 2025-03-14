@@ -55,8 +55,6 @@ const updateTask = async (req, res) => {
     status_id: statusId
   };
 
-  console.log('data :', data);
-
   try {
     const task = await Task.update(id, data, req.user.id);
     if (!task) return res.status(404).json({ error: 'Task not found' });

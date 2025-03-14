@@ -84,7 +84,7 @@ export const CalendarMain = ({
     return (
       <div className="fc-custom-nav-container">
         <div className="fc-nav-row">
-          {/* Navigation par année */}
+          {/* Navigation par année - Gauche */}
           <div className="fc-year-nav">
             <button 
               type="button" 
@@ -112,8 +112,8 @@ export const CalendarMain = ({
               Aujourd'hui
             </button>
           </div>
-
-          {/* Navigation par mois (visible uniquement en vue année) */}
+  
+          {/* Centre - Mois (visible uniquement en vue année) */}
           {currentView === 'resourceTimelineYear' && (
             <div className="fc-months-nav">
               {months.map((month, index) => (
@@ -129,6 +129,43 @@ export const CalendarMain = ({
               ))}
             </div>
           )}
+          
+          {/* Droite - Boutons de vue du calendrier */}
+          <div className="fc-view-buttons">
+            <button
+              type="button"
+              className={`fc-button fc-button-primary ${currentView === 'resourceTimelineYear' ? 'fc-button-active' : ''}`}
+              onClick={() => {
+                if (calendarRef.current) {
+                  calendarRef.current.getApi().changeView('resourceTimelineYear');
+                }
+              }}
+            >
+              Année
+            </button>
+            <button
+              type="button"
+              className={`fc-button fc-button-primary ${currentView === 'resourceTimelineMonth' ? 'fc-button-active' : ''}`}
+              onClick={() => {
+                if (calendarRef.current) {
+                  calendarRef.current.getApi().changeView('resourceTimelineMonth');
+                }
+              }}
+            >
+              Mois
+            </button>
+            <button
+              type="button"
+              className={`fc-button fc-button-primary ${currentView === 'resourceTimelineWeek' ? 'fc-button-active' : ''}`}
+              onClick={() => {
+                if (calendarRef.current) {
+                  calendarRef.current.getApi().changeView('resourceTimelineWeek');
+                }
+              }}
+            >
+              Semaine
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -160,11 +197,7 @@ export const CalendarMain = ({
         schedulerLicenseKey='GPL-My-Project-Is-Open-Source'
         initialView='resourceTimelineYear'
         initialDate={new Date()}
-        headerToolbar={{
-          left: '',
-          center: '',
-          right: 'resourceTimelineYear,resourceTimelineMonth,resourceTimelineWeek'
-        }}
+        headerToolbar={false}
         editable={true}
         selectable={true}
         selectMirror={true}

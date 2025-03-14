@@ -1,22 +1,117 @@
-/* ========================= */
-/* Styles pour l'en-tête des mois */
-/* ========================= */
-.fc .month-header {
-  background-color: #f8f9fa !important;
-  font-weight: bold;
-  font-size: 1.1em;
-  color: #333;
-  border-bottom: 2px solid #dee2e6;
+/* =========================
+ * 1. NAVIGATION ET EN-TÊTE
+ * ========================= */
+ .fc-custom-nav-container {
+  margin-bottom: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.fc-timeline-header-row  {
-  border-bottom: 2px solid #e0e0e0 !important;
+.fc-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
+/* Styles communs pour tous les boutons */
+.fc-custom-nav-container button.fc-button {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #4b5563;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
 
-/* ========================= */
-/* Styles pour les jours spéciaux */
-/* ========================= */
+.fc-custom-nav-container button.fc-button:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  color: #1f2937;
+}
+
+/* Groupes de boutons */
+.fc-year-nav,
+.fc-view-buttons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Style spécifique pour l'affichage de l'année */
+.fc-year-display {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #1f2937;
+  padding: 0 8px;
+}
+
+/* Styles pour les boutons de mois */
+.fc-months-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+}
+
+.fc-month-button {
+  padding: 4px 8px !important;
+  font-size: 0.85rem !important;
+  min-width: 40px;
+}
+
+/* Bouton actif */
+.fc-button-active {
+  background-color: #3b82f6 !important;
+  border-color: #2563eb !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Bouton "Aujourd'hui" spécial */
+button.fc-today-button {
+  background-color: #f0f9ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+button.fc-today-button:hover {
+  background-color: #dbeafe;
+  border-color: #60a5fa;
+}
+
+/* Responsive pour les boutons de mois */
+@media (max-width: 768px) {
+  .month-full { display: none; }
+  .month-abbr { display: inline; }
+  
+  .fc-nav-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .fc-year-nav,
+  .fc-view-buttons {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 769px) {
+  .month-full { display: inline; }
+  .month-abbr { display: none; }
+}
+
+/* =========================
+ * 2. JOURS SPÉCIAUX
+ * ========================= */
+/* Styles communs pour les jours fériés et weekends */
 .fc .holiday-slot,
 .fc .weekend-slot,
 .fc .holiday-column,
@@ -31,176 +126,33 @@
   color: #666;
 }
 
-/* ========================= */
-/* Styles pour le drag and drop */
-/* ========================= */
-.task-card {
-  touch-action: none;
-  transition: all 0.2s ease;
-  cursor: move;
-}
-
-.task-card.dragging {
-  opacity: 0.6;
-  transform: scale(0.98);
-}
-
-/* ========================= */
-/* Styles FullCalendar */
-/* ========================= */
-.task-card-wrapper.fc-event {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-}
-
-.backlog-container.drag-active {
-  background-color: rgba(59, 130, 246, 0.1);
-  border: 2px dashed rgb(59, 130, 246);
-}
-
-.fc-event.task-card {
-  background-color: transparent;
-  border: none;
-}
-
-.fc-event.task-card.fc-dragging {
-  opacity: 0.6;
-  transform: scale(0.98);
-}
-
-/* ========================= */
-/* Styles pour le feedback de drop sur le calendar */
-/* ========================= */
-.fc-highlight {
-  background-color: rgba(59, 130, 246, 0.1) !important;
-  border: 2px dashed rgb(59, 130, 246) !important;
-}
-
-/* ========================= */
-/* Styles pour le traitement en cours */
-/* ========================= */
-.processing .task-card {
-  pointer-events: none;
-  opacity: 0.7;
-}
-
-/* ========================= */
-/* Améliorer la visibilité de la zone de drop */
-/* ========================= */
-.fc-view-harness.fc-drop-active {
-  outline: 2px dashed rgb(59, 130, 246);
-  outline-offset: -2px;
-}
-
-/* Transitions pour les éléments du TaskBoard */
-.fc-event {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-/* Mise en surbrillance du TaskBoard */
-.taskboard-highlight {
-  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
-  border-radius: 8px;
-  animation: pulse-border 1.5s infinite ease-in-out;
-  transition: all 0.15s ease-out;
-}
-
-/* Surbrillance intense quand on survole une zone valide */
-.taskboard-highlight-intense {
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.7), 0 0 20px rgba(74, 108, 247, 0.6);
-}
-
-/* Mise en surbrillance des zones de dépôt actives */
-.dropzone-active {
-  background-color: rgba(74, 108, 247, 0.15) !important;
-  border: 2px dashed #4a6cf7 !important;
-  transform: scale(1.02);
-  transition: all 0.15s ease-out;
-}
-
-/* Zone de dépôt potentielle */
-.potential-drop-target {
-  background-color: rgba(230, 230, 250, 0.3);
-  transition: background-color 0.3s ease;
-  border: 1px dashed #ccc;
-}
-
-/* Élément fantôme qui suit le curseur */
-.task-ghost-element {
-  font-weight: bold;
-  border: 2px solid rgba(74, 108, 247, 0.7);
-  transform-origin: center center;
-}
-
-/* Animation d'apparition après le dépôt */
-.task-added {
-  animation: taskAddedAnimation 0.5s ease-in-out;
-}
-
-/* Placeholder temporaire pendant la transition */
-.temporary-task-placeholder {
-  background-color: rgba(74, 108, 247, 0.2);
-  border: 2px dashed rgba(74, 108, 247, 0.7);
-  border-radius: 4px;
-  box-shadow: none;
-}
-
-/* Animation de pulsation de la bordure */
-@keyframes pulse-border {
-  0% {
-    box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 4px rgba(74, 108, 247, 0.6), 0 0 20px rgba(74, 108, 247, 0.5);
-  }
-  100% {
-    box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
-  }
-}
-
-/* Animation d'apparition d'une tâche */
-@keyframes taskAddedAnimation {
-  0% {
-    transform: scale(1);
-    background-color: rgba(74, 108, 247, 0.4);
-  }
-  50% {
-    transform: scale(1.1);
-    background-color: rgba(74, 108, 247, 0.6);
-  }
-  100% {
-    transform: scale(1);
-    background-color: inherit;
-  }
-}
-
-/* Ajouter ces styles à votre fichier CalendarView.css ou équivalent */
-
-/* Style pour les lignes d'équipes */
-.fc-timeline-lane.team-resource-lane {
-  background-color: #f3f4f6 !important; /* Gris clair */
-  cursor: not-allowed !important;
-}
-
-/* Empêcher visuellement le dépôt sur les équipes */
-.fc-timeline-lane.team-resource-lane.fc-highlight {
-  background-color: #fee2e2 !important; /* Rouge clair pour indiquer qu'on ne peut pas déposer */
-}
-
-/* Coloration spéciale pendant le survol pour indiquer la non-droppabilité */
-.fc-timeline-lane.team-resource-lane:hover {
-  background-color: #f3f4f6 !important; /* Reste la même couleur */
-}
-
-/* Style pour les cellules de jours fériés et weekends */
+/* Styles spécifiques */
 .holiday-column {
   background-color: #fef3c7 !important; /* Jaune pâle */
 }
 
 .weekend-column {
   background-color: #f3f4f6 !important; /* Gris très clair */
+}
+
+.fc-day-today {
+  background-color: rgba(59, 130, 246, 0.05) !important;
+  border-left: 2px solid #3b82f6 !important;
+  border-right: 2px solid #3b82f6 !important;
+}
+
+/* =========================
+ * 3. RESSOURCES ET ÉQUIPES
+ * ========================= */
+/* Style pour les lignes d'équipes */
+.fc-timeline-lane.team-resource-lane {
+  background-color: #f3f4f6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Empêcher visuellement le dépôt sur les équipes */
+.fc-timeline-lane.team-resource-lane.fc-highlight {
+  background-color: #fee2e2 !important; /* Rouge clair pour indiquer qu'on ne peut pas déposer */
 }
 
 /* Renforcer les styles pour les en-têtes d'équipe */
@@ -215,8 +167,129 @@
   padding-left: 20px !important;
 }
 
-.fc-day-today {
-  background-color: rgba(59, 130, 246, 0.05) !important;
-  border-left: 2px solid #3b82f6 !important;
-  border-right: 2px solid #3b82f6 !important;
+/* =========================
+ * 4. DRAG AND DROP
+ * ========================= */
+/* Styles de base pour les cartes de tâches */
+.task-card {
+  touch-action: none;
+  transition: all 0.2s ease;
+  cursor: move;
+}
+
+.task-card.dragging,
+.fc-event.task-card.fc-dragging {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+/* Conteneurs et wrappers */
+.task-card-wrapper.fc-event {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fc-event.task-card {
+  background-color: transparent;
+  border: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Feedback de drop */
+.fc-highlight {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border: 2px dashed rgb(59, 130, 246) !important;
+}
+
+.backlog-container.drag-active,
+.fc-view-harness.fc-drop-active {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 2px dashed rgb(59, 130, 246);
+  outline-offset: -2px;
+}
+
+/* =========================
+ * 5. ÉTATS SPÉCIAUX
+ * ========================= */
+/* Traitement en cours */
+.processing .task-card {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Mise en surbrillance */
+.taskboard-highlight {
+  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
+  border-radius: 8px;
+  animation: pulse-border 1.5s infinite ease-in-out;
+  transition: all 0.15s ease-out;
+}
+
+.taskboard-highlight-intense {
+  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.7), 0 0 20px rgba(74, 108, 247, 0.6);
+}
+
+.dropzone-active {
+  background-color: rgba(74, 108, 247, 0.15) !important;
+  border: 2px dashed #4a6cf7 !important;
+  transform: scale(1.02);
+  transition: all 0.15s ease-out;
+}
+
+.potential-drop-target {
+  background-color: rgba(230, 230, 250, 0.3);
+  transition: background-color 0.3s ease;
+  border: 1px dashed #ccc;
+}
+
+/* =========================
+ * 6. ÉLÉMENTS TEMPORAIRES
+ * ========================= */
+.task-ghost-element {
+  font-weight: bold;
+  border: 2px solid rgba(74, 108, 247, 0.7);
+  transform-origin: center center;
+}
+
+.task-added {
+  animation: taskAddedAnimation 0.5s ease-in-out;
+}
+
+.temporary-task-placeholder {
+  background-color: rgba(74, 108, 247, 0.2);
+  border: 2px dashed rgba(74, 108, 247, 0.7);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+/* =========================
+ * 7. ANIMATIONS
+ * ========================= */
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(74, 108, 247, 0.6), 0 0 20px rgba(74, 108, 247, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
+  }
+}
+
+@keyframes taskAddedAnimation {
+  0% {
+    transform: scale(1);
+    background-color: rgba(74, 108, 247, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    background-color: rgba(74, 108, 247, 0.6);
+  }
+  100% {
+    transform: scale(1);
+    background-color: inherit;
+  }
 }

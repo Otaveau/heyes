@@ -101,8 +101,6 @@ export const useCalendarNavigation = (calendarRef, selectedYear, setSelectedYear
   // Gestionnaire pour les changements de vue du calendrier
   const handleViewChange = useCallback((viewInfo) => {
     // À compléter selon les besoins
-    console.log('Calendar view changed:', viewInfo.view.type);
-
   }, []);
 
   return {
