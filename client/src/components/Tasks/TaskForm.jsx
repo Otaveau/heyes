@@ -128,13 +128,33 @@ export const TaskForm = ({
                 } else {
                     newData.title = '';
                     if (!newData.resourceId) {
-                        newData.statusId = '';
+                        newData.statusId = '1';
                     }
                 }
             }
 
-            if (name === 'resourceId' && value !== '') {
-                newData.statusId = '2';
+            if (name === 'resourceId') {
+                if (value !== '') {
+                    // Si une ressource est sélectionnée, on met le statut à "En cours"
+                    newData.statusId = '2';
+                } else {
+                    // Si la ressource est désélectionnée
+                    // et que le statut est "En cours", on change le statut à "Entrant"
+                    if (newData.statusId === '2' && !newData.isConge) {
+                        newData.statusId = '1';
+                    }
+                }
+            }
+
+            // Si on change le statut à "En cours" mais qu'il n'y a pas de ressource
+            if (name === 'statusId' && value === '2' && !newData.resourceId && !newData.isConge) {
+                // Afficher un message pour demander à l'utilisateur d'attribuer une ressource
+                setTimeout(() => {
+                    setErrors(prevErrors => ({
+                        ...prevErrors,
+                        resourceId: 'Veuillez attribuer une ressource pour une tâche en cours'
+                    }));
+                }, 0);
             }
 
             return newData;
@@ -163,6 +183,10 @@ export const TaskForm = ({
         if (formData.startDate && formData.endDate &&
             new Date(formData.startDate) > new Date(formData.endDate)) {
             newErrors.endDate = ERROR_MESSAGES.END_DATE_VALIDATION;
+        }
+
+        if (formData.statusId === '2' && !formData.resourceId) {
+            newErrors.resourceId = 'Une ressource est requise pour une tâche en cours';
         }
 
         if (formData.isConge) {
@@ -275,7 +299,7 @@ export const TaskForm = ({
                                 name="title"
                                 value={formData.title}
                                 onChange={handleChange}
-                                className="w-full p-2 border rounded"
+                                className='w-full p-2 border rounded disabled:bg-gray-200 disabled:text-gray-500 disabled:border-gray-300 disabled:cursor-not-allowed'
                                 disabled={formData.isConge}
                                 required
                             />
@@ -361,7 +385,7 @@ export const TaskForm = ({
                                 name="statusId"
                                 value={formData.statusId}
                                 onChange={handleChange}
-                                className="w-full p-2 border rounded"
+                                className='w-full p-2 border rounded disabled:bg-gray-200 disabled:text-gray-500 disabled:border-gray-300 disabled:cursor-not-allowed'
                                 required={!formData.isConge}
                                 disabled={formData.resourceId !== '' || formData.isConge}
                             >
