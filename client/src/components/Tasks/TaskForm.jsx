@@ -29,22 +29,18 @@ export const TaskForm = ({
 
 
     const getInitialFormData = useCallback(() => {
-        // Si une tâche est sélectionnée (quelle que soit sa source)
         if (selectedTask) {
-            // Si la tâche a des propriétés start et end, elle vient probablement du calendrier
             const isFromCalendar = selectedTask.start && selectedTask.end;
-
-            const endForForm = DateUtils.adjustEndDateForForm(selectedTask.end);
-
             return {
+                id: selectedTask.id,
                 title: selectedTask.title || '',
                 description: selectedTask.description || selectedTask.extendedProps?.description || '',
                 startDate: isFromCalendar
                     ? formatDateForInput(selectedTask.start)
                     : (selectedDates ? formatDateForInput(selectedDates.start) : getTodayFormatted()),
                 endDate: isFromCalendar
-                    ? formatDateForInput(endForForm)
-                    : (selectedDates ? formatDateForInput(endForForm) : getTodayFormatted()),
+                    ? formatDateForInput(selectedTask.end)
+                    : (selectedDates ? formatDateForInput(selectedTask.end) : getTodayFormatted()),
                 resourceId: selectedTask.resourceId || (selectedDates ? selectedDates.resourceId : '') || '',
                 statusId: selectedTask.statusId || selectedTask.extendedProps?.statusId || '2',
                 isConge: selectedTask.isConge || selectedTask.title === 'CONGE' || false
@@ -71,7 +67,7 @@ export const TaskForm = ({
             title: '',
             description: '',
             startDate: today,
-            endDate: DateUtils.adjustEndDateForForm(today),
+            endDate: today,
             resourceId: '',
             statusId: '',
             isConge: false

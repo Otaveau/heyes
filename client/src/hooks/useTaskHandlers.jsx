@@ -133,8 +133,8 @@ export const useTaskHandlers = (
 
     console.log('formData :', formData);
 
-    const startDate = formData.start;
-    const endDate = formData.end;
+    const startDate = formData.startDate;
+    const endDate = formData.endDate;
 
     // Validation des dates
     if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
@@ -159,8 +159,8 @@ export const useTaskHandlers = (
       let updatedTask;
 
       // Cas de mise à jour d'une tâche existante
-      if (taskId) {
-        // Mettre à jour localement d'abord
+      if (taskId) {        // Mettre à jour localement d'abord
+        console.log('taskData :', taskData);
         updateTaskStatus(taskId, taskData);
 
         // Puis appel API

@@ -130,26 +130,6 @@ export class DateUtils {
       return adjustedDate;
     }
   }
-
-  // Fonction d'aide pour ajuster la date de fin dans le formulaire
-  // Cette fonction fait l'inverse de adjustEndDateForFullCalendar
-  static adjustEndDateForForm = (dateObj) => {
-    if (!dateObj) return null;
-
-    const end = new Date(dateObj);
-
-    // Si la date est à minuit pile (00:00:00), elle est probablement exclusive
-    // On soustrait un jour pour l'afficher comme inclusive dans le formulaire
-    if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0) {
-      const adjustedDate = new Date(end);
-      adjustedDate.setDate(adjustedDate.getDate() - 1);
-      return adjustedDate;
-    }
-
-    // Si elle a déjà une heure définie, elle est déjà inclusive
-    return end;
-  };
-
   /**
    * Calcule le nombre de jours ouvrés entre deux dates
    */
