@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { ERROR_MESSAGES } from '../../constants/constants';
-import { DateUtils } from '../../utils/dateUtils';
+import { ERROR_MESSAGES, DEFAULT_TASK_DURATION } from '../../constants/constants';
 
 export const TaskForm = ({
     isOpen,
@@ -49,12 +48,11 @@ export const TaskForm = ({
 
         // Si on crée une nouvelle tâche depuis le calendrier
         if (selectedDates && !selectedTask) {
-            const endForForm = DateUtils.adjustEndDateForForm(selectedDates.end);
             return {
                 title: '',
                 description: '',
                 startDate: formatDateForInput(selectedDates.start),
-                endDate: formatDateForInput(endForForm),
+                endDate: formatDateForInput(new Date(new Date(selectedDates.start).getTime() + DEFAULT_TASK_DURATION)),
                 resourceId: selectedDates.resourceId || '',
                 statusId: selectedDates.resourceId ? '2' : '',
                 isConge: false
