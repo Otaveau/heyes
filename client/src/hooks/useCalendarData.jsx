@@ -80,15 +80,12 @@ export const useCalendarData = () => {
     
     return tasks.map(task => {
       if (!task) return null;
+
+      console.log('task :', task);
       
       let startDate = task.start_date ? new Date(task.start_date) : new Date();
       let endDate = task.end_date ? new Date(task.end_date) : startDate;
 
-      startDate.setDate(startDate.getDate() + 1);
-      if (endDate) {
-        endDate.setDate(endDate.getDate() + 1);
-      }
-      
       return {
         id: task.id,
         title: task.title || 'Tâche sans titre',

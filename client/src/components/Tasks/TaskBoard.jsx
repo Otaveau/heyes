@@ -1,33 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trash2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Trash2} from 'lucide-react';
 import { Draggable } from '@fullcalendar/interaction';
 
-export const TaskBoard = ({ 
-  dropZones = [], 
+export const TaskBoard = ({
+  dropZones = [],
   dropZoneRefs,
-  externalTasks = [], 
+  externalTasks = [],
   handleExternalTaskClick,
   onDeleteTask,
-  updateTaskStatus,
   resources = []
 }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const draggablesRef = useRef([]);
-  
+
   // Créer des références locales si aucune n'est fournie
   const internalRefs = useRef([]);
-  
+
   // Initialiser les références internes si nécessaire
   useEffect(() => {
     if (!internalRefs.current.length) {
       internalRefs.current = dropZones.map(() => React.createRef());
     }
   }, [dropZones]);
-  
+
   // Utiliser les références externes si disponibles, sinon utiliser les références internes
   const effectiveRefs = dropZoneRefs || internalRefs;
-  
+
   // Fonction pour ouvrir la modal de confirmation
   const openDeleteModal = (e, task) => {
     e.stopPropagation();
@@ -48,30 +47,14 @@ export const TaskBoard = ({
     closeDeleteModal();
   };
 
-  const getNextZone = (currentStatusId) => {
-    const currentIndex = dropZones.findIndex(zone => zone.statusId === currentStatusId);
-    if (currentIndex < dropZones.length - 1) {
-      return dropZones[currentIndex + 1];
-    }
-    return null;
-  };
-
-  const getPreviousZone = (currentStatusId) => {
-    const currentIndex = dropZones.findIndex(zone => zone.statusId === currentStatusId);
-    if (currentIndex > 0) {
-      return dropZones[currentIndex - 1];
-    }
-    return null;
-  };
-
   // Fonction pour formater une date en format lisible
   const formatDate = (dateString) => {
     if (!dateString) return 'Non définie';
-    
+
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Date invalide';
-      
+
       // Format: JJ/MM/YYYY
       return date.toLocaleDateString();
     } catch (e) {
@@ -83,7 +66,7 @@ export const TaskBoard = ({
   // Fonction pour obtenir le nom d'une ressource à partir de son ID
   const getResourceName = (resourceId) => {
     if (!resourceId) return 'Non assigné';
-    
+
     const resource = resources.find(r => r.id.toString() === resourceId.toString());
     return resource ? resource.title : `ID: ${resourceId}`;
   };
@@ -95,7 +78,7 @@ export const TaskBoard = ({
       console.warn("Les références ne sont pas disponibles pour les draggables");
       return;
     }
-    
+
     // Nettoyage des anciens draggables
     draggablesRef.current.forEach(draggable => {
       if (draggable) draggable.destroy();
@@ -108,7 +91,7 @@ export const TaskBoard = ({
         console.warn(`Référence ${index} non disponible`);
         return;
       }
-      
+
       // Ne pas créer de draggable pour la zone avec statusId '2'
       const zone = dropZones[index];
       if (zone && zone.statusId === '2') {
@@ -119,26 +102,26 @@ export const TaskBoard = ({
         // Créer un draggable pour chaque zone (sauf la zone '2')
         const draggable = new Draggable(ref.current, {
           itemSelector: '.fc-event',
-          eventData: function(eventEl) {
+          eventData: function (eventEl) {
             const taskId = eventEl.getAttribute('data-task-id');
             const task = externalTasks.find(t => t.id.toString() === taskId.toString());
-            
+
             if (!task) return {};
-            
+
             return {
               id: task.id,
               title: task.title,
               start: task.start || new Date(),
               end: task.end || new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
               allDay: true,
-              extendedProps: { 
+              extendedProps: {
                 statusId: task.extendedProps?.statusId || task.statusId,
                 description: task.extendedProps?.description || ''
               }
             };
           }
         });
-        
+
         draggablesRef.current[index] = draggable;
       } catch (error) {
         console.error(`Erreur lors de la création du draggable pour la zone ${index}:`, error);
@@ -161,15 +144,15 @@ export const TaskBoard = ({
           if (!effectiveRefs.current[index]) {
             effectiveRefs.current[index] = React.createRef();
           }
-          
+
           const zoneTasks = externalTasks.filter(task => {
             const statusId = task.extendedProps?.statusId || task.statusId;
             return statusId === zone.statusId;
           });
-          
+
           // Déterminer si cette zone est la zone "En cours" (statusId '2')
           const isInProgressZone = zone.statusId === '2';
-          
+
           return (
             <div
               key={zone.id}
@@ -182,10 +165,6 @@ export const TaskBoard = ({
                 {zone.title} {isInProgressZone}
               </h3>
               {zoneTasks.map(task => {
-                const currentStatusId = task.extendedProps?.statusId || task.statusId;
-                const nextZone = getNextZone(currentStatusId);
-                const prevZone = getPreviousZone(currentStatusId);
-                
                 return (
                   <div
                     key={task.id}
@@ -194,27 +173,20 @@ export const TaskBoard = ({
                     onClick={() => handleExternalTaskClick && handleExternalTaskClick(task)}
                   >
                     <div className="font-medium">{task.title}</div>
-                    
-                     {/* Affichage amélioré pour le taskboard 2 */}
-                     {isInProgressZone ? (
+
+                    {/* Affichage amélioré pour le taskboard 2 */}
+                    {isInProgressZone ? (
                       <>
                         {task.resourceId && (
                           <div className="text-xs text-blue-600 mt-1">
                             <span className="font-medium">Assigné à:</span> {getResourceName(task.resourceId)}
                           </div>
                         )}
-                        
+
                         {/* Dates de la tâche */}
                         <div className="text-xs text-gray-600 mt-1">
                           <div><span className="font-medium">Début:</span> {formatDate(task.start)}</div>
-                          <div><span className="font-medium">Fin:</span> 
-                            {/* Ajuster la date de fin pour l'affichage */}
-                            {(() => {
-                              const endDate = new Date(task.end);
-                              endDate.setDate(endDate.getDate() - 2); // Soustraire 2 jours
-                              return formatDate(endDate);
-                            })()}
-                          </div>
+                          <div><span className="font-medium">Fin:</span> {formatDate(task.end)}</div>
                         </div>
                       </>
                     ) : (
@@ -228,45 +200,18 @@ export const TaskBoard = ({
                         )}
                       </>
                     )}
-                    
-                    {/* Actions de tâche - flèches pour toutes les zones */}
-                    <div className="flex justify-end mt-2 pt-2 border-t">
-                      {prevZone && (
-                        <button
-                          className="mr-2 text-gray-400 hover:text-blue-500 focus:outline-none"
-                          onClick={(e) => {
-                            
-                            e.stopPropagation();
-                            updateTaskStatus && updateTaskStatus(task.id, prevZone.statusId);
-                          }}
-                          title={`Déplacer vers ${prevZone.title}`}
-                        >
-                          <ArrowLeft size={24} className="transition-transform hover:scale-110" />
-                        </button>
-                      )}
-                      
-                      <button 
-                        className="text-gray-400 hover:text-red-500 focus:outline-none"
-                        onClick={(e) => openDeleteModal(e, task)}
-                        title="Supprimer la tâche"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      
-                      {nextZone && (
-                        <button
-                          className="ml-2 text-gray-400 hover:text-blue-500 focus:outline-none"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateTaskStatus && updateTaskStatus(task.id, nextZone.statusId);
-                          }}
-                          title={`Déplacer vers ${nextZone.title}`}
-                        >
-                          <ArrowRight size={24} className="transition-transform hover:scale-110" />
-                        </button>
-                      )}
-                    </div>
+
+                    <button
+                      className="text-gray-400 hover:text-red-500 focus:outline-none"
+                      onClick={(e) => openDeleteModal(e, task)}
+                      title="Supprimer la tâche"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+
+
                   </div>
+
                 );
               })}
               {zoneTasks.length === 0 && (

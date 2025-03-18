@@ -8,7 +8,7 @@ import { getEnhancedCalendarStyles } from '../../style/calendarStyles';
 
 export const CalendarMain = ({ 
   calendarRef,
-  calendarTasks,
+  tasks,
   resources,
   holidays,
   taskHandlers,
@@ -179,7 +179,7 @@ export const CalendarMain = ({
         ref={calendarRef}
         locale={frLocale}
         timeZone='Europe/Paris'
-        events={calendarTasks}
+        events={tasks}
         resources={resources}
         nextDayThreshold="00:00:00"
         slotLabelFormat={[
