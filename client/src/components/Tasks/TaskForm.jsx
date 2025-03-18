@@ -13,32 +13,6 @@ export const TaskForm = ({
     onSubmit: handleTaskSubmit
 }) => {
 
-    // Fonction d'aide pour formater les dates ISO en YYYY-MM-DD
-    const formatDateForInput = useCallback((dateString) => {
-        if (!dateString) return '';
-
-        // Si la date est déjà au format YYYY-MM-DD, la retourner telle quelle
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-            return dateString;
-        }
-
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return ''; // Date invalide
-
-            // Utiliser les méthodes UTC pour extraire année, mois et jour
-            const year = date.getUTCFullYear();
-            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-            const day = String(date.getUTCDate()).padStart(2, '0');
-
-            return `${year}-${month}-${day}`;
-        } catch (e) {
-            console.error('Erreur lors du formatage de la date:', e);
-            return '';
-        }
-    }, []);
-
-    // Obtenir la date du jour formatée
     const getTodayFormatted = useCallback(() => {
         const today = new Date();
         const year = today.getFullYear();
@@ -46,6 +20,13 @@ export const TaskForm = ({
         const day = String(today.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     }, []);
+
+    const formatDateForInput = useCallback((date) => {
+        if (!date) return getTodayFormatted();
+        const d = new Date(date);
+        return d.toISOString().split('T')[0];
+    }, [getTodayFormatted]);
+
 
     const getInitialFormData = useCallback(() => {
         // Si une tâche est sélectionnée (quelle que soit sa source)
@@ -198,51 +179,41 @@ export const TaskForm = ({
         return Object.keys(newErrors).length === 0;
     }, [formData]);
 
-    const handleSubmit = useCallback(async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        e.stopPropagation();
-
         if (!validateForm()) {
+            setIsSubmitting(false);
             return;
         }
-
+        
         setIsSubmitting(true);
         try {
             // Convertir les dates du format YYYY-MM-DD en dates ISO
-            // en s'assurant qu'elles sont interprétées en UTC et non en local
-            let startISO, endISO;
-
-            if (formData.startDate) {
-                // Crée une date UTC à partir de la chaîne YYYY-MM-DD
-                const [startYear, startMonth, startDay] = formData.startDate.split('-').map(Number);
-                const startDate = new Date(Date.UTC(startYear, startMonth - 1, startDay));
-                startISO = startDate.toISOString();
-            }
-
-            if (formData.endDate) {
-                // Pour la date de fin, nous ajoutons un jour car FullCalendar l'interprète comme exclusive
-                const [endYear, endMonth, endDay] = formData.endDate.split('-').map(Number);
-                const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay + 1));
-                endISO = endDate.toISOString();
-            }
-
-            await handleTaskSubmit({
+            const [startYear, startMonth, startDay] = formData.startDate.split('-').map(Number);
+            const [endYear, endMonth, endDay] = formData.endDate.split('-').map(Number);
+    
+            const startDate = new Date(startYear, startMonth - 1, startDay);
+            const endDate = new Date(endYear, endMonth - 1, endDay);
+    
+            const taskData = {
                 ...formData,
-                id: selectedTask?.id,
-                start: startISO,
-                end: endISO,
-            });
+                start: startDate.toISOString().split('T')[0],
+                end: endDate.toISOString().split('T')[0]
+            };
+    
+            // Appeler la fonction de soumission passée en prop
+            await handleTaskSubmit(taskData);
             onClose();
         } catch (error) {
-            console.error('Error submitting form:', error);
+            console.error('Error:', error);
             setErrors(prev => ({
                 ...prev,
-                submit: ERROR_MESSAGES.SUBMIT_ERROR
+                submit: 'Une erreur est survenue lors de la soumission'
             }));
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData, handleTaskSubmit, onClose, selectedTask?.id, validateForm]);
+    };
 
     const handleBackdropClick = useCallback((e) => {
         if (e.target === e.currentTarget) {

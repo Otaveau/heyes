@@ -2,30 +2,42 @@ import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
 import { ERROR_MESSAGES } from '../../constants/constants';
-import { DateUtils } from '../../utils/dateUtils';
-
-
 
 const transformTaskForServer = (taskData) => {
+
+    const statusId = taskData.statusId || taskData.extendedProps?.statusId;
+
+    const formatDateForServer = (date) => {
+        if (!date) return null;
+        const d = new Date(date);
+        return d.toISOString().split('T')[0];
+    };
+
     return {
         title: taskData.title.trim(),
-        startDate: taskData.start ? new Date(taskData.start).toISOString() : null,
-        endDate: taskData.end ? new Date(taskData.end).toISOString() : null,
+        startDate: formatDateForServer(taskData.start),
+        endDate: formatDateForServer(taskData.end),
         description: taskData.description?.trim() || '',
         ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
-        statusId: taskData.statusId ? parseInt(taskData.statusId, 10) : null
+        statusId: statusId
     };
 };
 
 const transformServerResponseToTask = (serverResponse) => {
 
-    DateUtils.normalizeTaskDates(serverResponse);
+    const formatDateFromServer = (dateStr) => {
+        if (!dateStr) return null;
+        const date = new Date(dateStr);
+        date.setHours(12, 0, 0, 0);
+        return date;
+    };
+
   
     return {
         id: serverResponse.id,
         title: serverResponse.title,
-        start: serverResponse.start_Date || null,
-        end: serverResponse.end_Date || null,
+        start: formatDateFromServer(serverResponse.start_date),
+        end: formatDateFromServer(serverResponse.end_date),
         resourceId: (serverResponse.owner_id || serverResponse.ownerId)?.toString(),
         allDay: true,
         extendedProps: {

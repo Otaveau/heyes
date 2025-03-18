@@ -30,28 +30,39 @@ class Task {
     const { title, start_date, end_date, description, owner_id, status_id } = data;
 
     const result = await pool.query(
-      'INSERT INTO tasks (title, start_date, end_date, description, owner_id, status_id, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      `INSERT INTO tasks (
+            title, 
+            start_date, 
+            end_date, 
+            description, 
+            owner_id, 
+            status_id, 
+            user_id
+        ) VALUES ($1, $2::date, $3::date, $4, $5, $6, $7) 
+        RETURNING *`,
       [title, start_date, end_date, description, owner_id, status_id, userId]
     );
     return result.rows[0];
   }
 
-  static async updateStatus(id, statusId, userId) {
-    const result = await pool.query(
-      'UPDATE tasks SET status_id = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
-      [statusId, id, userId]
-    );
-    return result.rows[0];
-  }
-
   static async update(id, data, user_id) {
-    // Si seul le statut est fourni, utiliser updateStatus
     if (data.status_id && Object.keys(data).length === 1) {
       return this.updateStatus(id, data.status_id, user_id);
     }
+
     const { title, start_date, end_date, owner_id, status_id, description } = data;
+
     const result = await pool.query(
-      'UPDATE tasks SET title = $1, start_date = $2::date, end_date = $3::date, owner_id = $4, status_id = $5, description = $6 WHERE id = $7 AND user_id = $8 RETURNING *',
+      `UPDATE tasks 
+      SET 
+          title = $1, 
+          start_date = $2::date, 
+          end_date = $3::date, 
+          owner_id = $4, 
+          status_id = $5, 
+          description = $6 
+      WHERE id = $7 AND user_id = $8 
+      RETURNING *`,
       [title, start_date, end_date, owner_id, status_id, description, id, user_id]
     );
     return result.rows[0];
