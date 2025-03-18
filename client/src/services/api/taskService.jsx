@@ -4,15 +4,20 @@ import { handleResponse } from '../apiUtils/errorHandlers';
 import { ERROR_MESSAGES } from '../../constants/constants';
 
 const transformTaskForServer = (taskData) => {
-
     const statusId = taskData.statusId || taskData.extendedProps?.statusId;
-
+    // Convertir les dates en UTC à midi
     const formatDateForServer = (date) => {
         if (!date) return null;
         const d = new Date(date);
-        return d.toISOString().split('T')[0];
+        // Créer une nouvelle date en UTC à midi
+        return new Date(Date.UTC(
+            d.getFullYear(),
+            d.getMonth(),
+            d.getDate(),
+            12, 0, 0
+        )).toISOString();
     };
-
+    console.log('taskData :', taskData);
     return {
         title: taskData.title.trim(),
         startDate: formatDateForServer(taskData.start),
@@ -24,15 +29,19 @@ const transformTaskForServer = (taskData) => {
 };
 
 const transformServerResponseToTask = (serverResponse) => {
-
     const formatDateFromServer = (dateStr) => {
         if (!dateStr) return null;
         const date = new Date(dateStr);
-        date.setHours(12, 0, 0, 0);
-        return date;
+        // Créer une nouvelle date locale à midi
+        return new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate(),
+            12, 0, 0
+        );
     };
-
-  
+    console.log('serverResponse start_date :', formatDateFromServer(serverResponse.start_date));
+    console.log('serverResponse end_date :', formatDateFromServer(serverResponse.end_date));
     return {
         id: serverResponse.id,
         title: serverResponse.title,

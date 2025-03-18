@@ -617,6 +617,7 @@ export const useTaskHandlers = (
 
     const resourceId = event._def.resourceIds[0];
     const updates = {
+      title: event.title,
       start: startDate,
       end: endDate,
       resourceId,
