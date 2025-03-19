@@ -22,43 +22,70 @@ export const TaskForm = ({
 
     const formatDateForInput = useCallback((date) => {
         if (!date) return getTodayFormatted();
+        
+        // Assurer que nous avons un objet Date
         const d = new Date(date);
-        return d.toISOString().split('T')[0];
+        
+        // Utiliser les méthodes UTC pour éviter les décalages de fuseau horaire
+        const year = d.getUTCFullYear();
+        const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(d.getUTCDate()).padStart(2, '0');
+        
+        // Retourner au format YYYY-MM-DD pour l'élément input type="date"
+        return `${year}-${month}-${day}`;
     }, [getTodayFormatted]);
 
 
     const getInitialFormData = useCallback(() => {
         if (selectedTask) {
             const isFromCalendar = selectedTask.start && selectedTask.end;
+            
+            // Pour extraire les dates inclusives du calendrier
+            let startDateStr, endDateStr;
+            
+            if (isFromCalendar) {
+                // Convertir les dates du calendrier en chaînes YYYY-MM-DD
+                // IMPORTANT: Pour la date de fin, soustraire 1 jour car elle est exclusive dans FullCalendar
+                const startDate = new Date(selectedTask.start);
+                const endDate = new Date(selectedTask.end);
+                endDate.setUTCDate(endDate.getUTCDate() - 1); // Convertir en inclusive
+                
+                // Formater en YYYY-MM-DD pour input type="date"
+                startDateStr = startDate.toISOString().split('T')[0];
+                endDateStr = endDate.toISOString().split('T')[0];
+            } else {
+                startDateStr = selectedDates ? formatDateForInput(selectedDates.start) : getTodayFormatted();
+                endDateStr = selectedDates ? formatDateForInput(selectedDates.end) : getTodayFormatted();
+            }
+            
+            // Vérifier si la propriété isConge existe
+            const isConge = (selectedTask.isConge ?? false) || (selectedTask.title === 'CONGE');
+            
             return {
                 id: selectedTask.id,
                 title: selectedTask.title || '',
                 description: selectedTask.description || selectedTask.extendedProps?.description || '',
-                startDate: isFromCalendar
-                    ? formatDateForInput(selectedTask.start)
-                    : (selectedDates ? formatDateForInput(selectedDates.start) : getTodayFormatted()),
-                endDate: isFromCalendar
-                    ? formatDateForInput(selectedTask.end)
-                    : (selectedDates ? formatDateForInput(selectedTask.end) : getTodayFormatted()),
+                startDate: startDateStr,
+                endDate: endDateStr,
                 resourceId: selectedTask.resourceId || (selectedDates ? selectedDates.resourceId : '') || '',
                 statusId: selectedTask.statusId || selectedTask.extendedProps?.statusId || '2',
-                isConge: selectedTask.isConge || selectedTask.title === 'CONGE' || false
+                isConge: isConge
             };
         }
-
+        
         // Si on crée une nouvelle tâche depuis le calendrier
         if (selectedDates && !selectedTask) {
             return {
                 title: '',
                 description: '',
                 startDate: formatDateForInput(selectedDates.start),
-                endDate: formatDateForInput(new Date(new Date(selectedDates.start).getTime() + DEFAULT_TASK_DURATION)),
+                endDate: formatDateForInput(selectedDates.start), // Même jour par défaut
                 resourceId: selectedDates.resourceId || '',
                 statusId: selectedDates.resourceId ? '2' : '',
                 isConge: false
             };
         }
-
+    
         // Cas par défaut (nouvelle tâche sans contexte)
         const today = getTodayFormatted();
         return {
@@ -72,9 +99,11 @@ export const TaskForm = ({
         };
     }, [selectedDates, selectedTask, formatDateForInput, getTodayFormatted]);
 
+
     const [formData, setFormData] = useState(getInitialFormData());
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
 
     useEffect(() => {
         if (isOpen) {
@@ -182,20 +211,19 @@ export const TaskForm = ({
         
         setIsSubmitting(true);
         try {
-            // Convertir les dates du format YYYY-MM-DD en dates ISO
-            const [startYear, startMonth, startDay] = formData.startDate.split('-').map(Number);
-            const [endYear, endMonth, endDay] = formData.endDate.split('-').map(Number);
-    
-            const startDate = new Date(startYear, startMonth - 1, startDay);
-            const endDate = new Date(endYear, endMonth - 1, endDay);
-    
+            console.log('Dates du formulaire avant soumission:', {
+                startDate: formData.startDate,
+                endDate: formData.endDate
+            });
+            
+            // Les dates sont déjà au format YYYY-MM-DD comme attendu
             const taskData = {
                 ...formData,
-                start: startDate.toISOString().split('T')[0],
-                end: endDate.toISOString().split('T')[0]
+                start: formData.startDate,
+                end: formData.endDate
             };
-    
-            // Appeler la fonction de soumission passée en prop
+            
+            // Appeler la fonction de soumission
             await handleTaskSubmit(taskData);
             onClose();
         } catch (error) {

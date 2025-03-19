@@ -26,6 +26,39 @@ export class DateUtils {
     return `${year}-${month}-${day}`;
   }
 
+  /**
+   * Formate une date au format ISO avec heure UTC fixe (23:00)
+   */
+  static formatDateToISOWithFixedTime(date) {
+    const dateObj = this.toDate(date);
+    if (!dateObj) return null;
+    
+    // Créer une nouvelle date en UTC à 23:00
+    return new Date(Date.UTC(
+      dateObj.getFullYear(),
+      dateObj.getMonth(),
+      dateObj.getDate(),
+      23, 0, 0
+    )).toISOString();
+  }
+
+  /**
+   * Crée une date UTC à partir des composants de date, sans conversion de fuseau horaire
+   */
+  static createUTCDate(year, month, day) {
+    return new Date(Date.UTC(year, month, day));
+  }
+
+  /**
+   * Extrait les composants de date (année, mois, jour) d'une date ISO
+   */
+  static extractDateComponents(isoString) {
+    if (!isoString) return null;
+    const datePart = isoString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    return { year, month, day };
+  }
+
   static isWeekend(date) {
     const dateObj = this.toDate(date);
     return dateObj ? [0, 6].includes(dateObj.getDay()) : false;
@@ -65,8 +98,8 @@ export class DateUtils {
   }
 
   /**
- * Trouve le prochain jour ouvré à partir d'une date donnée
- */
+   * Trouve le prochain jour ouvré à partir d'une date donnée
+   */
   static getNextWorkingDay(date, holidays) {
     const startDate = this.toDate(date);
     if (!startDate) return new Date();
@@ -82,32 +115,6 @@ export class DateUtils {
   }
 
   /**
-   * Normalise les heures des dates de début/fin d'une tâche
-   */
-  static normalizeTaskDates(task) {
-    if (!task) return task;
-    const taskCopy = { ...task };
-
-    if (taskCopy.start_date) {
-      const dateObj = new Date(taskCopy.start_date);
-      const isAtMidnight = dateObj.getHours() === 0 && dateObj.getMinutes() === 0;
-
-      if (isAtMidnight) {
-        dateObj.setHours(12);
-        taskCopy.start_date = dateObj.toISOString();
-
-        if (taskCopy.end_date) {
-          const endObj = new Date(taskCopy.end_date);
-          endObj.setHours(12);
-          taskCopy.end_date = endObj.toISOString();
-        }
-      }
-    }
-
-    return taskCopy;
-  }
-
-  /**
    * Ajuste une date de fin pour FullCalendar (ajoute un jour si nécessaire)
    * @param {Date|string} endDate - Date de fin à ajuster
    * @returns {Date} - Date de fin ajustée
@@ -116,19 +123,11 @@ export class DateUtils {
     const end = this.toDate(endDate);
     if (!end) return new Date();
 
-    // Vérifier si la date a déjà des heures/minutes définies
-    const hasTime = end.getHours() !== 0 || end.getMinutes() !== 0;
-
-    // Si la date est à minuit pile, elle est probablement exclusive
-    // Sinon, nous devons ajouter un jour pour la rendre exclusive
-    if (!hasTime) {
-      return end;
-    } else {
-      const adjustedDate = new Date(end);
-      adjustedDate.setDate(adjustedDate.getDate() + 1);
-      adjustedDate.setHours(0, 0, 0, 0);
-      return adjustedDate;
-    }
+    // Pour FullCalendar, la date de fin est exclusive, donc pour une tâche jusqu'au jour X inclus,
+    // il faut que la date de fin soit X+1
+    const adjustedDate = new Date(end);
+    adjustedDate.setDate(adjustedDate.getDate() + 1);
+    return adjustedDate;
   }
 
   /**
@@ -149,4 +148,17 @@ export class DateUtils {
       !this.isHolidayOrWeekend(actualEndDate, holidays);
   }
 
+  /**
+   * Convertit une date ISO en objet Date UTC pour FullCalendar
+   */
+  static isoToUTCDate(isoString) {
+    if (!isoString) return null;
+    
+    // Extraire les composants de date sans considérer l'heure
+    const datePart = isoString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    
+    // Créer une date UTC
+    return new Date(Date.UTC(year, month - 1, day));
+  }
 }

@@ -5,23 +5,12 @@ import { ERROR_MESSAGES } from '../../constants/constants';
 
 const transformTaskForServer = (taskData) => {
     const statusId = taskData.statusId || taskData.extendedProps?.statusId;
-    // Convertir les dates en UTC à midi
-    const formatDateForServer = (date) => {
-        if (!date) return null;
-        const d = new Date(date);
-        // Créer une nouvelle date en UTC à midi
-        return new Date(Date.UTC(
-            d.getFullYear(),
-            d.getMonth(),
-            d.getDate(),
-            12, 0, 0
-        )).toISOString();
-    };
-    console.log('taskData :', taskData);
+    
+    // On envoie les dates telles quelles au serveur
     return {
         title: taskData.title.trim(),
-        startDate: formatDateForServer(taskData.start),
-        endDate: formatDateForServer(taskData.end),
+        startDate: taskData.start,
+        endDate: taskData.end,
         description: taskData.description?.trim() || '',
         ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
         statusId: statusId
@@ -29,25 +18,14 @@ const transformTaskForServer = (taskData) => {
 };
 
 const transformServerResponseToTask = (serverResponse) => {
-    const formatDateFromServer = (dateStr) => {
-        if (!dateStr) return null;
-        const date = new Date(dateStr);
-        // Créer une nouvelle date locale à midi
-        return new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate(),
-            12, 0, 0
-        );
-    };
-    console.log('serverResponse start_date :', formatDateFromServer(serverResponse.start_date));
-    console.log('serverResponse end_date :', formatDateFromServer(serverResponse.end_date));
+    // Pas besoin de convertir les dates ici - le formatTasksForCalendar s'en chargera
+    // Nous préservons les dates ISO telles quelles
     return {
         id: serverResponse.id,
         title: serverResponse.title,
-        start: formatDateFromServer(serverResponse.start_date),
-        end: formatDateFromServer(serverResponse.end_date),
-        resourceId: (serverResponse.owner_id || serverResponse.ownerId)?.toString(),
+        start_date: serverResponse.start_date,
+        end_date: serverResponse.end_date,
+        owner_id: serverResponse.owner_id || serverResponse.ownerId,
         allDay: true,
         extendedProps: {
             statusId: (serverResponse.status_id || serverResponse.statusId)?.toString(),
@@ -57,9 +35,7 @@ const transformServerResponseToTask = (serverResponse) => {
     };
 };
 
-// Validateurs de données
 const validateTaskData = (taskData) => {
-
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
     if (taskData.endDate < taskData.startDate) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
@@ -70,6 +46,8 @@ export const fetchTasks = async () => {
         const response = await fetchWithTimeout(`${API_URL}/tasks`, {
             headers: getAuthHeaders()
         });
+
+        console.log('Réponse brute du serveur :', JSON.stringify(response));
         return handleResponse(response);
     } catch (error) {
         console.error('Erreur lors de la récupération des tâches:', error);
@@ -96,7 +74,6 @@ export const createTask = async (taskData) => {
 };
 
 export const updateTask = async (id, taskData) => {
-
     try {
         validateTaskData(taskData);
         const taskId = parseInt(id);
@@ -116,7 +93,6 @@ export const updateTask = async (id, taskData) => {
         const transformedTask = transformServerResponseToTask(dataFromServer);
 
         return transformedTask;
-
     } catch (error) {
         console.error('Erreur lors de la mise à jour de la tâche:', error);
         throw error;
@@ -138,4 +114,3 @@ export const deleteTask = async (id) => {
         throw error;
     }
 };
-

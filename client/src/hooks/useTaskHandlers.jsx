@@ -702,7 +702,8 @@ export const useTaskHandlers = (
 
     if (!info.draggedEl.parentNode) return;
 
-    const startDate = info.date;
+    const startDate = info.date || new Date();
+    const endDate = new Date(startDate.getTime() + 86400000);
 
     // Vérifier si c'est un jour férié ou un weekend
     if (DateUtils.isHolidayOrWeekend(startDate, holidays)) {
@@ -735,8 +736,6 @@ export const useTaskHandlers = (
     const externalTask = tasks.find(task => task.id.toString() === taskId.toString());
 
     if (!externalTask) return false;
-
-    const endDate = new Date(startDate.getTime() + 86400000);
 
     const updates = {
       title: externalTask.title,
