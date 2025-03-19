@@ -5,6 +5,7 @@ import { fetchHolidays } from '../services/api/holidayService';
 import { fetchStatuses } from '../services/api/statusService';
 import { fetchTeams } from '../services/api/teamService';
 
+
 export const useCalendarData = () => {
   const [tasks, setTasks] = useState([]);
   const [resources, setResources] = useState([]);
@@ -25,11 +26,8 @@ export const useCalendarData = () => {
   }, []);
 
   const formatResources = useCallback((ownersData, teamsData = []) => {
-
     const teamsArray = Array.isArray(teamsData) ? teamsData : [];
     const owners = Array.isArray(ownersData) ? ownersData : [];
-
-    // Créer un dictionnaire des équipes
     const teamDict = {};
     teamsArray.forEach(team => {
       if (team && team.team_id) {
@@ -41,14 +39,10 @@ export const useCalendarData = () => {
     });
 
     const resources = [];
-
-    // Créer les ressources de propriétaire avec parentId
     owners.forEach(owner => {
       if (!owner) return;
-
       const teamId = owner.teamId;
       const teamName = teamId && teamDict[teamId] ? teamDict[teamId].name : `Équipe ${teamId}`;
-
       resources.push({
         id: owner.ownerId,
         title: owner.name || 'Propriétaire sans nom',
@@ -61,7 +55,6 @@ export const useCalendarData = () => {
       });
     });
 
-    // Ajouter les équipes comme entrées distinctes
     Object.values(teamDict).forEach(team => {
       resources.push({
         id: `team_${team.id}`,
@@ -82,28 +75,19 @@ export const useCalendarData = () => {
       if (!task) return null;
 
       console.log('task :', task);
+    
+      // Pour la date de début
+      const startIso = task.start_date;
+      const [startYear, startMonth, startDay] = startIso.split('T')[0].split('-').map(Number);
+      const startDate = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+      
+      const endIso = task.end_date; 
+      const [endYear, endMonth, endDay] = endIso.split('T')[0].split('-').map(Number);
+      const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay + 1));
+      
+      console.log('startDate (UTC) :', startDate);
+      console.log('endDate (UTC) :', endDate);
 
-      // Solution pour éviter le décalage de date
-      let startDate, endDate;
-
-      if (task.start_date) {
-        // Méthode 1: Ajouter 'T00:00:00' pour forcer l'interprétation locale
-        const startStr = task.start_date.includes('T')
-          ? task.start_date
-          : `${task.start_date}T00:00:00`;
-        startDate = new Date(startStr);
-      } else {
-        startDate = new Date();
-      }
-
-      if (task.end_date) {
-        const endStr = task.end_date.includes('T')
-          ? task.end_date
-          : `${task.end_date}T00:00:00`;
-        endDate = new Date(endStr);
-      } else {
-        endDate = startDate;
-      }
 
       return {
         id: task.id,
