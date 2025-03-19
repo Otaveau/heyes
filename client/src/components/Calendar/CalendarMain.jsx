@@ -178,7 +178,7 @@ export const CalendarMain = ({
       <FullCalendar
         ref={calendarRef}
         locale={frLocale}
-        timeZone='Europe/Paris'
+        timeZone='UTC'
         events={tasks}
         resources={resources}
         nextDayThreshold="00:00:00"
@@ -190,7 +190,7 @@ export const CalendarMain = ({
           hour: '2-digit',
           minute: '2-digit',
           hour12: false,
-          timeZone: 'local'
+          timeZone: 'UTC'
         }}
         plugins={[resourceTimelinePlugin, interactionPlugin]}
         height='auto'

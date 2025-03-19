@@ -25,10 +25,10 @@ export const useCalendarData = () => {
   }, []);
 
   const formatResources = useCallback((ownersData, teamsData = []) => {
-    
+
     const teamsArray = Array.isArray(teamsData) ? teamsData : [];
     const owners = Array.isArray(ownersData) ? ownersData : [];
-    
+
     // Créer un dictionnaire des équipes
     const teamDict = {};
     teamsArray.forEach(team => {
@@ -39,16 +39,16 @@ export const useCalendarData = () => {
         };
       }
     });
-  
+
     const resources = [];
-    
+
     // Créer les ressources de propriétaire avec parentId
     owners.forEach(owner => {
       if (!owner) return;
-      
+
       const teamId = owner.teamId;
       const teamName = teamId && teamDict[teamId] ? teamDict[teamId].name : `Équipe ${teamId}`;
-      
+
       resources.push({
         id: owner.ownerId,
         title: owner.name || 'Propriétaire sans nom',
@@ -60,7 +60,7 @@ export const useCalendarData = () => {
         }
       });
     });
-    
+
     // Ajouter les équipes comme entrées distinctes
     Object.values(teamDict).forEach(team => {
       resources.push({
@@ -77,14 +77,33 @@ export const useCalendarData = () => {
 
   const formatTasksForCalendar = useCallback((tasksData) => {
     const tasks = Array.isArray(tasksData) ? tasksData : [];
-    
+
     return tasks.map(task => {
       if (!task) return null;
 
       console.log('task :', task);
-      
-      let startDate = task.start_date ? new Date(task.start_date) : new Date();
-      let endDate = task.end_date ? new Date(task.end_date) : startDate;
+
+      // Solution pour éviter le décalage de date
+      let startDate, endDate;
+
+      if (task.start_date) {
+        // Méthode 1: Ajouter 'T00:00:00' pour forcer l'interprétation locale
+        const startStr = task.start_date.includes('T')
+          ? task.start_date
+          : `${task.start_date}T00:00:00`;
+        startDate = new Date(startStr);
+      } else {
+        startDate = new Date();
+      }
+
+      if (task.end_date) {
+        const endStr = task.end_date.includes('T')
+          ? task.end_date
+          : `${task.end_date}T00:00:00`;
+        endDate = new Date(endStr);
+      } else {
+        endDate = startDate;
+      }
 
       return {
         id: task.id,
@@ -108,21 +127,21 @@ export const useCalendarData = () => {
       setIsLoading(true);
       setError(null);
       const year = new Date().getFullYear();
-      
+
       let holidayDates = [];
       try {
         holidayDates = await fetchHolidays(year);
       } catch (err) {
         console.error('Erreur lors de la récupération des jours fériés:', err);
       }
-      
+
       let ownersData = [];
       try {
         ownersData = await fetchOwners();
       } catch (err) {
         console.error('Erreur lors de la récupération des propriétaires:', err);
       }
-      
+
       let tasksData = [];
       try {
         tasksData = await fetchTasks();
@@ -136,7 +155,7 @@ export const useCalendarData = () => {
       } catch (err) {
         console.error('Erreur lors de la récupération des statuts:', err);
       }
-      
+
       let teamsData = [];
       try {
         const fetchedTeams = await fetchTeams();
@@ -146,22 +165,22 @@ export const useCalendarData = () => {
         } else if (fetchedTeams) {
           teamsData = [fetchedTeams];
         }
-        
+
       } catch (err) {
         console.error('Erreur lors de la récupération des équipes:', err);
       }
-   
+
       const formattedHolidays = formatHolidays(holidayDates);
       setHolidays(formattedHolidays);
 
       const formattedResources = formatResources(ownersData, teamsData);
       setResources(formattedResources);
-      
+
       setStatuses(statusesData);
-      
+
       const formattedTasks = formatTasksForCalendar(tasksData);
       setTasks(formattedTasks);
-      
+
     } catch (err) {
       console.error('Erreur générale dans loadData:', err);
       setError(err);

@@ -130,27 +130,6 @@ export class DateUtils {
       return adjustedDate;
     }
   }
-  /**
-   * Calcule le nombre de jours ouvrés entre deux dates
-   */
-  static getWorkingDaysBetweenDates(startDate, endDate, holidays) {
-    const start = this.toDate(startDate);
-    const end = this.toDate(endDate);
-
-    if (!start || !end) return 0;
-
-    let count = 0;
-    const current = new Date(start);
-
-    while (current < end) {
-      if (!this.isHolidayOrWeekend(current, holidays)) {
-        count++;
-      }
-      current.setDate(current.getDate() + 1);
-    }
-
-    return count;
-  }
 
   /**
    * Vérifie si l'événement commence et se termine sur des jours ouvrés
