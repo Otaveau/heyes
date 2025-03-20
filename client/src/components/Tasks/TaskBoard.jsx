@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trash2} from 'lucide-react';
+import { Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Draggable } from '@fullcalendar/interaction';
 
 export const TaskBoard = ({
@@ -8,7 +8,8 @@ export const TaskBoard = ({
   externalTasks = [],
   handleExternalTaskClick,
   onDeleteTask,
-  resources = []
+  resources = [],
+  onMoveTask
 }) => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
@@ -60,6 +61,44 @@ export const TaskBoard = ({
     } catch (e) {
       console.error('Erreur de formatage de date:', e);
       return 'Date invalide';
+    }
+  };
+
+  // Fonction pour déplacer une tâche vers la gauche (statut précédent)
+  const moveTaskLeft = (e, task) => {
+    e.stopPropagation(); // Empêcher le clic de se propager
+
+    // Trouver l'index de la zone actuelle
+    const currentZoneIndex = dropZones.findIndex(zone => {
+      const statusId = task.extendedProps?.statusId || task.statusId;
+      return zone.statusId === statusId;
+    });
+
+    // S'il y a une zone à gauche, déplacer la tâche
+    if (currentZoneIndex > 0) {
+      const targetZone = dropZones[currentZoneIndex - 1];
+      if (onMoveTask) {
+        onMoveTask(task.id, targetZone.statusId);
+      }
+    }
+  };
+
+  // Fonction pour déplacer une tâche vers la droite (statut suivant)
+  const moveTaskRight = (e, task) => {
+    e.stopPropagation(); // Empêcher le clic de se propager
+
+    // Trouver l'index de la zone actuelle
+    const currentZoneIndex = dropZones.findIndex(zone => {
+      const statusId = task.extendedProps?.statusId || task.statusId;
+      return zone.statusId === statusId;
+    });
+
+    // S'il y a une zone à droite, déplacer la tâche
+    if (currentZoneIndex < dropZones.length - 1) {
+      const targetZone = dropZones[currentZoneIndex + 1];
+      if (onMoveTask) {
+        onMoveTask(task.id, targetZone.statusId);
+      }
     }
   };
 
@@ -208,13 +247,40 @@ export const TaskBoard = ({
                       </>
                     )}
 
-                    <button
-                      className="text-gray-400 hover:text-red-500 focus:outline-none"
-                      onClick={(e) => openDeleteModal(e, task)}
-                      title="Supprimer la tâche"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                     {/* Barre d'actions avec boutons de déplacement et suppression */}
+                     <div className="flex justify-end mt-2 space-x-2">
+                      {/* Flèche gauche - visible sauf pour le premier taskboard */}
+                      {index > 0 && (
+                        <button
+                          className="p-1 text-gray-500 hover:text-blue-500 focus:outline-none"
+                          onClick={(e) => moveTaskLeft(e, task)}
+                          title="Déplacer vers la gauche"
+                        >
+                          <ArrowLeft size={16} />
+                        </button>
+                      )}
+
+                      {/* Bouton de suppression */}
+                      <button
+                        className="p-1 text-gray-400 hover:text-red-500 focus:outline-none"
+                        onClick={(e) => openDeleteModal(e, task)}
+                        title="Supprimer la tâche"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+
+                      {/* Flèche droite - visible sauf pour le dernier taskboard */}
+                      {index < dropZones.length - 1 && (
+                        <button
+                          className="p-1 text-gray-500 hover:text-blue-500 focus:outline-none"
+                          onClick={(e) => moveTaskRight(e, task)}
+                          title="Déplacer vers la droite"
+                        >
+                          <ArrowRight size={16} />
+                        </button>
+                      )}
+
+                    </div>
 
 
                   </div>

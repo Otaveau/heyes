@@ -817,6 +817,7 @@ export const useTaskHandlers = (
     handleExternalTaskClick,
     handleEventReceive,
     handleDeleteTask,
-    updateTaskStatus
+    updateTaskStatus,
+    handleTaskUpdate
   };
 };

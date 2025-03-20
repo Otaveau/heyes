@@ -147,6 +147,10 @@ export const useCalendarData = () => {
       
       // Pour endDate, nous n'ajoutons PAS de jour supplémentaire si déjà ajusté pour T23:00:00.000Z
       const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+
+      if (!(task.end_date && typeof task.end_date === 'string' && task.end_date.includes('T23:00:00.000Z'))) {
+        endDate.setDate(endDate.getDate() + 1);
+      }
       
       console.log('Dates finales pour FullCalendar:');
       console.log('startDate (UTC):', startDate.toISOString());
