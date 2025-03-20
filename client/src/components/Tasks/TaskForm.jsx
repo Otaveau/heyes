@@ -46,10 +46,7 @@ export const TaskForm = ({
             if (isFromCalendar) {
                 // Convertir les dates du calendrier en chaînes YYYY-MM-DD
                 const startDate = new Date(selectedTask.start);
-                
-                // IMPORTANT: Pour la date de fin, soustraire 1 jour car elle est exclusive dans FullCalendar
                 const endDate = new Date(selectedTask.end);
-                endDate.setDate(endDate.getDate() - 1); // Convertir en inclusive pour affichage
                 
                 // Formater en YYYY-MM-DD pour input type="date"
                 startDateStr = startDate.toISOString().split('T')[0];

@@ -76,43 +76,36 @@ export const useCalendarData = () => {
       if (!task) return null;
   
       console.log("Traitement de tâche depuis l'API:", task);
-  
-      // Créer des dates par défaut (aujourd'hui) si nécessaire
-      let startDate, endDate;
-      
-      if (!task.start_date) {
-        console.warn('Tâche sans date de début:', task.id, task.title);
-        startDate = new Date(); // Date par défaut (aujourd'hui)
-      } else {
-        startDate = DateUtils.isoToUTCDate(task.start_date);
-      }
-      
-      if (!task.end_date) {
-        console.warn('Tâche sans date de fin:', task.id, task.title);
-        endDate = new Date();
-      } else {
-        // IMPORTANT: Pour FullCalendar, on convertit la date inclusive de l'API en date exclusive
-        endDate = DateUtils.isoToUTCDate(task.end_date);
-        endDate.setDate(endDate.getDate() + 1); // Convertir en exclusive pour FullCalendar
-      }
-      
-      console.log('Dates pour FullCalendar (après conversion):');
-      console.log('startDate:', startDate.toISOString());
-      console.log('endDate (exclusive):', endDate.toISOString());
+        
+        // Gestion des dates avec valeurs par défaut
+        const startDate = task.start_date 
+            ? DateUtils.isoToUTCDate(task.start_date) 
+            : new Date();
+        
+        const endDate = task.end_date 
+            ? DateUtils.isoToUTCDate(task.end_date) 
+            : new Date();
+        
+        console.log('Dates pour FullCalendar (après conversion):', {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+        });
   
       return {
         id: task.id,
         title: task.title || 'Tâche sans titre',
         start: startDate,
-        end: endDate, // Date exclusive pour FullCalendar
+        end: endDate,
         resourceId: (task.owner_id || task.ownerId)?.toString(),
         allDay: true,
         extendedProps: {
-          statusId: (task.status_id || task.statusId)?.toString(),
-          userId: task.user_id || task.userId,
-          description: task.description || '',
-          team: task.team_name,
-        }
+          statusId: (task.status_id || task.statusId || task.extendedProps?.statusId)?.toString(),
+          userId: task.user_id || task.userId || task.extendedProps?.userId,
+          description: task.description || task.extendedProps?.description || '',
+          team: task.team_name || task.extendedProps?.teamName,
+          ownerName: task.owner_name || task.extendedProps?.ownerName,
+          statusType: task.status_type || task.extendedProps?.statusType
+      }
       };
     }).filter(task => task !== null);
   }, []);
@@ -176,6 +169,13 @@ export const useCalendarData = () => {
 
       const formattedTasks = formatTasksForCalendar(tasksData);
       setTasks(formattedTasks);
+
+      console.log('Données chargées avec succès : ', {
+        holidays: formattedHolidays,
+        resources: formattedResources,
+        statuses: statusesData,
+        tasks: formattedTasks
+      });
 
     } catch (err) {
       console.error('Erreur générale dans loadData:', err);

@@ -2,7 +2,6 @@ import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
 import { ERROR_MESSAGES } from '../../constants/constants';
-import { DateUtils } from '../../utils/dateUtils';
 
 
 const transformTaskForServer = (taskData) => {
@@ -17,9 +16,23 @@ const transformTaskForServer = (taskData) => {
         end: endDate
     });
     
-    // Pour s'assurer que les dates sont envoyées au format ISO sans heure/timezone
-    const formattedStartDate = startDate ? DateUtils.toISODateString(startDate) : null;
-    const formattedEndDate = endDate ? DateUtils.toISODateString(endDate) : null;
+    // Fonction de conversion de date précise
+    const formatExactDate = (dateString) => {
+        if (!dateString) return null;
+        
+        // Créer une date en s'assurant de ne pas modifier le jour
+        const date = new Date(dateString);
+        
+        // Méthode alternative pour formater la date
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+    };
+
+    const formattedStartDate = formatExactDate(startDate);
+    const formattedEndDate = formatExactDate(endDate);
     
     console.log("Dates formatées envoyées au serveur:", {
         startFormatted: formattedStartDate,
@@ -36,21 +49,46 @@ const transformTaskForServer = (taskData) => {
     };
 };
 
-
 const transformServerResponseToTask = (serverResponse) => {
-    // Pas besoin de convertir les dates ici - le formatTasksForCalendar s'en chargera
-    // Nous préservons les dates ISO telles quelles
+    if (!serverResponse || typeof serverResponse !== 'object') {
+        console.warn('Données invalides reçues pour transformation de tâche');
+        return null;
+    }
+
+    const normalizeDate = (dateString) => {
+        if (!dateString) return null;
+        try {
+            const date = new Date(dateString);
+            
+            // Méthode alternative de formatage de date
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        } catch (error) {
+            console.warn('Erreur de conversion de date:', error);
+            return null;
+        }
+    };
+
     return {
-        id: serverResponse.id,
-        title: serverResponse.title,
-        start_date: serverResponse.start_date,
-        end_date: serverResponse.end_date,
-        owner_id: serverResponse.owner_id || serverResponse.ownerId,
+        id: serverResponse.id || null,
+        title: serverResponse.title?.trim() || 'Tâche sans titre',
+        start_date: normalizeDate(serverResponse.start_date),
+        end_date: normalizeDate(serverResponse.end_date),
+        owner_id: serverResponse.owner_id || serverResponse.ownerId || null,
         allDay: true,
         extendedProps: {
-            statusId: (serverResponse.status_id || serverResponse.statusId)?.toString(),
-            userId: serverResponse.user_id || serverResponse.userId,
-            description: serverResponse.description || ''
+            statusId: serverResponse.status_id 
+                || serverResponse.statusId 
+                ? String(serverResponse.status_id || serverResponse.statusId) 
+                : null,
+            userId: serverResponse.user_id || serverResponse.userId || null,
+            description: serverResponse.description?.trim() || '',
+            ownerName: serverResponse.owner_name || null,
+            statusType: serverResponse.status_type || null,
+            teamName: serverResponse.team_name || null
         }
     };
 };
@@ -60,10 +98,16 @@ const validateTaskData = (taskData) => {
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
     
-    // Validation des dates - s'assurer qu'elles sont comparées dans le même format
+    // Validation des dates avec gestion des formats ISO
     if (taskData.startDate && taskData.endDate) {
-        // Utiliser les dates converties pour la validation
-        if (new Date(taskData.endDate) < new Date(taskData.startDate)) {
+        const start = new Date(taskData.startDate);
+        const end = new Date(taskData.endDate);
+        
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            throw new Error(ERROR_MESSAGES.INVALID_DATE_FORMAT);
+        }
+        
+        if (end < start) {
             throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
         }
     }
@@ -75,8 +119,16 @@ export const fetchTasks = async () => {
             headers: getAuthHeaders()
         });
 
-        console.log('Réponse brute du serveur :', JSON.stringify(response));
-        return handleResponse(response);
+        const dataFromServer = await handleResponse(response);
+
+        console.log('Données reçues du serveur:', dataFromServer);
+
+        // Transformer le tableau complet au lieu d'un seul objet
+        const transformedTasks = dataFromServer.map(transformServerResponseToTask);
+
+        console.log('Données transformées du serveur:', transformedTasks);
+
+        return transformedTasks;
     } catch (error) {
         console.error('Erreur lors de la récupération des tâches:', error);
         throw error;
@@ -88,15 +140,21 @@ export const createTask = async (taskData) => {
         validateTaskData(taskData);
         const dataToServer = transformTaskForServer(taskData);
 
-        console.log('Données envoyées au serveur pour création:', dataToServer);
-
         const response = await fetchWithTimeout(`${API_URL}/tasks`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(dataToServer)
         });
 
-        return handleResponse(response);
+        const dataFromServer = await handleResponse(response);
+
+        // Transforme et retourne un tableau, même pour une création unique
+        const transformedTasks = [transformServerResponseToTask(dataFromServer)]
+            .filter(task => task !== null);
+
+        console.log('Données transformées du serveur:', transformedTasks);
+
+        return transformedTasks[0] || null;
     } catch (error) {
         console.error('Erreur lors de la création de la tâche:', error);
         throw error;
@@ -110,8 +168,6 @@ export const updateTask = async (id, taskData) => {
         if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
 
         const dataToServer = transformTaskForServer(taskData);
-        
-        console.log('Données envoyées au serveur pour mise à jour:', dataToServer);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',
@@ -119,12 +175,13 @@ export const updateTask = async (id, taskData) => {
             body: JSON.stringify(dataToServer)
         });
 
-        // Obtenir les données JSON de la réponse
         const dataFromServer = await handleResponse(response);
 
-        const transformedTask = transformServerResponseToTask(dataFromServer);
+        // Transforme et retourne un tableau, même pour une mise à jour unique
+        const transformedTasks = [transformServerResponseToTask(dataFromServer)]
+            .filter(task => task !== null);
 
-        return transformedTask;
+        return transformedTasks[0] || null;
     } catch (error) {
         console.error('Erreur lors de la mise à jour de la tâche:', error);
         throw error;

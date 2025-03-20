@@ -672,6 +672,15 @@ const handleEventResize = useCallback(async (info) => {
     end: fcEndDate,
   });
 
+  // Ajustement de la date de fin pour correspondre à la date inclusive
+  const adjustedEndDate = new Date(fcEndDate);
+  adjustedEndDate.setDate(adjustedEndDate.getDate() - 1);
+
+  console.log("Dates ajustées pour l'API:", {
+    start: startDate,
+    end: adjustedEndDate,
+  });
+
   // Validation des dates
   if (!DateUtils.hasValidEventBoundaries(startDate, fcEndDate, holidays)) {
     info.revert();

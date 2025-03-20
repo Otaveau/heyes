@@ -112,7 +112,6 @@ export const CalendarView = () => {
   };
 
   // Gérer la soumission du formulaire
-  // Gérer la soumission du formulaire
   const handleFormSubmit = async (updatedTask) => {
     try {
       // Si la tâche provient d'un déplacement vers le taskboard '2'
@@ -176,6 +175,7 @@ export const CalendarView = () => {
           );
         }
       } else {
+        console.log('updatedTask:', updatedTask);
         // Pour les autres cas, utiliser le gestionnaire normal
         await taskHandlers.handleTaskSubmit(updatedTask);
       }

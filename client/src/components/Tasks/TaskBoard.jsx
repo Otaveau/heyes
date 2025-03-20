@@ -185,10 +185,46 @@ export const TaskBoard = ({
             effectiveRefs.current[index] = React.createRef();
           }
 
+          console.log('externalTasks', externalTasks);
+
           const zoneTasks = externalTasks.filter(task => {
-            const statusId = task.extendedProps?.statusId || task.statusId;
-            return statusId === zone.statusId;
+            // Log détaillé pour diagnostic
+            console.log('Task debugging:', {
+              taskId: task.id,
+              zoneStatusId: zone.statusId,
+              taskExtendedProps: task.extendedProps,
+              taskDirectProps: {
+                statusId: task.statusId,
+                status: task.status
+              }
+            });
+          
+            // Stratégie de récupération du statusId
+            const extractStatusId = () => {
+              // Vérifier dans différentes sources possibles
+              if (task.statusId) return task.statusId.toString();
+              if (task.extendedProps?.statusId) return task.extendedProps.statusId.toString();
+              if (task.status) return task.status.toString();
+              
+              // Valeur par défaut si aucun statusId trouvé
+              return null;
+            };
+          
+            const taskStatusId = extractStatusId();
+            
+            console.log('Comparaison des status:', {
+              taskStatusId,
+              zoneStatusId: zone.statusId,
+              match: taskStatusId === zone.statusId
+            });
+          
+            return taskStatusId === zone.statusId;
           });
+
+          console.log('Zone status:', zone.statusId);
+          console.log('External tasks:', externalTasks);
+          console.log('Filtered tasks:', zoneTasks);
+
 
           // Déterminer si cette zone est la zone "En cours" (statusId '2')
           const isInProgressZone = zone.statusId === '2';
@@ -226,14 +262,7 @@ export const TaskBoard = ({
                         {/* Dates de la tâche */}
                         <div className="text-xs text-gray-600 mt-1">
                           <div><span className="font-medium">Début:</span> {formatDate(task.start)}</div>
-                          <div>
-                            <span className="font-medium">Fin:</span> {formatDate((() => {
-                              // Si c'est une date de fin exclusive de FullCalendar, convertir en inclusive pour l'affichage
-                              const date = new Date(task.end);
-                              date.setDate(date.getDate() - 1);
-                              return date;
-                            })())}
-                          </div>
+                          <div><span className="font-medium">Fin:</span> {formatDate(task.end)}</div>
                         </div>
                       </>
                     ) : (
