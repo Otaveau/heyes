@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Draggable } from '@fullcalendar/interaction';
+import { DateUtils } from '../../utils/dateUtils';
 
 export const TaskBoard = ({
   dropZones = [],
@@ -225,9 +226,9 @@ export const TaskBoard = ({
                         {/* Dates de la tâche */}
                         <div className="text-xs text-gray-600 mt-1">
                           <div><span className="font-medium">Début:</span> {formatDate(task.start)}</div>
-                          {/* Affichage date de fin - 1j */}
                           <div>
                             <span className="font-medium">Fin:</span> {formatDate((() => {
+                              // Si c'est une date de fin exclusive de FullCalendar, convertir en inclusive pour l'affichage
                               const date = new Date(task.end);
                               date.setDate(date.getDate() - 1);
                               return date;
@@ -247,8 +248,8 @@ export const TaskBoard = ({
                       </>
                     )}
 
-                     {/* Barre d'actions avec boutons de déplacement et suppression */}
-                     <div className="flex justify-end mt-2 space-x-2">
+                    {/* Barre d'actions avec boutons de déplacement et suppression */}
+                    <div className="flex justify-end mt-2 space-x-2">
                       {/* Flèche gauche - visible sauf pour le premier taskboard */}
                       {index > 0 && (
                         <button

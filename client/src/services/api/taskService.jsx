@@ -2,20 +2,40 @@ import { fetchWithTimeout, getAuthHeaders } from '../apiUtils/apiConfig';
 import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
 import { ERROR_MESSAGES } from '../../constants/constants';
+import { DateUtils } from '../../utils/dateUtils';
+
 
 const transformTaskForServer = (taskData) => {
     const statusId = taskData.statusId || taskData.extendedProps?.statusId;
     
-    // On envoie les dates telles quelles au serveur
+    // Capture des dates sous leurs formes originales
+    let startDate = taskData.start || taskData.startDate;
+    let endDate = taskData.end || taskData.endDate;
+    
+    console.log("Dates originales reçues par transformTaskForServer:", {
+        start: startDate,
+        end: endDate
+    });
+    
+    // Pour s'assurer que les dates sont envoyées au format ISO sans heure/timezone
+    const formattedStartDate = startDate ? DateUtils.toISODateString(startDate) : null;
+    const formattedEndDate = endDate ? DateUtils.toISODateString(endDate) : null;
+    
+    console.log("Dates formatées envoyées au serveur:", {
+        startFormatted: formattedStartDate,
+        endFormatted: formattedEndDate
+    });
+    
     return {
         title: taskData.title.trim(),
-        startDate: taskData.start,
-        endDate: taskData.end,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
         description: taskData.description?.trim() || '',
         ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
         statusId: statusId
     };
 };
+
 
 const transformServerResponseToTask = (serverResponse) => {
     // Pas besoin de convertir les dates ici - le formatTasksForCalendar s'en chargera
@@ -35,10 +55,18 @@ const transformServerResponseToTask = (serverResponse) => {
     };
 };
 
+
 const validateTaskData = (taskData) => {
     if (!taskData) throw new Error(ERROR_MESSAGES.TASK_DATA_REQUIRED);
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
-    if (taskData.endDate < taskData.startDate) throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
+    
+    // Validation des dates - s'assurer qu'elles sont comparées dans le même format
+    if (taskData.startDate && taskData.endDate) {
+        // Utiliser les dates converties pour la validation
+        if (new Date(taskData.endDate) < new Date(taskData.startDate)) {
+            throw new Error(ERROR_MESSAGES.END_DATE_AFTER_START);
+        }
+    }
 };
 
 export const fetchTasks = async () => {
@@ -60,6 +88,8 @@ export const createTask = async (taskData) => {
         validateTaskData(taskData);
         const dataToServer = transformTaskForServer(taskData);
 
+        console.log('Données envoyées au serveur pour création:', dataToServer);
+
         const response = await fetchWithTimeout(`${API_URL}/tasks`, {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -80,6 +110,8 @@ export const updateTask = async (id, taskData) => {
         if (isNaN(taskId)) throw new Error(ERROR_MESSAGES.TASK_ID_REQUIRED);
 
         const dataToServer = transformTaskForServer(taskData);
+        
+        console.log('Données envoyées au serveur pour mise à jour:', dataToServer);
 
         const response = await fetchWithTimeout(`${API_URL}/tasks/${taskId}`, {
             method: 'PUT',

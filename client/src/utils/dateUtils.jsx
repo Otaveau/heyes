@@ -1,8 +1,13 @@
+/**
+ * Classe utilitaire pour la standardisation et la gestion des dates
+ * 
+ * Conventions importantes:
+ * - Base de données/API : utilise des dates INCLUSIVES (la date de fin est le dernier jour inclus dans l'événement)
+ * - FullCalendar : utilise des dates EXCLUSIVES (la date de fin n'est pas incluse dans l'événement)
+ */
 export class DateUtils {
 
-  /**
-   * Convertit une entrée en objet Date
-   */
+  // Convertit une entrée en objet Date
   static toDate(date) {
     if (!date) return null;
     if (date instanceof Date) return date;
@@ -13,9 +18,7 @@ export class DateUtils {
     return null;
   }
 
-  /**
-   * Formate une date au format YYYY-MM-DD
-   */
+  //Formate une date au format YYYY-MM-DD
   static formatDateToString(date) {
     const dateObj = this.toDate(date);
     if (!dateObj) return null;
@@ -26,9 +29,7 @@ export class DateUtils {
     return `${year}-${month}-${day}`;
   }
 
-  /**
-   * Formate une date au format ISO avec heure UTC fixe (23:00)
-   */
+  //Formate une date au format ISO avec heure UTC fixe (23:00)
   static formatDateToISOWithFixedTime(date) {
     const dateObj = this.toDate(date);
     if (!dateObj) return null;
@@ -42,41 +43,38 @@ export class DateUtils {
     )).toISOString();
   }
 
-  /**
-   * Crée une date UTC à partir des composants de date, sans conversion de fuseau horaire
-   */
+  //Crée une date UTC à partir des composants de date, sans conversion de fuseau horaire
   static createUTCDate(year, month, day) {
     return new Date(Date.UTC(year, month, day));
   }
 
-  /**
-   * Extrait les composants de date (année, mois, jour) d'une date ISO
-   */
+  //Extrait les composants de date (année, mois, jour) d'une date ISO
   static extractDateComponents(isoString) {
     if (!isoString) return null;
     const datePart = isoString.split('T')[0];
     const [year, month, day] = datePart.split('-').map(Number);
-    return { year, month, day };
+    return { year, month: month - 1, day }; // month-1 pour correspondre à l'API JavaScript (0-11)
   }
 
+  //Vérifie si une date tombe un week-end
   static isWeekend(date) {
     const dateObj = this.toDate(date);
     return dateObj ? [0, 6].includes(dateObj.getDay()) : false;
   }
 
+  // Vérifie si une date est un jour férié
   static isHoliday(date, holidays) {
     if (!date || !holidays) return false;
     const dateString = this.formatDateToString(date);
     return dateString ? !!holidays[dateString] : false;
   }
 
+  //Vérifie si une date est un jour férié ou un week-end
   static isHolidayOrWeekend(date, holidays = {}) {
     return this.isWeekend(date) || this.isHoliday(date, holidays);
   }
 
-  /**
-   * Vérifie si une plage de dates est valide pour un événement
-   */
+  //Vérifie si une plage de dates est valide pour un événement
   static isAllowedDateRange(startDate, endDate, holidays) {
     const start = this.toDate(startDate);
     const end = this.toDate(endDate);
@@ -87,8 +85,8 @@ export class DateUtils {
       return false;
     }
 
-    const actualEndDate = new Date(end);
-    actualEndDate.setDate(actualEndDate.getDate() - 1);
+    // Convertir la date de fin exclusive en inclusive pour la vérification
+    const actualEndDate = this.toInclusiveEndDate(end);
 
     if (this.isHolidayOrWeekend(actualEndDate, holidays)) {
       return false;
@@ -97,68 +95,75 @@ export class DateUtils {
     return true;
   }
 
-  /**
-   * Trouve le prochain jour ouvré à partir d'une date donnée
-   */
-  static getNextWorkingDay(date, holidays) {
-    const startDate = this.toDate(date);
-    if (!startDate) return new Date();
-
-    const nextDay = new Date(startDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    while (this.isHolidayOrWeekend(nextDay, holidays)) {
-      nextDay.setDate(nextDay.getDate() + 1);
-    }
-
-    return nextDay;
+  //Convertit une date de fin INCLUSIVE (API) en EXCLUSIVE (FullCalendar)
+  static toExclusiveEndDate(date) {
+    const endDate = this.toDate(date);
+    if (!endDate) return null;
+    
+    // Pour FullCalendar, ajouter un jour à la date de fin inclusive
+    const exclusiveDate = new Date(endDate);
+    exclusiveDate.setDate(exclusiveDate.getDate() + 1);
+    return exclusiveDate;
   }
 
-  /**
-   * Ajuste une date de fin pour FullCalendar (ajoute un jour si nécessaire)
-   * @param {Date|string} endDate - Date de fin à ajuster
-   * @returns {Date} - Date de fin ajustée
-   */
-  static adjustEndDateForFullCalendar(endDate) {
-    const end = this.toDate(endDate);
-    if (!end) return new Date();
-
-    // Pour FullCalendar, la date de fin est exclusive, donc pour une tâche jusqu'au jour X inclus,
-    // il faut que la date de fin soit X+1
-    const adjustedDate = new Date(end);
-    adjustedDate.setDate(adjustedDate.getDate() + 1);
-    return adjustedDate;
+  //Convertit une date de fin EXCLUSIVE (FullCalendar) en INCLUSIVE (API)
+  static toInclusiveEndDate(date) {
+    const endDate = this.toDate(date);
+    if (!endDate) return null;
+    
+    // Pour l'API, soustraire un jour à la date de fin exclusive
+    const inclusiveDate = new Date(endDate);
+    inclusiveDate.setDate(inclusiveDate.getDate() - 1);
+    return inclusiveDate;
   }
 
-  /**
-   * Vérifie si l'événement commence et se termine sur des jours ouvrés
-   * Ignorant les jours intermédiaires
-   */
+  // Vérifie si l'événement commence et se termine sur des jours ouvrés
   static hasValidEventBoundaries(startDate, endDate, holidays) {
     const start = this.toDate(startDate);
     const end = this.toDate(endDate);
 
     if (!start || !end) return false;
 
-    // La date de fin dans FullCalendar est exclusive, donc on regarde la veille
-    const actualEndDate = new Date(end);
-    actualEndDate.setDate(actualEndDate.getDate() - 1);
+    // La date de fin dans FullCalendar est exclusive, donc on regarde la veille (date inclusive)
+    const actualEndDate = this.toInclusiveEndDate(end);
 
     return !this.isHolidayOrWeekend(start, holidays) &&
       !this.isHolidayOrWeekend(actualEndDate, holidays);
   }
 
-  /**
-   * Convertit une date ISO en objet Date UTC pour FullCalendar
-   */
+  // Convertit une date ISO en objet Date UTC pour FullCalendar
   static isoToUTCDate(isoString) {
     if (!isoString) return null;
     
-    // Extraire les composants de date sans considérer l'heure
-    const datePart = isoString.split('T')[0];
-    const [year, month, day] = datePart.split('-').map(Number);
+    const components = this.extractDateComponents(isoString);
+    if (!components) return null;
     
-    // Créer une date UTC
-    return new Date(Date.UTC(year, month - 1, day));
+    return this.createUTCDate(components.year, components.month, components.day);
   }
+
+  //Convertit une date au format ISO sans heure
+  static toISODateString(date) {
+    return this.formatDateToString(date);
+  }
+
+  //Formate une date pour l'affichage utilisateur
+  static formatForDisplay(date) {
+    if (!date) return 'Non définie';
+    
+    try {
+      const dateObj = this.toDate(date);
+      if (!dateObj || isNaN(dateObj.getTime())) return 'Date invalide';
+      
+      return dateObj.toLocaleDateString();
+    } catch (e) {
+      console.error('Erreur de formatage de date:', e);
+      return 'Date invalide';
+    }
+  }
+
+  //Convertit une chaîne ISO en objet Date
+  static fromISOString(isoString) {
+    return this.isoToUTCDate(isoString);
+  }
+
 }

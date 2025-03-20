@@ -74,9 +74,9 @@ export const useTaskHandlers = (
   }, [dropZoneRefs]);
 
   const updateTaskStatus = useCallback((taskId, updates) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id.toString() === taskId.toString() 
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id.toString() === taskId.toString()
           ? { ...task, ...updates }
           : task
       )
@@ -95,6 +95,11 @@ export const useTaskHandlers = (
         ...updates,
         title: updates.title || existingTask.title
       };
+
+      // Pour s'assurer que la date de fin est au format inclusif attendu par l'API
+      if (completeUpdates.end) {
+        completeUpdates.end = DateUtils.toInclusiveEndDate(completeUpdates.end);
+      }
 
       // Mise à jour locale
       updateTaskStatus(taskId, completeUpdates);
@@ -275,7 +280,15 @@ export const useTaskHandlers = (
   const handleExternalTaskClick = useCallback((task) => {
     const fullTask = tasks.find(t => t.id.toString() === task.id.toString());
     if (!fullTask) return;
-
+  
+    console.log("Tâche cliquée dans le taskboard:", {
+      id: fullTask.id,
+      title: fullTask.title,
+      start: fullTask.start,
+      end: fullTask.end
+    });
+  
+    // Utiliser les dates telles quelles sans conversion
     setCalendarState(prev => ({
       ...prev,
       isFormOpen: true,
@@ -285,8 +298,8 @@ export const useTaskHandlers = (
         description: fullTask.extendedProps?.description || '',
         statusId: fullTask.extendedProps?.statusId || task.statusId || '1',
         resourceId: fullTask.resourceId || null,
-        start: fullTask.start || new Date(),
-        end: fullTask.end || new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
+        start: fullTask.start,
+        end: fullTask.end
       }
     }));
   }, [setCalendarState, tasks]);
@@ -517,10 +530,10 @@ export const useTaskHandlers = (
 
   // Préparation d'un événement pour le TaskBoard
   const prepareEventForTaskBoard = useCallback((event, targetDropZone) => {
-    return { 
+    return {
       statusId: targetDropZone.statusId,
       ownerId: null,
-     };
+    };
   }, []);
 
 
@@ -593,94 +606,106 @@ export const useTaskHandlers = (
   }, [highlightTaskBoard, dropZoneRefs, isEventOverDropZone, tasks, prepareEventForTaskBoard, simulateImmediateAppearance, updateTaskStatus]);
 
 
-  // Déplacement d'un événement dans le calendrier
-  const handleEventDrop = useCallback(async (dropInfo) => {
-    const { event } = dropInfo;
-    const startDate = event.start;
-    const endDate = event.end || new Date(startDate.getTime() + 86400000);
+ // Déplacement d'un événement dans le calendrier
+ const handleEventDrop = useCallback(async (dropInfo) => {
+  const { event } = dropInfo;
+  const startDate = event.start;
+  const fcEndDate = event.end || new Date(startDate.getTime() + 86400000);
+  
+  console.log("Déplacement - dates FullCalendar:", {
+    start: startDate,
+    end: fcEndDate
+  });
 
-    // Validation des dates
-    if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
-      dropInfo.revert();
-      toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
-      return;
+  // Validation des dates
+  if (!DateUtils.hasValidEventBoundaries(startDate, fcEndDate, holidays)) {
+    dropInfo.revert();
+    toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
+    return;
+  }
+
+  const taskId = event.id;
+  const existingTask = tasks.find(t => t.id.toString() === taskId.toString());
+
+  if (!existingTask) {
+    console.warn(`Tâche avec l'ID ${taskId} introuvable`);
+    dropInfo.revert();
+    return;
+  }
+
+  const resourceId = event._def.resourceIds[0];
+  const updates = {
+    title: event.title,
+    start: startDate,
+    end: fcEndDate, // Date de fin exclusive de FullCalendar telle quelle
+    resourceId,
+    statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId,
+    extendedProps: {
+      statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId
     }
+  };
 
-    const taskId = event.id;
-    const existingTask = tasks.find(t => t.id.toString() === taskId.toString());
-
-    if (!existingTask) {
-      console.warn(`Tâche avec l'ID ${taskId} introuvable`);
-      dropInfo.revert();
-      return;
+  await handleTaskUpdate(
+    taskId,
+    updates,
+    {
+      revertFunction: dropInfo.revert,
+      successMessage: `Tâche "${event.title}" déplacée`
     }
+  );
+}, [tasks, handleTaskUpdate, holidays]);
 
-    const resourceId = event._def.resourceIds[0];
-    const updates = {
-      title: event.title,
-      start: startDate,
-      end: endDate,
-      resourceId,
+
+// Redimensionnement d'un événement
+const handleEventResize = useCallback(async (info) => {
+  if (info.isProcessing) {
+    info.revert();
+    return;
+  }
+
+  const { event } = info;
+  const startDate = event.start;
+  const fcEndDate = event.end; // Date exclusive de FullCalendar
+  
+  console.log("Redimensionnement - dates FullCalendar:", {
+    start: startDate,
+    end: fcEndDate,
+  });
+
+  // Validation des dates
+  if (!DateUtils.hasValidEventBoundaries(startDate, fcEndDate, holidays)) {
+    info.revert();
+    toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
+    return;
+  }
+
+  const existingTask = tasks.find(task => task.id.toString() === event.id.toString());
+  if (!existingTask) {
+    console.warn(`Tâche avec l'ID ${event.id} introuvable`);
+    info.revert();
+    return;
+  }
+
+  // Utiliser directement les dates de FullCalendar sans conversion
+  const updates = {
+    start: startDate,
+    end: fcEndDate, // Date de fin exclusive de FullCalendar telle quelle
+    resourceId: event._def.resourceIds[0],
+    extendedProps: {
       statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId,
-      extendedProps: {
-        statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId
-      }
-    };
-
-    await handleTaskUpdate(
-      taskId,
-      updates,
-      {
-        revertFunction: dropInfo.revert,
-        successMessage: `Tâche "${event.title}" déplacée`
-      }
-    );
-  }, [tasks, handleTaskUpdate, holidays]);
-
-  // Redimensionnement d'un événement
-  const handleEventResize = useCallback(async (info) => {
-    if (info.isProcessing) {
-      info.revert();
-      return;
+      description: event._def.extendedProps.description || existingTask.extendedProps?.description
     }
+  };
 
-    const { event } = info;
-    const startDate = event.start;
-    const endDate = event.end;
-
-    // Validation des dates
-    if (!DateUtils.hasValidEventBoundaries(startDate, endDate, holidays)) {
-      info.revert();
-      toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
-      return;
+  await handleTaskUpdate(
+    event.id,
+    updates,
+    {
+      revertFunction: info.revert,
+      successMessage: `Tâche "${event.title}" redimensionnée`
     }
-
-    const existingTask = tasks.find(task => task.id.toString() === event.id.toString());
-    if (!existingTask) {
-      console.warn(`Tâche avec l'ID ${event.id} introuvable`);
-      info.revert();
-      return;
-    }
-
-    const updates = {
-      start: startDate,
-      end: endDate,
-      resourceId: event._def.resourceIds[0],
-      extendedProps: {
-        statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId,
-        description: event._def.extendedProps.description || existingTask.extendedProps?.description
-      }
-    };
-
-    await handleTaskUpdate(
-      event.id,
-      updates,
-      {
-        revertFunction: info.revert,
-        successMessage: `Tâche "${event.title}" redimensionnée`
-      }
-    );
-  }, [handleTaskUpdate, holidays, tasks]);
+  );
+}, [handleTaskUpdate, holidays, tasks]);
 
   // Dépôt d'une tâche externe sur le calendrier
   const handleExternalDrop = useCallback(async (info) => {

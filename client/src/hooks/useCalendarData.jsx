@@ -4,6 +4,7 @@ import { fetchOwners } from '../services/api/ownerService';
 import { fetchHolidays } from '../services/api/holidayService';
 import { fetchStatuses } from '../services/api/statusService';
 import { fetchTeams } from '../services/api/teamService';
+import { DateUtils } from '../utils/dateUtils';
 
 export const useCalendarData = () => {
   const [tasks, setTasks] = useState([]);
@@ -67,100 +68,43 @@ export const useCalendarData = () => {
     return resources;
   }, []);
 
-  // Dans useCalendarData.jsx - formatTasksForCalendar
+  // Fonction mise à jour pour standardiser le traitement des dates
   const formatTasksForCalendar = useCallback((tasksData) => {
     const tasks = Array.isArray(tasksData) ? tasksData : [];
   
     return tasks.map(task => {
       if (!task) return null;
   
-      console.log('task :', task);
+      console.log("Traitement de tâche depuis l'API:", task);
   
-      // Vérifier si les dates sont null ou undefined
-      if (!task.start_date || !task.end_date) {
-        console.warn('Tâche avec dates nulles :', task.id, task.title);
-        
-        // Créer des dates par défaut (aujourd'hui) pour éviter les erreurs
-        const today = new Date();
-        const startDate = today;
-        const endDate = new Date(today);
-        endDate.setDate(today.getDate() + 1); // +1 jour pour l'exclusivité
-        
-        return {
-          id: task.id,
-          title: task.title || 'Tâche sans titre',
-          start: startDate,
-          end: endDate,
-          resourceId: (task.owner_id || task.ownerId)?.toString(),
-          allDay: true,
-          extendedProps: {
-            statusId: (task.status_id || task.statusId)?.toString(),
-            userId: task.user_id || task.userId,
-            description: task.description || '',
-            team: task.team_name,
-          }
-        };
-      }
-  
-      // Si la date est au format ISO avec T23:00:00.000Z
-      let startDateStr, endDateStr;
+      // Créer des dates par défaut (aujourd'hui) si nécessaire
+      let startDate, endDate;
       
-      // Extraire les parties date des chaînes ISO en vérifiant si elles existent
-      if (typeof task.start_date === 'string' && task.start_date.includes('T')) {
-        startDateStr = task.start_date.split('T')[0];
-        endDateStr = task.end_date.split('T')[0];
+      if (!task.start_date) {
+        console.warn('Tâche sans date de début:', task.id, task.title);
+        startDate = new Date(); // Date par défaut (aujourd'hui)
       } else {
-        // Format simple ou autre
-        startDateStr = String(task.start_date);
-        endDateStr = String(task.end_date);
+        startDate = DateUtils.isoToUTCDate(task.start_date);
       }
       
-      let [startYear, startMonth, startDay] = startDateStr.split('-').map(Number);
-      let [endYear, endMonth, endDay] = endDateStr.split('-').map(Number);
-      
-      // Vérifier si les valeurs sont des nombres valides
-      if (isNaN(startYear) || isNaN(startMonth) || isNaN(startDay) ||
-          isNaN(endYear) || isNaN(endMonth) || isNaN(endDay)) {
-        console.warn('Tâche avec format de date invalide :', task.id, task.title);
-        
-        // Utiliser la date d'aujourd'hui comme repli
-        const today = new Date();
-        startYear = today.getFullYear();
-        startMonth = today.getMonth() + 1;
-        startDay = today.getDate();
-        endYear = today.getFullYear();
-        endMonth = today.getMonth() + 1;
-        endDay = today.getDate() + 1;
+      if (!task.end_date) {
+        console.warn('Tâche sans date de fin:', task.id, task.title);
+        endDate = new Date();
+      } else {
+        // IMPORTANT: Pour FullCalendar, on convertit la date inclusive de l'API en date exclusive
+        endDate = DateUtils.isoToUTCDate(task.end_date);
+        endDate.setDate(endDate.getDate() + 1); // Convertir en exclusive pour FullCalendar
       }
       
-      // Si la date contient T23:00:00.000Z, ajouter un jour pour avoir le jour correct
-      if (task.start_date && typeof task.start_date === 'string' && task.start_date.includes('T23:00:00.000Z')) {
-        startDay += 1;
-      }
-      
-      if (task.end_date && typeof task.end_date === 'string' && task.end_date.includes('T23:00:00.000Z')) {
-        endDay += 1;
-      }
-      
-      // Créer des dates UTC avec les jours ajustés
-      const startDate = new Date(Date.UTC(startYear, startMonth - 1, startDay));
-      
-      // Pour endDate, nous n'ajoutons PAS de jour supplémentaire si déjà ajusté pour T23:00:00.000Z
-      const endDate = new Date(Date.UTC(endYear, endMonth - 1, endDay));
-
-      if (!(task.end_date && typeof task.end_date === 'string' && task.end_date.includes('T23:00:00.000Z'))) {
-        endDate.setDate(endDate.getDate() + 1);
-      }
-      
-      console.log('Dates finales pour FullCalendar:');
-      console.log('startDate (UTC):', startDate.toISOString());
-      console.log('endDate (UTC):', endDate.toISOString());
+      console.log('Dates pour FullCalendar (après conversion):');
+      console.log('startDate:', startDate.toISOString());
+      console.log('endDate (exclusive):', endDate.toISOString());
   
       return {
         id: task.id,
         title: task.title || 'Tâche sans titre',
         start: startDate,
-        end: endDate,
+        end: endDate, // Date exclusive pour FullCalendar
         resourceId: (task.owner_id || task.ownerId)?.toString(),
         allDay: true,
         extendedProps: {
