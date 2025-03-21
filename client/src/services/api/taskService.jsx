@@ -3,35 +3,51 @@ import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
 import { ERROR_MESSAGES } from '../../constants/constants';
 
+
 const transformTaskForServer = (taskData) => {
     const statusId = taskData.statusId || taskData.extendedProps?.statusId;
 
-    console.log("Task originale recue par TaskService :", taskData);
+    console.log("Task originale reçue par TaskService :", taskData);
 
     let startDate = taskData.start || taskData.startDate;
     let endDate;
     const isNewTask = !taskData.id;
 
-    if (isNewTask) {
-        endDate = taskData.endDate || taskData.end;
+    // Prioriser extendedProps.inclusiveEndDate quelle que soit la situation (nouvelle tâche ou mise à jour)
+    if (taskData.extendedProps?.inclusiveEndDate) {
+        endDate = taskData.extendedProps.inclusiveEndDate;
+        console.log("Utilisation de inclusiveEndDate depuis extendedProps:", endDate);
+    } 
+    // Si pas d'inclusiveEndDate, traiter selon création ou modification
+    else if (isNewTask) {
+        // Pour les nouvelles tâches sans inclusiveEndDate explicite
+        if (taskData.endDate) {
+            // Si on a endDate, l'utiliser directement (supposé être inclusive)
+            endDate = taskData.endDate;
+            console.log("Nouvelle tâche - utilisation de endDate:", endDate);
+        } else if (taskData.end) {
+            // Si on a seulement end, convertir de exclusive à inclusive
+            const endDateObj = new Date(taskData.end);
+            endDateObj.setDate(endDateObj.getDate() - 1);
+            endDate = endDateObj;
+            console.log("Nouvelle tâche - conversion de end en date inclusive:", endDate);
+        }
     } else {
-        // 1. Si nous avons une inclusiveEndDate dans extendedProps, c'est notre source la plus fiable
-        if (taskData.extendedProps?.inclusiveEndDate) {
-            endDate = taskData.extendedProps.inclusiveEndDate;
-            console.log("Utilisation de inclusiveEndDate depuis extendedProps:", endDate);
-        } 
-        // 2. Si nous avons une end_date (supposée être déjà inclusive), l'utiliser
-        else if (taskData.end_date) {
+        // Pour les mises à jour sans inclusiveEndDate explicite
+        if (taskData.end_date) {
             endDate = taskData.end_date;
             console.log("Utilisation de end_date (inclusive):", endDate);
-        }
-        // 3. Si nous avons end, convertir de exclusive à inclusive
-        else if (taskData.end) {
+        } else if (taskData.end) {
             const endDateObj = new Date(taskData.end);
             endDateObj.setDate(endDateObj.getDate() - 1); // Convertir exclusive à inclusive
-            endDate = endDateObj.toISOString().split('T')[0];
+            endDate = endDateObj;
             console.log("Conversion de end (exclusive) en date inclusive:", endDate);
         }
+    }
+    
+    // Convertir en format ISO si nécessaire
+    if (endDate instanceof Date) {
+        endDate = endDate.toISOString().split('T')[0];
     }
     
     console.log("Dates finales pour le serveur:", {

@@ -60,22 +60,27 @@ export const useCalendarEventHandlers = (
 
   // Déplacement d'un événement dans le calendrier
   const handleEventDrop = useCallback(async (dropInfo) => {
-    const { event, enrichedEvent } = dropInfo;
+    const { event } = dropInfo;
     const startDate = event.start;
-    const fcEndDate = event.end || new Date(startDate.getTime() + 86400000);
-
-    // Créer une date de fin inclusive (pour les vérifications et la logique métier)
-    const inclusiveEndDate = new Date(fcEndDate);
-    inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
+    const endDate = event.end || new Date(startDate.getTime() + 86400000);
 
     console.log('Dates après déplacement:', {
       startDate,
-      fcEndDate: fcEndDate, // Date exclusive (FullCalendar)
-      inclusiveEndDate: inclusiveEndDate // Date inclusive (jour inclus dans l'événement)
+      endDate,
+    });
+
+    const exclusiveEndDate = endDate;
+    const inclusiveEndDate = new Date(exclusiveEndDate);
+    inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
+
+    console.log('Dates inclusives/exclusives:', {
+      startDate,
+      inclusiveEndDate,
+      exclusiveEndDate
     });
 
     // Validation des dates
-    if (!DateUtils.hasValidEventBoundaries(startDate, fcEndDate, holidays)) {
+    if (!DateUtils.hasValidEventBoundaries(startDate, inclusiveEndDate, holidays)) {
       dropInfo.revert();
       toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
       return;
@@ -96,8 +101,8 @@ export const useCalendarEventHandlers = (
     const updates = {
       title: event.title,
       start: startDate, // Date de début (toujours inclusive)
-      end: fcEndDate,   // Date de fin exclusive pour FullCalendar
-      exclusiveEndDate: fcEndDate, // Explicitement stocker la date exclusive
+      end: endDate,   // Date de fin exclusive pour FullCalendar
+      exclusiveEndDate: exclusiveEndDate, // Explicitement stocker la date exclusive
       resourceId,
       statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId,
       extendedProps: {
@@ -106,13 +111,7 @@ export const useCalendarEventHandlers = (
       }
     };
 
-    // Si nous avons des données enrichies de l'événement (via le wrapper dans CalendarMain)
-    if (enrichedEvent && enrichedEvent.extendedProps) {
-      updates.extendedProps = {
-        ...updates.extendedProps,
-        ...enrichedEvent.extendedProps
-      };
-    }
+    console.log('Mises à jour avant appel API:', updates);
 
     await handleTaskUpdate(
       taskId,
@@ -126,25 +125,24 @@ export const useCalendarEventHandlers = (
 
   // Redimensionnement d'un événement
   const handleEventResize = useCallback(async (info) => {
-    const { event, enrichedEvent } = info;
 
-    if (info.isProcessing) {
-      info.revert();
-      return;
-    }
-
-    // Utilisation précise des dates de FullCalendar
+    const { event } = info;
     const startDate = event.start;
-    const fcEndDate = event.end;
+    const endDate = event.end || new Date(startDate.getTime() + 86400000);
 
-    // Créer une date de fin inclusive pour les validations
-    const inclusiveEndDate = new Date(fcEndDate);
+    console.log('Dates après resize:', {
+      startDate,
+      endDate,
+    });
+
+    const exclusiveEndDate = endDate;
+    const inclusiveEndDate = new Date(exclusiveEndDate);
     inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
 
-    console.log("Redimensionnement - dates:", {
-      start: startDate,
-      end: fcEndDate, // Date exclusive (FullCalendar)
-      inclusiveEndDate: inclusiveEndDate // Date inclusive
+    console.log('Redimensionnement - dates inclusives/exclusives:', {
+      startDate,
+      inclusiveEndDate,
+      exclusiveEndDate
     });
 
     // Validation des dates avec la date de fin inclusive
@@ -160,26 +158,18 @@ export const useCalendarEventHandlers = (
       info.revert();
       return;
     }
-
+    // Préparer les mises à jour avec les deux formats de dates
     const updates = {
       start: startDate,
-      end: fcEndDate, // Date exclusive pour FullCalendar
-      exclusiveEndDate: fcEndDate,
+      end: endDate, 
+      exclusiveEndDate: exclusiveEndDate,
       resourceId: event._def.resourceIds[0],
+      statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId,
       extendedProps: {
         statusId: event._def.extendedProps.statusId || existingTask.extendedProps?.statusId,
-        description: event._def.extendedProps.description || existingTask.extendedProps?.description,
-        inclusiveEndDate: inclusiveEndDate // Ajouter la date inclusive
+        inclusiveEndDate: inclusiveEndDate // Stocker la date inclusive dans les propriétés étendues
       }
     };
-
-    // Si nous avons des données enrichies de l'événement (via le wrapper dans CalendarMain)
-    if (enrichedEvent && enrichedEvent.extendedProps) {
-      updates.extendedProps = {
-        ...updates.extendedProps,
-        ...enrichedEvent.extendedProps
-      };
-    }
 
     await handleTaskUpdate(
       event.id,
@@ -192,7 +182,6 @@ export const useCalendarEventHandlers = (
   }, [handleTaskUpdate, holidays, tasks]);
 
 
-  
   return {
     handleCalendarEventClick,
     handleDateClick,
