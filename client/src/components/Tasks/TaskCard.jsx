@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, User } from 'lucide-react';
 import { ERROR_MESSAGES } from '../../constants/constants';
+import { DateUtils } from '../../utils/dateUtils';
 
 const formatDate = (dateString) => {
   if (!dateString) return null;
@@ -77,7 +78,17 @@ export const TaskCard = ({
 
   const handleClick = () => {
     if (!disabled && onTaskClick) {
-      onTaskClick(task);
+      // Enrichir la tâche avec la date de fin inclusive avant de la passer au clic
+      const inclusiveEndDate = DateUtils.getInclusiveEndDate(task);
+      const enrichedTask = {
+        ...task,
+        extendedProps: {
+          ...(task.extendedProps || {}),
+          inclusiveEndDate: inclusiveEndDate
+        }
+      };
+      
+      onTaskClick(enrichedTask);
     }
   };
 
@@ -91,7 +102,7 @@ export const TaskCard = ({
   const startDateFormatted = formatDate(start_date || start);
   const endDateFormatted = formatDate(end_date || end);
   const assignedTo = owner_id || resourceId;
-
+  
   return (
     <div className="fc-event task-card-wrapper" data-task-id={id}>
       <div

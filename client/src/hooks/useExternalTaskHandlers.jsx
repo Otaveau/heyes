@@ -14,13 +14,43 @@ export const useExternalTaskHandlers = (
   ) => {
     // Référence pour l'élément fantôme
     const ghostElementRef = useRef(null);
+    
+    // Fonction utilitaire pour obtenir la date de fin inclusive
+    const getInclusiveEndDate = useCallback((task) => {
+      // Si la date inclusive est stockée dans extendedProps
+      if (task.extendedProps?.inclusiveEndDate) {
+        return task.extendedProps.inclusiveEndDate;
+      }
+      
+      // Si la tâche a une propriété end_date (supposée déjà inclusive)
+      if (task.end_date) {
+        return task.end_date;
+      }
+      
+      // Si la tâche a une propriété end (exclusive, à convertir)
+      if (task.end) {
+        const endDate = new Date(task.end);
+        endDate.setDate(endDate.getDate() - 1); // Convertir en date inclusive
+        return endDate;
+      }
+      
+      return null;
+    }, []);
   
     // Clic sur une tâche externe
     const handleExternalTaskClick = useCallback((task) => {
       const fullTask = tasks.find(t => t.id.toString() === task.id.toString());
       if (!fullTask) return;
+      
+      // Obtenir la date de fin inclusive
+      const inclusiveEndDate = getInclusiveEndDate(fullTask);
+      
+      console.log('Tâche externe cliquée:', {
+        task: fullTask,
+        inclusiveEndDate
+      });
   
-      // Utiliser les dates telles quelles sans conversion
+      // Utiliser les dates en incluant la date de fin inclusive
       setCalendarState(prev => ({
         ...prev,
         isFormOpen: true,
@@ -31,10 +61,14 @@ export const useExternalTaskHandlers = (
           statusId: fullTask.extendedProps?.statusId || task.statusId || '1',
           resourceId: fullTask.resourceId || null,
           start: fullTask.start,
-          end: fullTask.end
+          end: fullTask.end, // Date exclusive pour FullCalendar
+          extendedProps: {
+            ...(fullTask.extendedProps || {}),
+            inclusiveEndDate: inclusiveEndDate // Explicitement stocker la date inclusive
+          }
         }
       }));
-    }, [setCalendarState, tasks]);
+    }, [setCalendarState, tasks, getInclusiveEndDate]);
   
     // Mettre en surbrillance le TaskBoard
     const highlightTaskBoard = useCallback((isHighlighted) => {
@@ -320,7 +354,12 @@ export const useExternalTaskHandlers = (
       if (!info.draggedEl.parentNode) return;
   
       const startDate = info.date || new Date();
-      const endDate = new Date(startDate.getTime() + 86400000);
+      
+      // Créer une date de fin inclusive (même jour que startDate par défaut)
+      const inclusiveEndDate = new Date(startDate);
+      
+      // Créer une date de fin exclusive (jour suivant pour FullCalendar)
+      const exclusiveEndDate = new Date(startDate.getTime() + 86400000);
   
       // Vérifier si c'est un jour férié ou un weekend
       if (DateUtils.isHolidayOrWeekend(startDate, holidays)) {
@@ -358,11 +397,13 @@ export const useExternalTaskHandlers = (
         title: externalTask.title,
         description: externalTask.extendedProps?.description || '',
         start: startDate,
-        end: endDate,
+        end: exclusiveEndDate, // Date exclusive pour FullCalendar
+        exclusiveEndDate: exclusiveEndDate, // Stocker explicitement la date exclusive
         resourceId: info.resource?.id ? parseInt(info.resource.id) : null,
         extendedProps: {
           ...externalTask.extendedProps,
-          statusId: '2' // S'assurer que statusId est dans extendedProps
+          statusId: '2', // S'assurer que statusId est dans extendedProps
+          inclusiveEndDate: inclusiveEndDate // Stocker la date inclusive dans extendedProps
         },
         statusId: '2' // Garder aussi au niveau racine pour compatibilité
       };
@@ -380,10 +421,11 @@ export const useExternalTaskHandlers = (
                 ...t,
                 resourceId: info.resource?.id ? parseInt(info.resource.id) : null,
                 start: startDate,
-                end: endDate,
+                end: exclusiveEndDate, // Date exclusive pour FullCalendar
                 extendedProps: {
                   ...t.extendedProps,
-                  statusId: '2'
+                  statusId: '2',
+                  inclusiveEndDate: inclusiveEndDate // Stocker la date inclusive
                 }
               };
             }
@@ -421,6 +463,7 @@ export const useExternalTaskHandlers = (
       handleExternalTaskClick,
       handleEventDragStop,
       handleExternalDrop,
-      handleEventReceive
+      handleEventReceive,
+      createGhostElement // Exposer cette fonction si nécessaire
     };
   };

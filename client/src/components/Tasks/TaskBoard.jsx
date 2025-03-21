@@ -238,7 +238,7 @@ export const TaskBoard = ({
                         {/* Dates de la tâche */}
                         <div className="text-xs text-gray-600 mt-1">
                           <div><span className="font-medium">Début:</span> {formatDate(task.start)}</div>
-                          <div><span className="font-medium">Fin:</span> {formatDate(task.end)}</div>
+                          <div><span className="font-medium">Fin:</span> {formatDate(DateUtils.getInclusiveEndDate(task))}</div>
                         </div>
                       </>
                     ) : (

@@ -1,4 +1,3 @@
-// CalendarView.jsx avec support d'affichage des tâches à la fois dans le calendrier et taskboard 2
 import React, { useState, useRef, useMemo } from 'react';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
@@ -53,7 +52,6 @@ export const CalendarView = () => {
   };
 
   // Gérer le déplacement des tâches entre les taskboards
-  // Gérer le déplacement des tâches entre les taskboards
   const handleMoveTask = (taskId, newStatusId) => {
     // Trouver la tâche à déplacer
     const taskToMove = tasks.find(task => task.id.toString() === taskId.toString());
@@ -62,8 +60,6 @@ export const CalendarView = () => {
       console.error(`Tâche avec l'ID ${taskId} non trouvée`);
       return;
     }
-
-    // Si la tâche est déplacée vers le taskboard "En cours" (statusId '2')
     if (newStatusId === '2') {
       // Ouvrir le formulaire pour modifier la tâche
       setCalendarState(prev => ({
@@ -74,9 +70,6 @@ export const CalendarView = () => {
         taskOriginId: taskId
       }));
     } else {
-      // Pour les autres taskboards, mettre à jour directement le statut
-      // et réinitialiser les dates et le propriétaire
-
       // Vérifier si la tâche est actuellement dans le taskboard "En cours"
       const isMovingFromInProgress = (taskToMove.extendedProps?.statusId === '2' || taskToMove.statusId === '2');
 
@@ -154,13 +147,13 @@ export const CalendarView = () => {
             }
           );
         } else {
-          // Si les conditions sont remplies, mettre à jour normalement vers le statut '2'
+          // Si les conditions sont remplies, mettre à jour vers le statut '2'
           updatedTask = {
             ...updatedTask,
-            statusId: '2', // Mettre à jour le statusId principal
+            statusId: '2',
             extendedProps: {
               ...updatedTask.extendedProps,
-              statusId: '2' // Conserver le statusId '2' pour qu'elle reste visible dans le taskboard
+              statusId: '2'
             }
           };
 
@@ -175,9 +168,77 @@ export const CalendarView = () => {
           );
         }
       } else {
-        console.log('updatedTask:', updatedTask);
-        // Pour les autres cas, utiliser le gestionnaire normal
-        await taskHandlers.handleTaskSubmit(updatedTask);
+        console.log('updatedTask avant préparation:', updatedTask);
+
+        // Préparer les dates inclusives et exclusives
+        const startDate = updatedTask.startDate || updatedTask.start;
+        const inclusiveEndDate = updatedTask.endDate || updatedTask.end;
+
+        // Calculer la date exclusive (pour FullCalendar)
+        let exclusiveEndDate = null;
+        if (inclusiveEndDate) {
+          // Créer une copie pour ne pas modifier l'original
+          if (typeof inclusiveEndDate === 'string') {
+            const dateObj = new Date(inclusiveEndDate);
+            dateObj.setDate(dateObj.getDate() + 1);
+            exclusiveEndDate = dateObj.toISOString().split('T')[0];
+          } else {
+            const dateObj = new Date(inclusiveEndDate);
+            dateObj.setDate(dateObj.getDate() + 1);
+            exclusiveEndDate = dateObj;
+          }
+        }
+
+        console.log('Dates préparées:', {
+          startDate,
+          inclusiveEndDate,
+          exclusiveEndDate
+        });
+
+        // Déterminer si c'est une création ou une modification
+        const isNewTask = !updatedTask.id;
+
+        if (isNewTask) {
+          // CAS DE CRÉATION
+          // Enrichir avec les dates inclusives/exclusives
+          const enrichedTask = {
+            ...updatedTask,
+            start: startDate,
+            end: exclusiveEndDate, // Date exclusive pour FullCalendar
+            exclusiveEndDate: exclusiveEndDate,
+            startDate: startDate, // Garder aussi les noms de propriétés originaux
+            endDate: inclusiveEndDate, // Date inclusive originale
+            extendedProps: {
+              ...(updatedTask.extendedProps || {}),
+              inclusiveEndDate: inclusiveEndDate, // Stocker explicitement la date inclusive
+              statusId: updatedTask.statusId
+            }
+          };
+
+          console.log('Task enrichie pour création:', enrichedTask);
+
+          // Pour les autres cas, utiliser le gestionnaire normal
+          await taskHandlers.handleTaskSubmit(enrichedTask);
+        } else {
+          // CAS DE MODIFICATION
+          // Enrichir avec les dates inclusives/exclusives
+          const enrichedTask = {
+            ...updatedTask,
+            start: startDate,
+            end: exclusiveEndDate, // Date exclusive pour FullCalendar
+            exclusiveEndDate: exclusiveEndDate,
+            extendedProps: {
+              ...(updatedTask.extendedProps || {}),
+              inclusiveEndDate: inclusiveEndDate, // Stocker explicitement la date inclusive
+              statusId: updatedTask.statusId
+            }
+          };
+
+          console.log('Task enrichie pour modification:', enrichedTask);
+
+          // Pour les autres cas, utiliser le gestionnaire normal
+          await taskHandlers.handleTaskSubmit(enrichedTask);
+        }
       }
 
       // Réinitialiser l'état

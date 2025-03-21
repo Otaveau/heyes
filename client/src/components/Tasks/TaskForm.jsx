@@ -38,22 +38,46 @@ export const TaskForm = ({
 
     const getInitialFormData = useCallback(() => {
         if (selectedTask) {
-            const isFromCalendar = selectedTask.start && selectedTask.end;
+            const isAssigned = selectedTask.start && selectedTask.end;
             
             // Pour extraire les dates inclusives du calendrier
             let startDateStr, endDateStr;
             
-            if (isFromCalendar) {
-                // Convertir les dates du calendrier en chaînes YYYY-MM-DD
+            if (isAssigned) {
+                console.log('selectedTask pour initialisation du formulaire:', selectedTask);
+                
+                // Récupérer la date de début (déjà inclusive)
                 const startDate = new Date(selectedTask.start);
-                const endDate = new Date(selectedTask.end);
+                
+                // Récupérer la date de fin (en cherchant la version inclusive)
+                let endDate;
+                
+                // Options prioritaires pour trouver la date de fin inclusive
+                if (selectedTask.extendedProps?.inclusiveEndDate) {
+                    // Option 1: Utiliser la date inclusive explicite si elle existe
+                    endDate = new Date(selectedTask.extendedProps.inclusiveEndDate);
+                    console.log('Utilisation de extendedProps.inclusiveEndDate:', endDate);
+                } else if (selectedTask.end) {
+                    // Option 2: Convertir la date exclusive en date inclusive
+                    endDate = new Date(selectedTask.end);
+                    console.log('Conversion de la date exclusive en date inclusive:', endDate);
+                } else {
+                    // Option 3: Fallback si aucune date de fin n'est disponible
+                    endDate = new Date(startDate);
+                    console.log('Aucune date de fin trouvée, utilisation de la date de début:', endDate);
+                }
                 
                 // Formater en YYYY-MM-DD pour input type="date"
                 startDateStr = startDate.toISOString().split('T')[0];
                 endDateStr = endDate.toISOString().split('T')[0];
-              } else {
-                startDateStr = selectedDates ? formatDateForInput(selectedDates.start) : getTodayFormatted();
-                endDateStr = selectedDates ? formatDateForInput(selectedDates.end) : getTodayFormatted();
+                
+                console.log('Dates formatées pour le formulaire:', {
+                    startDateStr,
+                    endDateStr,
+                    originalStart: selectedTask.start,
+                    originalEnd: selectedTask.end,
+                    inclusiveEndDate: selectedTask.extendedProps?.inclusiveEndDate
+                });
             }
             
             // Vérifier si la propriété isConge existe

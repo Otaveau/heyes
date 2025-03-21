@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -19,9 +19,22 @@ export const CalendarMain = ({
   goToNextYear,
   navigateToMonth
 }) => {
-  // État pour suivre la vue actuelle
+
   const [currentView, setCurrentView] = useState('resourceTimelineYear');
-  
+
+  const formattedTasksForCalendar = useMemo(() => {
+    return tasks.map(task => {
+      // Si la tâche a déjà une exclusiveEndDate, on l'utilise
+      if (task.extendedProps?.exclusiveEndDate) {
+        return {
+          ...task,
+          end: task.extendedProps.exclusiveEndDate
+        };
+      }  
+      return task;
+    });
+  }, [tasks]);
+ 
   useEffect(() => {
     if (calendarRef.current) {
       const currentDate = new Date();
@@ -30,7 +43,7 @@ export const CalendarMain = ({
     }
   }, [calendarRef]);
 
-  // Appliquer les styles améliorés
+  
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = getEnhancedCalendarStyles();
@@ -171,6 +184,70 @@ export const CalendarMain = ({
     );
   };
 
+  // Gestionnaire personnalisé pour eventDrop pour gérer la conversion des dates exclusives
+  const handleEventDrop = (info) => {
+    const { event } = info;
+    
+    // Récupérer les dates start et end (end est exclusive dans FullCalendar)
+    const start = event.start;
+    const end = event.end;
+    
+    // Créer une copie inclusive de la date de fin (soustraire un jour)
+    const inclusiveEndDate = end ? new Date(end) : null;
+    if (inclusiveEndDate) {
+      inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
+    }
+    
+    // Enrichir les données de l'événement avec les dates inclusives/exclusives
+    const extendedEvent = {
+      ...event.toPlainObject(),
+      extendedProps: {
+        ...event.extendedProps,
+        inclusiveEndDate: inclusiveEndDate // Stocker la date inclusive
+      }
+    };
+    
+    // Appeler le gestionnaire d'événement original avec les données enrichies
+    if (taskHandlers.handleEventDrop) {
+      taskHandlers.handleEventDrop({
+        ...info,
+        enrichedEvent: extendedEvent
+      });
+    }
+  };
+
+  // Gestionnaire personnalisé pour eventResize
+  const handleEventResize = (info) => {
+    const { event } = info;
+    
+    // Récupérer les dates start et end (end est exclusive dans FullCalendar)
+    const start = event.start;
+    const end = event.end;
+    
+    // Créer une copie inclusive de la date de fin (soustraire un jour)
+    const inclusiveEndDate = end ? new Date(end) : null;
+    if (inclusiveEndDate) {
+      inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
+    }
+    
+    // Enrichir les données de l'événement avec les dates inclusives/exclusives
+    const extendedEvent = {
+      ...event.toPlainObject(),
+      extendedProps: {
+        ...event.extendedProps,
+        inclusiveEndDate: inclusiveEndDate // Stocker la date inclusive
+      }
+    };
+    
+    // Appeler le gestionnaire d'événement original avec les données enrichies
+    if (taskHandlers.handleEventResize) {
+      taskHandlers.handleEventResize({
+        ...info,
+        enrichedEvent: extendedEvent
+      });
+    }
+  };
+
 
   return (
     <div className="calendar-container">
@@ -179,7 +256,7 @@ export const CalendarMain = ({
         ref={calendarRef}
         locale={frLocale}
         timeZone='UTC'
-        events={tasks}
+        events={formattedTasksForCalendar}
         resources={resources}
         nextDayThreshold="00:00:00"
         slotLabelFormat={[
@@ -298,11 +375,11 @@ export const CalendarMain = ({
         
         // Gestionnaires d'événements
         eventDragStart={taskHandlers.handleEventDragStart}
-        eventDrop={taskHandlers.handleEventDrop}
+        eventDrop={handleEventDrop}
         drop={taskHandlers.handleExternalDrop}
         select={taskHandlers.handleDateClick}
         eventClick={taskHandlers.handleCalendarEventClick}
-        eventResize={taskHandlers.handleEventResize}
+        eventResize={handleEventResize}
         eventDragStop={taskHandlers.handleEventDragStop}
         eventReceive={taskHandlers.handleEventReceive}
       />

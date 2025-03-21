@@ -5,16 +5,41 @@ import { ERROR_MESSAGES } from '../../constants/constants';
 
 const transformTaskForServer = (taskData) => {
     const statusId = taskData.statusId || taskData.extendedProps?.statusId;
-    
-    // Capture des dates sous leurs formes originales
+
+    console.log("Task originale recue par TaskService :", taskData);
+
     let startDate = taskData.start || taskData.startDate;
-    let endDate = taskData.end || taskData.endDate;
+    let endDate;
+    const isNewTask = !taskData.id;
+
+    if (isNewTask) {
+        endDate = taskData.endDate || taskData.end;
+    } else {
+        // 1. Si nous avons une inclusiveEndDate dans extendedProps, c'est notre source la plus fiable
+        if (taskData.extendedProps?.inclusiveEndDate) {
+            endDate = taskData.extendedProps.inclusiveEndDate;
+            console.log("Utilisation de inclusiveEndDate depuis extendedProps:", endDate);
+        } 
+        // 2. Si nous avons une end_date (supposée être déjà inclusive), l'utiliser
+        else if (taskData.end_date) {
+            endDate = taskData.end_date;
+            console.log("Utilisation de end_date (inclusive):", endDate);
+        }
+        // 3. Si nous avons end, convertir de exclusive à inclusive
+        else if (taskData.end) {
+            const endDateObj = new Date(taskData.end);
+            endDateObj.setDate(endDateObj.getDate() - 1); // Convertir exclusive à inclusive
+            endDate = endDateObj.toISOString().split('T')[0];
+            console.log("Conversion de end (exclusive) en date inclusive:", endDate);
+        }
+    }
     
-    console.log("Dates originales reçues par transformTaskForServer:", {
-        start: startDate,
-        end: endDate
+    console.log("Dates finales pour le serveur:", {
+        startDate,
+        endDate: endDate, // Toujours inclusif à ce stade
+        isNewTask
     });
-    
+
     return {
         title: taskData.title.trim(),
         startDate: startDate,
@@ -51,11 +76,32 @@ const transformServerResponseToTask = (serverResponse) => {
         }
     };
 
+    // Normaliser les dates inclusives du serveur
+    const inclusiveStartDate = normalizeDate(serverResponse.start_date);
+    const inclusiveEndDate = normalizeDate(serverResponse.end_date);
+    
+    // Calculer la date de fin exclusive pour FullCalendar
+    let exclusiveEndDate = null;
+    if (inclusiveEndDate) {
+        const endDate = new Date(inclusiveEndDate);
+        endDate.setDate(endDate.getDate() + 1);
+        exclusiveEndDate = endDate.toISOString().split('T')[0];
+    }
+
+    console.log('Transformation response serveur:', {
+        id: serverResponse.id,
+        inclusiveEndDate,
+        exclusiveEndDate
+    });
+
     return {
         id: serverResponse.id || null,
         title: serverResponse.title?.trim() || 'Tâche sans titre',
-        start_date: normalizeDate(serverResponse.start_date),
-        end_date: normalizeDate(serverResponse.end_date),
+        start: inclusiveStartDate,
+        end: exclusiveEndDate,
+        start_date: inclusiveStartDate,
+        end_date: inclusiveEndDate,
+        exclusiveEndDate: exclusiveEndDate,
         owner_id: serverResponse.owner_id || serverResponse.ownerId || null,
         allDay: true,
         extendedProps: {
@@ -67,7 +113,8 @@ const transformServerResponseToTask = (serverResponse) => {
             description: serverResponse.description?.trim() || '',
             ownerName: serverResponse.owner_name || null,
             statusType: serverResponse.status_type || null,
-            teamName: serverResponse.team_name || null
+            teamName: serverResponse.team_name || null,
+            inclusiveEndDate: inclusiveEndDate
         }
     };
 };
@@ -78,9 +125,21 @@ const validateTaskData = (taskData) => {
     if (!taskData.title?.trim()) throw new Error(ERROR_MESSAGES.TITLE_REQUIRED);
     
     // Validation des dates avec gestion des formats ISO
-    if (taskData.startDate && taskData.endDate) {
-        const start = new Date(taskData.startDate);
-        const end = new Date(taskData.endDate);
+    // Si nous avons une exclusiveEndDate, nous l'utiliserons pour la validation
+    let startDate = taskData.startDate || taskData.start;
+    let endDate;
+    
+    if (taskData.exclusiveEndDate) {
+        // Si nous avons une exclusiveEndDate, nous l'utilisons telle quelle pour la validation
+        endDate = taskData.exclusiveEndDate;
+    } else {
+        // Sinon, nous utilisons la date de fin traditionnelle
+        endDate = taskData.endDate || taskData.end;
+    }
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
         
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
             throw new Error(ERROR_MESSAGES.INVALID_DATE_FORMAT);

@@ -4,7 +4,7 @@ import { fetchOwners } from '../services/api/ownerService';
 import { fetchHolidays } from '../services/api/holidayService';
 import { fetchStatuses } from '../services/api/statusService';
 import { fetchTeams } from '../services/api/teamService';
-import { DateUtils } from '../utils/dateUtils';
+
 
 export const useCalendarData = () => {
   const [tasks, setTasks] = useState([]);
@@ -69,58 +69,69 @@ export const useCalendarData = () => {
   }, []);
 
   // Fonction mise à jour pour standardiser le traitement des dates
-  const formatTasksForCalendar = useCallback((tasksData) => {
+  const formatTasks = useCallback((tasksData) => {
     const tasks = Array.isArray(tasksData) ? tasksData : [];
-  
+
     return tasks.map(task => {
-        if (!task) return null;
-  
-        console.log("Traitement de tâche depuis l'API:", task);
-        
-        // Gestion précise des dates
-        const startDate = task.start_date 
-            ? new Date(
-                Date.UTC(
-                    new Date(task.start_date).getFullYear(),
-                    new Date(task.start_date).getMonth(),
-                    new Date(task.start_date).getDate()
-                )
-            )
-            : new Date();
-        
-        const endDate = task.end_date 
-            ? new Date(
-                Date.UTC(
-                    new Date(task.end_date).getFullYear(),
-                    new Date(task.end_date).getMonth(),
-                    new Date(task.end_date).getDate()  // Date exclusive pour FullCalendar
-                )
-            )
-            : new Date();
-        
-        console.log('Dates pour FullCalendar (après conversion):', {
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-        });
-  
-        return {
-            id: task.id,
-            title: task.title || 'Tâche sans titre',
-            start: startDate,
-            end: endDate,
-            resourceId: (task.owner_id || task.ownerId)?.toString(),
-            allDay: true,
-            extendedProps: {
-                statusId: (task.status_id || task.statusId || task.extendedProps?.statusId)?.toString(),
-                userId: task.user_id || task.userId || task.extendedProps?.userId,
-                description: task.description || task.extendedProps?.description || '',
-                team: task.team_name || task.extendedProps?.teamName,
-                ownerName: task.owner_name || task.extendedProps?.ownerName,
-                statusType: task.status_type || task.extendedProps?.statusType
-            }
-        };
+      if (!task) return null;
+
+      console.log("Traitement des tasks reçues par l'API:", task);
+
+      // Gestion précise des dates
+      const startDate = task.start_date
+        ? new Date(
+          Date.UTC(
+            new Date(task.start_date).getFullYear(),
+            new Date(task.start_date).getMonth(),
+            new Date(task.start_date).getDate()
+          )
+        )
+        : new Date();
+
+      // Date inclusive (celle stockée en BDD)
+      const inclusiveEndDate = task.end_date
+        ? new Date(
+          Date.UTC(
+            new Date(task.end_date).getFullYear(),
+            new Date(task.end_date).getMonth(),
+            new Date(task.end_date).getDate()
+          )
+        )
+        : new Date();
+
+      // Date exclusive pour FullCalendar (jour suivant la date de fin inclusive)
+      const exclusiveEndDate = new Date(inclusiveEndDate);
+      exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
+
+      console.log('Dates pour la tâche formatée:', {
+        startDate: startDate.toISOString(),
+        inclusiveEndDate: inclusiveEndDate.toISOString(),
+        exclusiveEndDate: exclusiveEndDate.toISOString()
+    });
+
+    return {
+      id: task.id,
+      title: task.title || 'Tâche sans titre',
+      start: startDate,
+      end: exclusiveEndDate, // Date exclusive pour FullCalendar
+      resourceId: (task.owner_id || task.ownerId)?.toString(),
+      allDay: true,
+      extendedProps: {
+          statusId: (task.status_id || task.statusId || task.extendedProps?.statusId)?.toString(),
+          userId: task.user_id || task.userId || task.extendedProps?.userId,
+          description: task.description || task.extendedProps?.description || '',
+          team: task.team_name || task.extendedProps?.teamName,
+          ownerName: task.owner_name || task.extendedProps?.ownerName,
+          statusType: task.status_type || task.extendedProps?.statusType,
+          
+          // Ajout des informations de dates supplémentaires
+          startDate: startDate,
+          inclusiveEndDate: inclusiveEndDate, // Date inclusive (jour inclus dans l'événement)
+          exclusiveEndDate: exclusiveEndDate  // Date exclusive (jour non inclus)
+      }
+  };
     }).filter(task => task !== null);
-}, []);
+  }, []);
 
 
   const loadData = useCallback(async () => {
@@ -179,7 +190,7 @@ export const useCalendarData = () => {
 
       setStatuses(statusesData);
 
-      const formattedTasks = formatTasksForCalendar(tasksData);
+      const formattedTasks = formatTasks(tasksData);
       setTasks(formattedTasks);
 
       console.log('Données chargées avec succès : ', {
@@ -195,7 +206,7 @@ export const useCalendarData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [formatHolidays, formatResources, formatTasksForCalendar]);
+  }, [formatHolidays, formatResources, formatTasks]);
 
   useEffect(() => {
     loadData();
