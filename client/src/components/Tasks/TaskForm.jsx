@@ -209,11 +209,7 @@ export const TaskForm = ({
         
         setIsSubmitting(true);
         try {
-            console.log('Dates du formulaire avant soumission:', {
-                startDate: formData.startDate,
-                endDate: formData.endDate
-            });
-            
+      
             // Les dates sont déjà au format YYYY-MM-DD comme attendu
             const taskData = {
                 ...formData,

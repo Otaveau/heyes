@@ -185,20 +185,8 @@ export const TaskBoard = ({
             effectiveRefs.current[index] = React.createRef();
           }
 
-          console.log('externalTasks', externalTasks);
-
           const zoneTasks = externalTasks.filter(task => {
-            // Log détaillé pour diagnostic
-            console.log('Task debugging:', {
-              taskId: task.id,
-              zoneStatusId: zone.statusId,
-              taskExtendedProps: task.extendedProps,
-              taskDirectProps: {
-                statusId: task.statusId,
-                status: task.status
-              }
-            });
-          
+
             // Stratégie de récupération du statusId
             const extractStatusId = () => {
               // Vérifier dans différentes sources possibles
@@ -211,22 +199,10 @@ export const TaskBoard = ({
             };
           
             const taskStatusId = extractStatusId();
-            
-            console.log('Comparaison des status:', {
-              taskStatusId,
-              zoneStatusId: zone.statusId,
-              match: taskStatusId === zone.statusId
-            });
           
             return taskStatusId === zone.statusId;
           });
 
-          console.log('Zone status:', zone.statusId);
-          console.log('External tasks:', externalTasks);
-          console.log('Filtered tasks:', zoneTasks);
-
-
-          // Déterminer si cette zone est la zone "En cours" (statusId '2')
           const isInProgressZone = zone.statusId === '2';
 
           return (

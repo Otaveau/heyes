@@ -3,7 +3,6 @@ import { API_URL } from '../../constants/constants';
 import { handleResponse } from '../apiUtils/errorHandlers';
 import { ERROR_MESSAGES } from '../../constants/constants';
 
-
 const transformTaskForServer = (taskData) => {
     const statusId = taskData.statusId || taskData.extendedProps?.statusId;
     
@@ -16,33 +15,10 @@ const transformTaskForServer = (taskData) => {
         end: endDate
     });
     
-    // Fonction de conversion de date précise
-    const formatExactDate = (dateString) => {
-        if (!dateString) return null;
-        
-        // Créer une date en s'assurant de ne pas modifier le jour
-        const date = new Date(dateString);
-        
-        // Méthode alternative pour formater la date
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        
-        return `${year}-${month}-${day}`;
-    };
-
-    const formattedStartDate = formatExactDate(startDate);
-    const formattedEndDate = formatExactDate(endDate);
-    
-    console.log("Dates formatées envoyées au serveur:", {
-        startFormatted: formattedStartDate,
-        endFormatted: formattedEndDate
-    });
-    
     return {
         title: taskData.title.trim(),
-        startDate: formattedStartDate,
-        endDate: formattedEndDate,
+        startDate: startDate,
+        endDate: endDate,
         description: taskData.description?.trim() || '',
         ownerId: taskData.resourceId ? parseInt(taskData.resourceId, 10) : null,
         statusId: statusId
@@ -58,14 +34,17 @@ const transformServerResponseToTask = (serverResponse) => {
     const normalizeDate = (dateString) => {
         if (!dateString) return null;
         try {
+            // Convertir en date UTC à minuit
             const date = new Date(dateString);
+            const normalizedDate = new Date(
+                Date.UTC(
+                    date.getFullYear(), 
+                    date.getMonth(), 
+                    date.getDate()
+                )
+            );
             
-            // Méthode alternative de formatage de date
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            
-            return `${year}-${month}-${day}`;
+            return normalizedDate.toISOString().split('T')[0];
         } catch (error) {
             console.warn('Erreur de conversion de date:', error);
             return null;
