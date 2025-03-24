@@ -6,9 +6,6 @@ import { ERROR_MESSAGES } from '../../constants/constants';
 
 const transformTaskForServer = (taskData) => {
     const statusId = taskData.statusId || taskData.extendedProps?.statusId;
-
-    console.log("Task originale reçue par TaskService :", taskData);
-
     let startDate = taskData.start || taskData.startDate;
     let endDate;
     const isNewTask = !taskData.id;
@@ -16,7 +13,6 @@ const transformTaskForServer = (taskData) => {
     // Prioriser extendedProps.inclusiveEndDate quelle que soit la situation (nouvelle tâche ou mise à jour)
     if (taskData.extendedProps?.inclusiveEndDate) {
         endDate = taskData.extendedProps.inclusiveEndDate;
-        console.log("Utilisation de inclusiveEndDate depuis extendedProps:", endDate);
     } 
     // Si pas d'inclusiveEndDate, traiter selon création ou modification
     else if (isNewTask) {
@@ -24,24 +20,20 @@ const transformTaskForServer = (taskData) => {
         if (taskData.endDate) {
             // Si on a endDate, l'utiliser directement (supposé être inclusive)
             endDate = taskData.endDate;
-            console.log("Nouvelle tâche - utilisation de endDate:", endDate);
         } else if (taskData.end) {
             // Si on a seulement end, convertir de exclusive à inclusive
             const endDateObj = new Date(taskData.end);
             endDateObj.setDate(endDateObj.getDate() - 1);
             endDate = endDateObj;
-            console.log("Nouvelle tâche - conversion de end en date inclusive:", endDate);
         }
     } else {
         // Pour les mises à jour sans inclusiveEndDate explicite
         if (taskData.end_date) {
             endDate = taskData.end_date;
-            console.log("Utilisation de end_date (inclusive):", endDate);
         } else if (taskData.end) {
             const endDateObj = new Date(taskData.end);
-            endDateObj.setDate(endDateObj.getDate() - 1); // Convertir exclusive à inclusive
+            endDateObj.setDate(endDateObj.getDate() - 1);
             endDate = endDateObj;
-            console.log("Conversion de end (exclusive) en date inclusive:", endDate);
         }
     }
     
@@ -49,12 +41,6 @@ const transformTaskForServer = (taskData) => {
     if (endDate instanceof Date) {
         endDate = endDate.toISOString().split('T')[0];
     }
-    
-    console.log("Dates finales pour le serveur:", {
-        startDate,
-        endDate: endDate, // Toujours inclusif à ce stade
-        isNewTask
-    });
 
     return {
         title: taskData.title.trim(),
@@ -103,12 +89,6 @@ const transformServerResponseToTask = (serverResponse) => {
         endDate.setDate(endDate.getDate() + 1);
         exclusiveEndDate = endDate.toISOString().split('T')[0];
     }
-
-    console.log('Transformation response serveur:', {
-        id: serverResponse.id,
-        inclusiveEndDate,
-        exclusiveEndDate
-    });
 
     return {
         id: serverResponse.id || null,
@@ -174,14 +154,7 @@ export const fetchTasks = async () => {
         });
 
         const dataFromServer = await handleResponse(response);
-
-        console.log('Données reçues du serveur:', dataFromServer);
-
-        // Transformer le tableau complet au lieu d'un seul objet
         const transformedTasks = dataFromServer.map(transformServerResponseToTask);
-
-        console.log('Données transformées du serveur:', transformedTasks);
-
         return transformedTasks;
     } catch (error) {
         console.error('Erreur lors de la récupération des tâches:', error);
@@ -201,13 +174,9 @@ export const createTask = async (taskData) => {
         });
 
         const dataFromServer = await handleResponse(response);
-
         // Transforme et retourne un tableau, même pour une création unique
         const transformedTasks = [transformServerResponseToTask(dataFromServer)]
             .filter(task => task !== null);
-
-        console.log('Données transformées du serveur:', transformedTasks);
-
         return transformedTasks[0] || null;
     } catch (error) {
         console.error('Erreur lors de la création de la tâche:', error);

@@ -49,11 +49,6 @@ export const useTaskMutationHandlers = (setTasks, setCalendarState, tasks, holid
             end: exclusiveEndDate, // Date exclusive pour FullCalendar
             exclusiveEndDate: exclusiveEndDate // Stockage explicite de la date exclusive
           };
-          
-          console.log('Conversion de dates dans handleTaskUpdate:', {
-            inclusiveEndDate: updates.extendedProps.inclusiveEndDate,
-            exclusiveEndDate: exclusiveEndDate
-          });
         }
   
         // Mise à jour locale
@@ -97,8 +92,6 @@ export const useTaskMutationHandlers = (setTasks, setCalendarState, tasks, holid
         toast.error(ERROR_MESSAGES.TITLE_REQUIRED, TOAST_CONFIG);
         return;
       }
-
-      console.log('Données formData reçues par handleTaskSubmit:', formData);
   
       const startDate = formData.startDate || formData.start;
       const inclusiveEndDate = formData.endDate || formData.end;
@@ -165,7 +158,7 @@ export const useTaskMutationHandlers = (setTasks, setCalendarState, tasks, holid
       } finally {
         setCalendarState(prev => ({ ...prev, isProcessing: false }));
       }
-    }, [holidays, setCalendarState, updateTaskStatus, setTasks, getExclusiveEndDate]);
+    }, [holidays, setCalendarState, updateTaskStatus, setTasks]);
   
     // Suppression d'une tâche
     const handleDeleteTask = useCallback(async (taskId) => {

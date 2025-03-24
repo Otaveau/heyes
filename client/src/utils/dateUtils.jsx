@@ -9,30 +9,20 @@ export class DateUtils {
 
 
   static getInclusiveEndDate (task) {
-
-    console.log('Task reçue par getInclusiveEndDate:', task);
-
     // Si la propriété inclusiveEndDate est disponible dans extendedProps, l'utiliser
     if (task.extendedProps?.inclusiveEndDate) {
       return task.extendedProps.inclusiveEndDate;
     }
-
-    console.log('Task reçue par getInclusiveEndDate if 1:', task);
-    
     // Si end_date est disponible, l'utiliser (supposée être déjà inclusive)
     if (task.end_date) {
       return task.end_date;
-    }
-    console.log('Task reçue par getInclusiveEndDate if 2:', task);
-    
+    } 
     // Si end est disponible, la convertir de date exclusive à inclusive
     if (task.end) {
       const endDate = new Date(task.end);
       endDate.setDate(endDate.getDate() - 1);
       return endDate;
     }
-    console.log('Task reçue par getInclusiveEndDate if 3:', task);
-    
     return null;
   };
 
@@ -151,14 +141,9 @@ export class DateUtils {
   static hasValidEventBoundaries(startDate, endDate, holidays) {
     const start = this.toDate(startDate);
     const end = this.toDate(endDate);
-
     if (!start || !end) return false;
-
-    // La date de fin dans FullCalendar est exclusive, donc on regarde la veille (date inclusive)
-    const actualEndDate = this.toInclusiveEndDate(end);
-
     return !this.isHolidayOrWeekend(start, holidays) &&
-      !this.isHolidayOrWeekend(actualEndDate, holidays);
+      !this.isHolidayOrWeekend(endDate, holidays);
   }
 
   // Convertit une date ISO en objet Date UTC pour FullCalendar

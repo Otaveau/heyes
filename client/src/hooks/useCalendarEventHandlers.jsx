@@ -63,21 +63,9 @@ export const useCalendarEventHandlers = (
     const { event } = dropInfo;
     const startDate = event.start;
     const endDate = event.end || new Date(startDate.getTime() + 86400000);
-
-    console.log('Dates après déplacement:', {
-      startDate,
-      endDate,
-    });
-
     const exclusiveEndDate = endDate;
     const inclusiveEndDate = new Date(exclusiveEndDate);
     inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
-
-    console.log('Dates inclusives/exclusives:', {
-      startDate,
-      inclusiveEndDate,
-      exclusiveEndDate
-    });
 
     // Validation des dates
     if (!DateUtils.hasValidEventBoundaries(startDate, inclusiveEndDate, holidays)) {
@@ -111,8 +99,6 @@ export const useCalendarEventHandlers = (
       }
     };
 
-    console.log('Mises à jour avant appel API:', updates);
-
     await handleTaskUpdate(
       taskId,
       updates,
@@ -130,20 +116,16 @@ export const useCalendarEventHandlers = (
     const startDate = event.start;
     const endDate = event.end || new Date(startDate.getTime() + 86400000);
 
-    console.log('Dates après resize:', {
-      startDate,
-      endDate,
-    });
+    console.log ('startDate :', startDate);
+    console.log ('endDate :', endDate);
 
     const exclusiveEndDate = endDate;
     const inclusiveEndDate = new Date(exclusiveEndDate);
     inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
 
-    console.log('Redimensionnement - dates inclusives/exclusives:', {
-      startDate,
-      inclusiveEndDate,
-      exclusiveEndDate
-    });
+    console.log ('inclusiveEndDate :', inclusiveEndDate);
+
+
 
     // Validation des dates avec la date de fin inclusive
     if (!DateUtils.hasValidEventBoundaries(startDate, inclusiveEndDate, holidays)) {

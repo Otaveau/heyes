@@ -168,7 +168,6 @@ export const CalendarView = () => {
           );
         }
       } else {
-        console.log('updatedTask avant préparation:', updatedTask);
 
         // Préparer les dates inclusives et exclusives
         const startDate = updatedTask.startDate || updatedTask.start;
@@ -188,12 +187,6 @@ export const CalendarView = () => {
             exclusiveEndDate = dateObj;
           }
         }
-
-        console.log('Dates préparées:', {
-          startDate,
-          inclusiveEndDate,
-          exclusiveEndDate
-        });
 
         // Déterminer si c'est une création ou une modification
         const isNewTask = !updatedTask.id;
@@ -215,8 +208,6 @@ export const CalendarView = () => {
             }
           };
 
-          console.log('Task enrichie pour création:', enrichedTask);
-
           // Pour les autres cas, utiliser le gestionnaire normal
           await taskHandlers.handleTaskSubmit(enrichedTask);
         } else {
@@ -233,8 +224,6 @@ export const CalendarView = () => {
               statusId: updatedTask.statusId
             }
           };
-
-          console.log('Task enrichie pour modification:', enrichedTask);
 
           // Pour les autres cas, utiliser le gestionnaire normal
           await taskHandlers.handleTaskSubmit(enrichedTask);

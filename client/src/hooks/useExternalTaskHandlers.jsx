@@ -44,11 +44,6 @@ export const useExternalTaskHandlers = (
       
       // Obtenir la date de fin inclusive
       const inclusiveEndDate = getInclusiveEndDate(fullTask);
-      
-      console.log('Tâche externe cliquée:', {
-        task: fullTask,
-        inclusiveEndDate
-      });
   
       // Utiliser les dates en incluant la date de fin inclusive
       setCalendarState(prev => ({
