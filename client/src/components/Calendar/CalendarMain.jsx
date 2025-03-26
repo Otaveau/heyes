@@ -15,6 +15,7 @@ export const CalendarMain = ({
   handleViewChange: externalHandleViewChange,
   months,
   selectedYear,
+  setSelectedYear,
   goToPreviousYear,
   goToNextYear,
   navigateToMonth,
@@ -68,21 +69,35 @@ export const CalendarMain = ({
   };
 
   // Fonction pour gérer le bouton "Aujourd'hui"
-  const handleTodayClick = () => {
-    if (calendarRef.current) {
-      const today = new Date();
-      const currentYear = today.getFullYear();
-      const currentMonth = today.getMonth();
-      if (currentYear !== selectedYear) {
-        const yearDifference = currentYear - selectedYear;
-        const navigationMethod = yearDifference < 0 ? goToPreviousYear : goToNextYear;
-        for (let i = 0; i < Math.abs(yearDifference); i++) {
-          navigationMethod();
-        }
+  // Fonction pour gérer le bouton "Aujourd'hui"
+const handleTodayClick = async () => {
+  if (calendarRef.current) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    // Si nous sommes dans une année différente, changer d'année d'abord
+    if (currentYear !== selectedYear) {
+      // Utiliser directement l'API FullCalendar pour naviguer à la date du jour
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.gotoDate(today);
+      
+      // Mettre à jour l'état local pour refléter le changement
+      if (typeof setSelectedYear === 'function') {
+        setSelectedYear(currentYear);
       }
+    } else {
+      // Si nous sommes déjà dans la bonne année, juste naviguer au mois courant
       navigateToMonth(currentMonth);
     }
-  };
+    
+    // Faire défiler vers la position actuelle
+    setTimeout(() => {
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.scrollToTime({ month: currentMonth, date: today.getDate() });
+    }, 100);
+  }
+};
 
 
   // Rendu des boutons de navigation personnalisés

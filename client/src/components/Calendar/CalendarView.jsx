@@ -290,6 +290,7 @@ export const CalendarView = () => {
           handleViewChange={handleViewChange}
           months={months}
           selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
           goToPreviousYear={goToPreviousYear}
           goToNextYear={goToNextYear}
           navigateToMonth={navigateToMonth}
