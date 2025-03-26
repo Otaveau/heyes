@@ -270,7 +270,29 @@ export const useExternalTaskHandlers = (
   // Dans votre fonction handleEventDragStop de useExternalTaskHandlers.js
 
   const handleEventDragStop = useCallback(async (info) => {
-    console.log('handleEventDragStop launched');
+
+    const eventId = info.event.id;
+    const eventTask = tasks.find(t => t.id.toString() === eventId.toString());
+
+    if (eventTask) {
+      const isConge =
+        eventTask.isConge === true ||
+        eventTask.extendedProps?.isConge === true ||
+        eventTask.title === 'CONGE';
+
+      // Si c'est un congé, ignorer le drop
+      if (isConge) {
+        console.log("Drop ignoré: les congés ne peuvent pas être déplacés");
+
+        // Restaurer visuellement l'élément
+        if (info.el) {
+          info.el.style.display = '';
+          info.el.style.opacity = '1';
+        }
+
+        return; // Sortir sans effectuer le drop
+      }
+    }
 
     try {
       console.log('État de dropZones:', dropZones ? `tableau avec ${dropZones.length} éléments` : 'undefined');
@@ -361,8 +383,6 @@ export const useExternalTaskHandlers = (
             end_date: null
           }
         };
-
-        console.log('Mise à jour de tâche avec dates vidées:', updates);
 
         // Mettre à jour l'état local immédiatement
         if (typeof updateTaskStatus === 'function') {

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { ERROR_MESSAGES, DEFAULT_TASK_DURATION } from '../../constants/constants';
+import { ERROR_MESSAGES } from '../../constants/constants';
 
 export const TaskForm = ({
     isOpen,

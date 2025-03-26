@@ -194,6 +194,15 @@ export const CalendarView = () => {
 
         // Déterminer si c'est une création ou une modification
         const isNewTask = !updatedTask.id;
+        const isConge = updatedTask.isConge === true;
+       
+        console.log('Traitement de tâche:', {
+          isNewTask,
+          isConge,
+          startDate,
+          inclusiveEndDate,
+          exclusiveEndDate
+        });
 
         if (isNewTask) {
           // CAS DE CRÉATION
@@ -201,14 +210,16 @@ export const CalendarView = () => {
           const enrichedTask = {
             ...updatedTask,
             start: startDate,
-            end: exclusiveEndDate, // Date exclusive pour FullCalendar
+            end: exclusiveEndDate,
             exclusiveEndDate: exclusiveEndDate,
-            startDate: startDate, // Garder aussi les noms de propriétés originaux
-            endDate: inclusiveEndDate, // Date inclusive originale
+            startDate: startDate,
+            endDate: inclusiveEndDate,
             extendedProps: {
               ...(updatedTask.extendedProps || {}),
-              inclusiveEndDate: inclusiveEndDate, // Stocker explicitement la date inclusive
-              statusId: updatedTask.statusId
+              inclusiveEndDate: inclusiveEndDate,
+              exclusiveEndDate: exclusiveEndDate,
+              statusId: updatedTask.statusId,
+              isConge: isConge
             }
           };
 
@@ -220,12 +231,14 @@ export const CalendarView = () => {
           const enrichedTask = {
             ...updatedTask,
             start: startDate,
-            end: exclusiveEndDate, // Date exclusive pour FullCalendar
+            end: exclusiveEndDate,
             exclusiveEndDate: exclusiveEndDate,
             extendedProps: {
               ...(updatedTask.extendedProps || {}),
-              inclusiveEndDate: inclusiveEndDate, // Stocker explicitement la date inclusive
-              statusId: updatedTask.statusId
+              inclusiveEndDate: inclusiveEndDate,
+              exclusiveEndDate: exclusiveEndDate,
+              statusId: updatedTask.statusId,
+              isConge: isConge
             }
           };
 

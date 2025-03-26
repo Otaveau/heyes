@@ -158,6 +158,9 @@ export const TaskBoard = ({
         const draggable = new Draggable(ref.current, {
           itemSelector: '.fc-event',
           eventData: function (eventEl) {
+            if (eventEl.getAttribute('data-is-conge') === 'true') {
+              return null;
+            }
             const taskId = eventEl.getAttribute('data-task-id');
             const task = externalTasks.find(t => t.id.toString() === taskId.toString());
 
@@ -214,6 +217,18 @@ export const TaskBoard = ({
             };
           
             const taskStatusId = extractStatusId();
+
+            // Vérifier si c'est un congé 
+            const isConge = 
+            task.isConge === true || 
+            task.extendedProps?.isConge === true || 
+            task.title === 'CONGE';
+
+            // Si c'est un congé et que le tableau courant est "En cours" (statusId === '2'),
+            // alors ne pas inclure cette tâche
+            if (isConge) {
+              return false;
+            }
           
             return taskStatusId === zone.statusId;
           });
@@ -233,11 +248,19 @@ export const TaskBoard = ({
                 {zone.title} {isInProgressZone}
               </h3>
               {zoneTasks.map(task => {
+
+                // Vérifier si c'est un congé
+                const isConge = 
+                task.isConge === true || 
+                task.extendedProps?.isConge === true || 
+                task.title === 'CONGE';
+
                 return (
                   <div
                     key={task.id}
                     data-task-id={task.id}
-                    className={`${isInProgressZone ? '' : 'fc-event'} p-2 mb-2 bg-white border rounded hover:bg-gray-50 relative ${isInProgressZone ? 'border-blue-200' : ''}`}
+                    className={`${isConge ? 'conge-task' : 'fc-event'} p-2 mb-2 bg-white border rounded hover:bg-gray-50 relative`}
+                    data-is-conge={isConge ? 'true' : 'false'}
                     onClick={() => handleExternalTaskClick && handleExternalTaskClick(task)}
                   >
                     <div className="font-medium">{task.title}</div>
