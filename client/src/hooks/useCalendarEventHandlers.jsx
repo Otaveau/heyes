@@ -60,6 +60,7 @@ export const useCalendarEventHandlers = (
 
   // Déplacement d'un événement dans le calendrier
   const handleEventDrop = useCallback(async (dropInfo) => {
+    console.log('handleEventDrop :', handleEventDrop);
     const { event } = dropInfo;
     const startDate = event.start;
     const endDate = event.end || new Date(startDate.getTime() + 86400000);

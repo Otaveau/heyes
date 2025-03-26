@@ -28,7 +28,9 @@ export const useTaskHandlers = (
     setCalendarState, 
     taskMutationHandlers.updateTaskStatus,
     taskMutationHandlers.handleTaskUpdate,
-    holidays
+    holidays,
+    dropZoneRefs,
+    dropZones
   );
 
   // Retourner toutes les fonctions nécessaires

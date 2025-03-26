@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, createRef } from 'react';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { useTaskHandlers } from '../../hooks/useTaskHandlers';
 import { useCalendarNavigation } from '../../hooks/useCalendarNavigation';
@@ -31,10 +31,8 @@ export const CalendarView = () => {
     { id: 'done', statusId: '4', title: 'Done' }
   ], []);
 
-  // Créer les références pour les zones de dépôt
-  const dropZoneRefs = useMemo(() => {
-    return { current: dropZones.map(() => React.createRef()) };
-  }, [dropZones]);
+    // Créer les références pour les zones de dépôt
+  const dropZoneRefs = useRef(dropZones.map(() => createRef()));
 
   const calendarRef = useRef(null);
   const { tasks, setTasks, resources, holidays, statuses } = useCalendarData();
@@ -295,6 +293,9 @@ export const CalendarView = () => {
           goToPreviousYear={goToPreviousYear}
           goToNextYear={goToNextYear}
           navigateToMonth={navigateToMonth}
+          dropZoneRefs={dropZoneRefs}
+          dropZones={dropZones}
+          
         />
       </div>
 

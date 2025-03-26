@@ -29,6 +29,21 @@ export const TaskBoard = ({
   // Utiliser les références externes si disponibles, sinon utiliser les références internes
   const effectiveRefs = dropZoneRefs || internalRefs;
 
+  useEffect(() => {
+    console.log('TaskBoard rendu avec effectiveRefs:', effectiveRefs);
+    console.log('Nombre d\'éléments dans effectiveRefs.current:', effectiveRefs.current?.length);
+    
+    // Vérifier chaque ref
+    if (effectiveRefs.current) {
+      effectiveRefs.current.forEach((ref, index) => {
+        console.log(`Ref ${index}:`, ref?.current ? 'Attachée au DOM' : 'Non attachée');
+      });
+    }
+    
+    // Vérifier aussi les dropZones
+    console.log('dropZones:', dropZones);
+  }, [effectiveRefs, dropZones]);
+
   // Fonction pour ouvrir la modal de confirmation
   const openDeleteModal = (e, task) => {
     e.stopPropagation();
@@ -174,11 +189,11 @@ export const TaskBoard = ({
         if (draggable) draggable.destroy();
       });
     };
-  }, [effectiveRefs, externalTasks, dropZones]);
+  }, [effectiveRefs, externalTasks, dropZones, dropZoneRefs]);
 
   return (
     <>
-      <div className="flex w-full space-x-4 backlogs">
+      <div className="flex w-full space-x-4 backlogs taskboard-container">
         {dropZones.map((zone, index) => {
           // S'assurer que les refs sont initialisées
           if (!effectiveRefs.current[index]) {
@@ -209,9 +224,10 @@ export const TaskBoard = ({
             <div
               key={zone.id}
               ref={effectiveRefs.current[index]}
-              className={`flex-1 w-1/4 p-4 rounded mt-4 ${isInProgressZone ? 'bg-blue-50' : 'bg-gray-100 dropzone'}`}
+              className={`flex-1 w-1/4 p-4 rounded mt-4 potential-drop-target ${isInProgressZone ? 'bg-blue-50' : 'bg-gray-100 dropzone'}`}
               data-status-id={zone.statusId}
               data-zone-id={zone.id}
+              data-dropzone-id={zone.id}
             >
               <h3 className={`mb-4 font-bold ${isInProgressZone ? 'text-blue-700' : ''}`}>
                 {zone.title} {isInProgressZone}

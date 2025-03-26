@@ -10,7 +10,9 @@ export const useExternalTaskHandlers = (
     setCalendarState, 
     updateTaskStatus,
     handleTaskUpdate,
-    holidays
+    holidays,
+    dropZoneRefs,
+    dropZones
   ) => {
     // Référence pour l'élément fantôme
     const ghostElementRef = useRef(null);
@@ -134,37 +136,48 @@ export const useExternalTaskHandlers = (
     }, []);
   
     // Vérifier si un événement est au-dessus d'une zone de dépôt
-    const isEventOverDropZone = useCallback((eventPosition) => {
-      const dropZoneElements = document.querySelectorAll('.potential-drop-target');
-      
-      // Réinitialiser les styles de toutes les zones
-      dropZoneElements.forEach(el => {
-        el.classList.remove('active-drop-target');
-      });
-  
-      // Vérifier chaque zone
-      for (let i = 0; i < dropZoneElements.length; i++) {
-        const dropZoneEl = dropZoneElements[i];
-        const rect = dropZoneEl.getBoundingClientRect();
-  
-        if (eventPosition.x >= rect.left &&
-            eventPosition.x <= rect.right &&
-            eventPosition.y >= rect.top &&
-            eventPosition.y <= rect.bottom) {
-  
-          dropZoneEl.classList.add('active-drop-target');
-          return { 
-            dropZone: {
-              id: dropZoneEl.getAttribute('data-dropzone-id') || i.toString(),
-              statusId: dropZoneEl.getAttribute('data-status-id') || '1',
-              title: dropZoneEl.getAttribute('data-title') || 'Colonne'
-            } 
-          };
+    const isEventOverDropZone = useCallback((position) => {
+      try {
+        // Méthode alternative de détection des zones de dépôt
+        // Utiliser les sélecteurs DOM pour trouver toutes les zones de dépôt visibles
+        const droppableElements = document.querySelectorAll('[data-status-id]');
+        
+        if (!droppableElements || droppableElements.length === 0) {
+          console.log('Aucun élément avec data-status-id trouvé dans le DOM');
+          return null;
         }
+        
+        // Vérifier chaque élément pour voir si la position est au-dessus
+        for (let i = 0; i < droppableElements.length; i++) {
+          const element = droppableElements[i];
+          const rect = element.getBoundingClientRect();
+          
+          const isOver = (
+            position.x >= rect.left &&
+            position.x <= rect.right &&
+            position.y >= rect.top &&
+            position.y <= rect.bottom
+          );
+          
+          if (isOver) {
+            // Obtenir l'ID de statut de l'élément
+            const statusId = element.dataset.statusId;
+            if (!statusId) continue;
+            
+            // Trouver la dropZone correspondante
+            const dropZone = dropZones.find(zone => zone.statusId === statusId);
+            if (dropZone) {
+              console.log(`Élément trouvé au-dessus de la zone ${dropZone.title}`);
+              return { dropZone, element };
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erreur dans isEventOverDropZone:', error);
       }
-  
+      
       return null;
-    }, []);
+    }, [dropZones]);
   
     // Créer l'élément fantôme pour le glisser-déposer
     const createGhostElement = useCallback((info) => {
@@ -255,78 +268,94 @@ export const useExternalTaskHandlers = (
   
     // Fin du glisser-déposer
     const handleEventDragStop = useCallback(async (info) => {
-      // Nettoyer tous les effets visuels
-      highlightTaskBoard(false);
-      document.querySelectorAll('.potential-drop-target, .dropzone-active').forEach(el => {
-        el.classList.remove('potential-drop-target');
-        el.classList.remove('dropzone-active');
-        el.classList.remove('active-drop-target');
-      });
-  
-      if (window.ghostMoveHandler) {
-        document.removeEventListener('mousemove', window.ghostMoveHandler);
-        window.ghostMoveHandler = null;
-      }
-  
-      if (info.el) {
-        info.el.classList.remove('dragging-event');
-        info.el.style.opacity = '1';
-      }
-  
-      // Vérifier si l'événement est sur une zone de dépôt
-      const eventPosition = {
-        x: info.jsEvent.clientX,
-        y: info.jsEvent.clientY
-      };
-  
-      const dropTarget = isEventOverDropZone(eventPosition);
-  
-      if (dropTarget) {
-        const { dropZone } = dropTarget;
-        const taskId = info.event.id;
-        const task = tasks.find(t => t.id.toString() === taskId.toString());
-  
-        if (!task) {
-          console.warn(`Task with id ${taskId} not found`);
-          return;
+      console.log('handleEventDragStop launched');
+      
+      try {
+        // Log pour déboguer l'état des refs
+        console.log('État des dropZoneRefs:', dropZoneRefs ? 'défini' : 'undefined');
+        console.log('dropZoneRefs.current:', dropZoneRefs?.current ? `tableau de ${dropZoneRefs.current.length} éléments` : 'undefined');
+        
+        // Nettoyer tous les effets visuels
+        highlightTaskBoard(false);
+        document.querySelectorAll('.potential-drop-target, .dropzone-active').forEach(el => {
+          el.classList.remove('potential-drop-target');
+          el.classList.remove('dropzone-active');
+          el.classList.remove('active-drop-target');
+        });
+    
+        if (window.ghostMoveHandler) {
+          document.removeEventListener('mousemove', window.ghostMoveHandler);
+          window.ghostMoveHandler = null;
         }
-  
-        // Préparer l'événement et cacher l'original
-        const customUpdates = {
-          statusId: dropZone.statusId,
-          ownerId: null,
+    
+        if (info.el) {
+          info.el.classList.remove('dragging-event');
+          info.el.style.opacity = '1';
+        }
+    
+        // Vérifier si l'événement est sur une zone de dépôt
+        const eventPosition = {
+          x: info.jsEvent.clientX,
+          y: info.jsEvent.clientY
         };
-  
-        if (info.el) info.el.style.display = 'none';
-        info.event.remove();
-  
-        // Animer la transition vers le TaskBoard
-        simulateImmediateAppearance(taskId, dropZone);
-  
-        // Préparer les mises à jour
-        const updates = {
-          resourceId: null,
-          statusId: dropZone.statusId,
-          extendedProps: {
+    
+        const dropTarget = isEventOverDropZone(eventPosition);
+    
+        if (dropTarget) {
+          const { dropZone } = dropTarget;
+          const taskId = info.event.id;
+          
+          // Vérification supplémentaire pour tasks
+          if (!tasks || !Array.isArray(tasks)) {
+            console.error('tasks n\'est pas défini ou n\'est pas un tableau');
+            return;
+          }
+          
+          const task = tasks.find(t => t.id.toString() === taskId.toString());
+    
+          if (!task) {
+            console.warn(`Task with id ${taskId} not found`);
+            return;
+          }
+    
+          if (info.el) info.el.style.display = 'none';
+          info.event.remove();
+    
+          // Animer la transition vers le TaskBoard
+          simulateImmediateAppearance(taskId, dropZone);
+    
+          // Préparer les mises à jour pour le déplacement vers le taskboard
+          const updates = {
+            resourceId: null,
+            owner_id: null,
+            start: null,
+            end: null,
+            start_date: null,
+            end_date: null,
             statusId: dropZone.statusId,
-            ...customUpdates
-          },
-          title: task.title
-        };
-  
-        // Mettre à jour l'état
-        updateTaskStatus(taskId, updates);
-  
-        // Mise à jour sur le serveur
-        try {
-          await handleTaskUpdate(taskId, updates, { skipApiCall: false });
-          toast.success(`Tâche déplacée vers ${dropZone.title || 'la colonne'}`, TOAST_CONFIG);
-        } catch (error) {
-          console.error('Erreur lors de la mise à jour de la tâche:', error);
-          toast.error(ERROR_MESSAGES.UPDATE_FAILED, TOAST_CONFIG);
+            extendedProps: {
+              statusId: dropZone.statusId,
+              inclusiveEndDate: null,
+              exclusiveEndDate: null
+            }
+          };
+    
+          // Mettre à jour l'état
+          updateTaskStatus(taskId, updates);
+    
+          // Mise à jour sur le serveur
+          try {
+            await handleTaskUpdate(taskId, updates, { skipApiCall: false });
+            toast.success(`Tâche déplacée vers ${dropZone.title || 'la colonne'}`, TOAST_CONFIG);
+          } catch (error) {
+            console.error('Erreur lors de la mise à jour de la tâche:', error);
+            toast.error(ERROR_MESSAGES.UPDATE_FAILED, TOAST_CONFIG);
+          }
         }
+      } catch (error) {
+        console.error('Erreur pendant handleEventDragStop:', error);
       }
-    }, [tasks, updateTaskStatus, handleTaskUpdate, highlightTaskBoard, isEventOverDropZone, simulateImmediateAppearance]);
+    }, [dropZoneRefs, highlightTaskBoard, isEventOverDropZone, tasks, simulateImmediateAppearance, updateTaskStatus, handleTaskUpdate]);
   
     // Dépôt d'une tâche externe sur le calendrier
     const handleExternalDrop = useCallback(async (info) => {

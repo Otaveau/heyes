@@ -17,7 +17,9 @@ export const CalendarMain = ({
   selectedYear,
   goToPreviousYear,
   goToNextYear,
-  navigateToMonth
+  navigateToMonth,
+  dropZoneRefs,
+  dropZones
 }) => {
 
   const [currentView, setCurrentView] = useState('resourceTimelineYear');
@@ -189,7 +191,6 @@ export const CalendarMain = ({
     const { event } = info;
     
     // Récupérer les dates start et end (end est exclusive dans FullCalendar)
-    const start = event.start;
     const end = event.end;
     
     // Créer une copie inclusive de la date de fin (soustraire un jour)
@@ -221,7 +222,6 @@ export const CalendarMain = ({
     const { event } = info;
     
     // Récupérer les dates start et end (end est exclusive dans FullCalendar)
-    const start = event.start;
     const end = event.end;
     
     // Créer une copie inclusive de la date de fin (soustraire un jour)
