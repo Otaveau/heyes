@@ -56,6 +56,8 @@ export const CalendarView = () => {
     // Trouver la tâche à déplacer
     const taskToMove = tasks.find(task => task.id.toString() === taskId.toString());
 
+    console.log('taskToMove :', taskToMove);
+
     if (!taskToMove) {
       console.error(`Tâche avec l'ID ${taskId} non trouvée`);
       return;
@@ -78,9 +80,13 @@ export const CalendarView = () => {
         statusId: newStatusId,
         extendedProps: {
           ...taskToMove.extendedProps,
+          inclusiveEndDate: null,
+          exclusiveEndDate: null,
           statusId: newStatusId
         }
       };
+
+      console.log('updates :', updates);
 
       // Si la tâche sort du taskboard "En cours", réinitialiser les dates et le propriétaire
       if (isMovingFromInProgress) {
