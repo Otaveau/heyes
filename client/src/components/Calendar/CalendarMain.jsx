@@ -73,22 +73,13 @@ export const CalendarMain = ({
       const today = new Date();
       const currentYear = today.getFullYear();
       const currentMonth = today.getMonth();
-
-      // Naviguer vers l'année courante
       if (currentYear !== selectedYear) {
-        // Trouver la différence entre l'année actuelle et l'année sélectionnée
         const yearDifference = currentYear - selectedYear;
-        
-        // Utiliser goToPreviousYear ou goToNextYear selon la différence
         const navigationMethod = yearDifference < 0 ? goToPreviousYear : goToNextYear;
-        
-        // Répéter la navigation autant de fois que nécessaire
         for (let i = 0; i < Math.abs(yearDifference); i++) {
           navigationMethod();
         }
       }
-
-      // Naviguer vers le mois courant
       navigateToMonth(currentMonth);
     }
   };
@@ -293,7 +284,6 @@ export const CalendarMain = ({
           internalHandleViewChange(info);
         }}
         
-        // Autres gestionnaires d'événements (comme dans votre code original)
         resourceLabelDidMount={(info) => {
           if (info.resource.extendedProps?.isTeam) {
             info.el.style.fontWeight = 'bold';
@@ -341,32 +331,32 @@ export const CalendarMain = ({
           if (!arg?.date) return [];
           const classes = [];
           if (arg.level === 1 && DateUtils.isHolidayOrWeekend(arg.date, holidays)) {
-            classes.push(DateUtils.isHoliday(arg.date, holidays) ? 'holiday-slot' : 'weekend-slot');
+            // Utiliser weekend-slot pour tous les jours non ouvrés
+            classes.push('weekend-slot');
           }
           return classes;
         }}
+        
         slotLaneClassNames={(arg) => {
           if (!arg?.date) return '';
-          return DateUtils.isHolidayOrWeekend(arg.date, holidays)
-            ? DateUtils.isHoliday(arg.date, holidays)
-              ? 'holiday-column'
-              : 'weekend-column'
-            : '';
+          // Utiliser weekend-column pour tous les jours non ouvrés
+          return DateUtils.isHolidayOrWeekend(arg.date, holidays) ? 'weekend-column' : '';
         }}
+        
         dayHeaderClassNames={(arg) => {
           if (!arg?.date) return '';
-          return DateUtils.isHolidayOrWeekend(arg.date, holidays)
-            ? DateUtils.isHoliday(arg.date, holidays)
-              ? 'holiday-header'
-              : 'weekend-header'
-            : '';
+          // Utiliser weekend-header pour tous les jours non ouvrés
+          return DateUtils.isHolidayOrWeekend(arg.date, holidays) ? 'weekend-header' : '';
         }}
+        
         dayCellClassNames={(arg) => {
           if (!arg?.date) return [];
           const classes = [];
-          if (DateUtils.isWeekend(arg.date)) {
+          // Appliquer weekend-cell à tous les jours non ouvrés
+          if (DateUtils.isHolidayOrWeekend(arg.date, holidays)) {
             classes.push('weekend-cell');
           }
+          // Vous pouvez toujours garder holiday-cell pour une distinction visuelle si nécessaire
           if (DateUtils.isHoliday(arg.date, holidays)) {
             classes.push('holiday-cell');
           }
