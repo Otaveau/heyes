@@ -6,7 +6,7 @@ import frLocale from '@fullcalendar/core/locales/fr';
 import { DateUtils } from '../../utils/dateUtils';
 import { getEnhancedCalendarStyles } from '../../style/calendarStyles';
 
-export const CalendarMain = ({ 
+export const CalendarMain = ({
   calendarRef,
   tasks,
   resources,
@@ -19,8 +19,6 @@ export const CalendarMain = ({
   goToPreviousYear,
   goToNextYear,
   navigateToMonth,
-  dropZoneRefs,
-  dropZones
 }) => {
 
   const [currentView, setCurrentView] = useState('resourceTimelineYear');
@@ -33,11 +31,11 @@ export const CalendarMain = ({
           ...task,
           end: task.extendedProps.exclusiveEndDate
         };
-      }  
+      }
       return task;
     });
   }, [tasks]);
- 
+
   useEffect(() => {
     if (calendarRef.current) {
       const currentDate = new Date();
@@ -46,12 +44,12 @@ export const CalendarMain = ({
     }
   }, [calendarRef]);
 
-  
+
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = getEnhancedCalendarStyles();
     document.head.appendChild(style);
-    
+
     return () => {
       document.head.removeChild(style);
     };
@@ -61,7 +59,7 @@ export const CalendarMain = ({
   const internalHandleViewChange = (info) => {
     const newView = info.view.type;
     setCurrentView(newView);
-    
+
     // Appeler le gestionnaire externe si fourni
     if (externalHandleViewChange) {
       externalHandleViewChange(info);
@@ -69,35 +67,34 @@ export const CalendarMain = ({
   };
 
   // Fonction pour gérer le bouton "Aujourd'hui"
-  // Fonction pour gérer le bouton "Aujourd'hui"
-const handleTodayClick = async () => {
-  if (calendarRef.current) {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
+  const handleTodayClick = async () => {
+    if (calendarRef.current) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
 
-    // Si nous sommes dans une année différente, changer d'année d'abord
-    if (currentYear !== selectedYear) {
-      // Utiliser directement l'API FullCalendar pour naviguer à la date du jour
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.gotoDate(today);
-      
-      // Mettre à jour l'état local pour refléter le changement
-      if (typeof setSelectedYear === 'function') {
-        setSelectedYear(currentYear);
+      // Si nous sommes dans une année différente, changer d'année d'abord
+      if (currentYear !== selectedYear) {
+        // Utiliser directement l'API FullCalendar pour naviguer à la date du jour
+        const calendarApi = calendarRef.current.getApi();
+        calendarApi.gotoDate(today);
+
+        // Mettre à jour l'état local pour refléter le changement
+        if (typeof setSelectedYear === 'function') {
+          setSelectedYear(currentYear);
+        }
+      } else {
+        // Si nous sommes déjà dans la bonne année, juste naviguer au mois courant
+        navigateToMonth(currentMonth);
       }
-    } else {
-      // Si nous sommes déjà dans la bonne année, juste naviguer au mois courant
-      navigateToMonth(currentMonth);
+
+      // Faire défiler vers la position actuelle
+      setTimeout(() => {
+        const calendarApi = calendarRef.current.getApi();
+        calendarApi.scrollToTime({ month: currentMonth, date: today.getDate() });
+      }, 100);
     }
-    
-    // Faire défiler vers la position actuelle
-    setTimeout(() => {
-      const calendarApi = calendarRef.current.getApi();
-      calendarApi.scrollToTime({ month: currentMonth, date: today.getDate() });
-    }, 100);
-  }
-};
+  };
 
 
   // Rendu des boutons de navigation personnalisés
@@ -107,8 +104,8 @@ const handleTodayClick = async () => {
         <div className="fc-nav-row">
           {/* Navigation par année - Gauche */}
           <div className="fc-year-nav">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="fc-button fc-button-primary fc-prev-year-button"
               onClick={goToPreviousYear}
               title="Année précédente"
@@ -116,8 +113,8 @@ const handleTodayClick = async () => {
               &laquo;
             </button>
             <span className="fc-year-display">{selectedYear}</span>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="fc-button fc-button-primary fc-next-year-button"
               onClick={goToNextYear}
               title="Année suivante"
@@ -133,24 +130,22 @@ const handleTodayClick = async () => {
               Aujourd'hui
             </button>
           </div>
-  
-          {/* Centre - Mois (visible uniquement en vue année) */}
-          {currentView === 'resourceTimelineYear' && (
-            <div className="fc-months-nav">
-              {months.map((month, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className="fc-button fc-button-primary fc-month-button"
-                  onClick={() => navigateToMonth(index)}
-                >
-                  <span className="month-full">{month}</span>
-                  <span className="month-abbr">{month.substring(0, 3)}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          
+
+          {/* Centre - Mois (visible dans toutes les vues) */}
+          <div className="fc-months-nav">
+            {months.map((month, index) => (
+              <button
+                key={index}
+                type="button"
+                className="fc-button fc-button-primary fc-month-button"
+                onClick={() => navigateToMonth(index)}
+              >
+                <span className="month-full">{month}</span>
+                <span className="month-abbr">{month.substring(0, 3)}</span>
+              </button>
+            ))}
+          </div>
+
           {/* Droite - Boutons de vue du calendrier */}
           <div className="fc-view-buttons">
             <button
@@ -195,16 +190,16 @@ const handleTodayClick = async () => {
   // Gestionnaire personnalisé pour eventDrop pour gérer la conversion des dates exclusives
   const handleEventDrop = (info) => {
     const { event } = info;
-    
+
     // Récupérer les dates start et end (end est exclusive dans FullCalendar)
     const end = event.end;
-    
+
     // Créer une copie inclusive de la date de fin (soustraire un jour)
     const inclusiveEndDate = end ? new Date(end) : null;
     if (inclusiveEndDate) {
       inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
     }
-    
+
     // Enrichir les données de l'événement avec les dates inclusives/exclusives
     const extendedEvent = {
       ...event.toPlainObject(),
@@ -213,7 +208,7 @@ const handleTodayClick = async () => {
         inclusiveEndDate: inclusiveEndDate // Stocker la date inclusive
       }
     };
-    
+
     // Appeler le gestionnaire d'événement original avec les données enrichies
     if (taskHandlers.handleEventDrop) {
       taskHandlers.handleEventDrop({
@@ -226,16 +221,16 @@ const handleTodayClick = async () => {
   // Gestionnaire personnalisé pour eventResize
   const handleEventResize = (info) => {
     const { event } = info;
-    
+
     // Récupérer les dates start et end (end est exclusive dans FullCalendar)
     const end = event.end;
-    
+
     // Créer une copie inclusive de la date de fin (soustraire un jour)
     const inclusiveEndDate = end ? new Date(end) : null;
     if (inclusiveEndDate) {
       inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
     }
-    
+
     // Enrichir les données de l'événement avec les dates inclusives/exclusives
     const extendedEvent = {
       ...event.toPlainObject(),
@@ -244,7 +239,7 @@ const handleTodayClick = async () => {
         inclusiveEndDate: inclusiveEndDate // Stocker la date inclusive
       }
     };
-    
+
     // Appeler le gestionnaire d'événement original avec les données enrichies
     if (taskHandlers.handleEventResize) {
       taskHandlers.handleEventResize({
@@ -298,7 +293,7 @@ const handleTodayClick = async () => {
         datesSet={(info) => {
           internalHandleViewChange(info);
         }}
-        
+
         resourceLabelDidMount={(info) => {
           if (info.resource.extendedProps?.isTeam) {
             info.el.style.fontWeight = 'bold';
@@ -322,19 +317,19 @@ const handleTodayClick = async () => {
 
         eventAllow={(dropInfo, draggedEvent) => {
           const resourceId = dropInfo.resource ? dropInfo.resource.id : null;
-          const resource = resourceId ? 
+          const resource = resourceId ?
             resources.find(r => r.id === resourceId) : null;
-          
+
           if (resource && resource.extendedProps?.isTeam) {
             return false;
           }
-          
+
           const startDate = new Date(dropInfo.start);
           const endDate = new Date(dropInfo.end);
           endDate.setDate(endDate.getDate() - 1);
 
           if (DateUtils.isHolidayOrWeekend(startDate, holidays) ||
-              DateUtils.isHolidayOrWeekend(endDate, holidays)) {
+            DateUtils.isHolidayOrWeekend(endDate, holidays)) {
             return false;
           }
 
@@ -351,19 +346,19 @@ const handleTodayClick = async () => {
           }
           return classes;
         }}
-        
+
         slotLaneClassNames={(arg) => {
           if (!arg?.date) return '';
           // Utiliser weekend-column pour tous les jours non ouvrés
           return DateUtils.isHolidayOrWeekend(arg.date, holidays) ? 'weekend-column' : '';
         }}
-        
+
         dayHeaderClassNames={(arg) => {
           if (!arg?.date) return '';
           // Utiliser weekend-header pour tous les jours non ouvrés
           return DateUtils.isHolidayOrWeekend(arg.date, holidays) ? 'weekend-header' : '';
         }}
-        
+
         dayCellClassNames={(arg) => {
           if (!arg?.date) return [];
           const classes = [];
@@ -377,7 +372,7 @@ const handleTodayClick = async () => {
           }
           return classes;
         }}
-        
+
         // Gestionnaires d'événements
         eventDragStart={taskHandlers.handleEventDragStart}
         eventDrop={handleEventDrop}
