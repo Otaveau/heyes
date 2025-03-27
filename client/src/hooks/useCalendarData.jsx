@@ -45,7 +45,7 @@ export const useCalendarData = () => {
       const teamName = teamId && teamDict[teamId] ? teamDict[teamId].name : `Équipe ${teamId}`;
       resources.push({
         id: owner.ownerId,
-        title: owner.name || 'Propriétaire sans nom',
+        title: owner.name || 'Membre sans nom',
         parentId: `team_${teamId}`,
         extendedProps: {
           email: owner.email || '',

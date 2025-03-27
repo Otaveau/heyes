@@ -24,6 +24,24 @@ export const CalendarMain = ({
 }) => {
 
   const [currentView, setCurrentView] = useState('resourceTimelineYear');
+  const [currentWeekNumber, setCurrentWeekNumber] = useState(1);
+
+  // Calcule le numéro de semaine
+  const getWeekNumber = (date) => {
+    // Créer une copie de la date pour ne pas modifier l'original
+    const targetDate = new Date(date);
+
+    // Définir le 4 janvier comme référence pour la première semaine
+    // (norme ISO 8601 - la semaine qui contient le premier jeudi de l'année)
+    const firstDayOfYear = new Date(targetDate.getFullYear(), 0, 1);
+    const pastDaysOfYear = (targetDate - firstDayOfYear) / 86400000;
+
+    // Calculer le numéro de la semaine
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  };
+
+
+
 
   const formattedTasksForCalendar = useMemo(() => {
     return tasks.map(task => {
@@ -61,6 +79,12 @@ export const CalendarMain = ({
   const internalHandleViewChange = (info) => {
     const newView = info.view.type;
     setCurrentView(newView);
+
+    // Mettre à jour le numéro de semaine si on est en vue semaine
+    if (newView === 'resourceTimelineWeek') {
+      const currentDate = info.view.currentStart;
+      setCurrentWeekNumber(getWeekNumber(currentDate));
+    }
 
     // Appeler le gestionnaire externe si fourni
     if (externalHandleViewChange) {
@@ -123,29 +147,6 @@ export const CalendarMain = ({
             >
               &raquo;
             </button>
-
-            {/* Boutons de navigation de semaine - Visible uniquement en vue semaine */}
-            {currentView === 'resourceTimelineWeek' && (
-              <>
-                <button
-                  type="button"
-                  className="fc-button fc-button-primary fc-prev-week-button"
-                  onClick={goToPreviousWeek}
-                  title="Semaine précédente"
-                >
-                  &lt;
-                </button>
-                <button
-                  type="button"
-                  className="fc-button fc-button-primary fc-next-week-button"
-                  onClick={goToNextWeek}
-                  title="Semaine suivante"
-                >
-                  &gt;
-                </button>
-              </>
-            )}
-
             <button
               type="button"
               className="fc-button fc-button-primary fc-today-button"
@@ -170,6 +171,54 @@ export const CalendarMain = ({
               </button>
             ))}
           </div>
+
+          {/* Boutons de navigation de semaine - Visible uniquement en vue semaine */}
+          {currentView === 'resourceTimelineWeek' && (
+            <>
+              <button
+                type="button"
+                className="fc-button fc-button-primary fc-prev-week-button"
+                onClick={() => {
+                  goToPreviousWeek();
+
+                  // Mettre à jour le numéro de semaine après navigation
+                  setTimeout(() => {
+                    if (calendarRef.current) {
+                      const api = calendarRef.current.getApi();
+                      const currentDate = api.getDate();
+                      setCurrentWeekNumber(getWeekNumber(currentDate));
+                    }
+                  }, 100);
+                }}
+                title="Semaine précédente"
+              >
+                &lt;
+              </button>
+
+              {/* Affichage du numéro de semaine */}
+              <span className="fc-week-display">Semaine {currentWeekNumber}</span>
+
+              <button
+                type="button"
+                className="fc-button fc-button-primary fc-next-week-button"
+                onClick={() => {
+                  goToNextWeek();
+
+                  // Mettre à jour le numéro de semaine après navigation
+                  setTimeout(() => {
+                    if (calendarRef.current) {
+                      const api = calendarRef.current.getApi();
+                      const currentDate = api.getDate();
+                      setCurrentWeekNumber(getWeekNumber(currentDate));
+                    }
+                  }, 100);
+                }}
+                title="Semaine suivante"
+              >
+                &gt;
+              </button>
+            </>
+          )}
 
           {/* Droite - Boutons de vue du calendrier */}
           <div className="fc-view-buttons">
@@ -316,7 +365,13 @@ export const CalendarMain = ({
         resourcesInitiallyExpanded={true}
         viewDidMount={internalHandleViewChange}
         datesSet={(info) => {
+          // Appeler le gestionnaire existant
           internalHandleViewChange(info);
+          
+          // Mettre à jour le numéro de semaine si on est en vue semaine
+          if (info.view.type === 'resourceTimelineWeek') {
+            setCurrentWeekNumber(getWeekNumber(info.view.currentStart));
+          }
         }}
 
         resourceLabelDidMount={(info) => {

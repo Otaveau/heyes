@@ -298,3 +298,27 @@ button.fc-today-button:hover {
     background-color: inherit;
   }
 }
+
+/*Styles CSS pour l'affichage du numéro de semaine*/
+
+/* Ajoutez ces styles à votre fichier CSS */
+.fc-week-display {
+  display: inline-block;
+  padding: 0 8px;
+  font-weight: 600;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Assurez-vous que les boutons et l'affichage de la semaine sont bien alignés */
+.fc-year-nav {
+  display: flex;
+  align-items: center;
+}
+
+/* Style optionnel pour mettre en évidence l'affichage du numéro de semaine */
+.fc-week-display {
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  margin: 0 4px;
+}

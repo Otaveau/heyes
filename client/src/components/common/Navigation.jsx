@@ -30,7 +30,7 @@ export const Navigation = () => {
 
   const navItems = [
     { path: '/calendar', icon: <Calendar className="h-6 w-6" />, label: 'Calendrier' },
-    { path: '/owners', icon: <UserCircle className="h-6 w-6" />, label: 'Propriétaires' },
+    { path: '/owners', icon: <UserCircle className="h-6 w-6" />, label: 'Membres' },
     { path: '/teams', icon: <Users className="h-6 w-6" />, label: 'Équipes' },
   ];
 

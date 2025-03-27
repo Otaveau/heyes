@@ -162,7 +162,7 @@ export const TeamManagement = () => {
   return (
     <div className="p-8 min-h-screen w-full md:w-4/5 lg:w-3/4 mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md">
       <h2 className="text-3xl text-center font-bold mb-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">Gestion des équipes</h2>
-  
+
       {/* Formulaire d'ajout d'équipe */}
       <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-sm mb-10">
         <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ajouter une équipe</h3>
@@ -203,7 +203,7 @@ export const TeamManagement = () => {
           {error && <p className="mt-3 text-red-500 text-sm font-medium">{error}</p>}
         </form>
       </div>
-  
+
       {/* Conteneur principal qui change de layout basé sur la sélection d'équipe */}
       <div className={`${selectedTeam ? 'grid gap-10 grid-cols-1 md:grid-cols-2' : 'flex justify-center'}`}>
         {/* Liste des équipes - sera centrée quand aucune équipe n'est sélectionnée */}
@@ -214,7 +214,7 @@ export const TeamManagement = () => {
               {teams.length} {teams.length > 1 ? 'équipes' : 'équipe'}
             </div>
           </div>
-  
+
           {isLoading && !isSubmitting ? (
             <div className="flex justify-center items-center py-16 bg-white dark:bg-gray-700 rounded-lg shadow-sm">
               <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
@@ -234,11 +234,10 @@ export const TeamManagement = () => {
               {teams.map(team => (
                 <Card
                   key={team.team_id}
-                  className={`p-5 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    selectedTeam && selectedTeam.team_id === team.team_id
+                  className={`p-5 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedTeam && selectedTeam.team_id === team.team_id
                       ? 'bg-blue-50 border-blue-400 shadow-md dark:bg-blue-900/20 dark:border-blue-500'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700/70'
-                  }`}
+                    }`}
                   onClick={() => handleTeamSelect(team)}
                 >
                   <div className="flex justify-between items-center">
@@ -258,7 +257,7 @@ export const TeamManagement = () => {
             </div>
           )}
         </div>
-  
+
         {/* Détails de l'équipe sélectionnée */}
         {selectedTeam && (
           <div className="space-y-6">
@@ -281,13 +280,13 @@ export const TeamManagement = () => {
                       className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="flex justify-end space-x-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleCancelEdit}
                       disabled={isSubmitting}
-                      className="border-gray-300 hover:bg-gray-100"
+                      className="border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors duration-200 px-4 py-2 rounded-md"
                     >
                       <X className="mr-2 h-4 w-4" />
                       Annuler
@@ -295,7 +294,7 @@ export const TeamManagement = () => {
                     <Button
                       type="submit"
                       disabled={isSubmitting || !editedTeam.name.trim()}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 hover:bg-green-700 text-white transition-colors duration-200 px-4 py-2 rounded-md shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <>
@@ -323,7 +322,7 @@ export const TeamManagement = () => {
                   </div>
                   {/* Ajouter d'autres détails si nécessaire */}
                   <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
-                    <Button 
+                    <Button
                       onClick={handleEditMode}
                       className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4"
                     >
@@ -337,7 +336,7 @@ export const TeamManagement = () => {
           </div>
         )}
       </div>
-  
+
       <ConfirmationModal
         isOpen={deleteModalOpen}
         onClose={closeDeleteModal}

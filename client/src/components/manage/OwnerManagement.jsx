@@ -28,7 +28,7 @@ export const OwnerManagement = () => {
   const previousSelectedOwner = useRef(null);
 
   useEffect(() => {
-    // Afficher les détails du propriétaire sélectionné dans la console
+    // Afficher les détails du membre sélectionné dans la console
     if (selectedOwner && selectedOwner !== previousSelectedOwner.current) {
       previousSelectedOwner.current = selectedOwner;
     }
@@ -42,7 +42,7 @@ export const OwnerManagement = () => {
       setOwners(data);
     } catch (error) {
       console.error('Error fetching owners:', error);
-      setError('Impossible de charger les propriétaires. Veuillez réessayer plus tard.');
+      setError('Impossible de charger les membres. Veuillez réessayer plus tard.');
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +74,7 @@ export const OwnerManagement = () => {
       // Vérification si l'email existe déjà
       const existingOwner = owners.find(owner => owner.email.toLowerCase() === newOwner.email.toLowerCase());
       if (existingOwner) {
-        setError('Un propriétaire avec cet email existe déjà');
+        setError('Un membre avec cet email existe déjà');
         setIsSubmitting(false);
         return;
       }
@@ -100,7 +100,7 @@ export const OwnerManagement = () => {
         window.location.href = '/login';
         return;
       } else {
-        setError('Erreur lors de la création du propriétaire. Veuillez réessayer.');
+        setError('Erreur lors de la création du membre. Veuillez réessayer.');
       }
     } finally {
       setIsSubmitting(false);
@@ -131,7 +131,7 @@ export const OwnerManagement = () => {
       // Utilisation du service deleteOwner
       await deleteOwner(ownerId);
 
-      // Si le propriétaire supprimé était sélectionné, désélectionner
+      // Si le membre supprimé était sélectionné, désélectionner
       if (selectedOwner && (selectedOwner.id === ownerId || selectedOwner.owner_id === ownerId || selectedOwner.ownerId === ownerId)) {
         setSelectedOwner(null);
         setEditMode(false);
@@ -145,7 +145,7 @@ export const OwnerManagement = () => {
         window.location.href = '/login';
         return;
       } else {
-        setError('Erreur lors de la suppression du propriétaire. Veuillez réessayer.');
+        setError('Erreur lors de la suppression du membre. Veuillez réessayer.');
       }
     } finally {
       setIsLoading(false);
@@ -212,7 +212,7 @@ export const OwnerManagement = () => {
       });
 
       if (existingOwner) {
-        setError('Un autre propriétaire utilise déjà cet email');
+        setError('Un autre membre utilise déjà cet email');
         setIsSubmitting(false);
         return;
       }
@@ -225,7 +225,7 @@ export const OwnerManagement = () => {
 
       const updatedOwner = await updateOwner(ownerId, sanitizedOwner);
 
-      // Récupérer le nom de l'équipe pour l'ajouter aux informations du propriétaire
+      // Récupérer le nom de l'équipe pour l'ajouter aux informations du membre
       const teamId = updatedOwner.teamId || updatedOwner.team_id;
       const teamName = getTeamNameById(teamId);
 
@@ -238,13 +238,13 @@ export const OwnerManagement = () => {
         teamName: teamName
       };
 
-      // Mettre à jour le propriétaire sélectionné
+      // Mettre à jour le membre sélectionné
       setSelectedOwner(normalizedOwner);
 
       // Sortir du mode édition
       setEditMode(false);
 
-      // Recharger la liste des propriétaires
+      // Recharger la liste des membres
       await loadOwners();
     } catch (error) {
       console.error('Error updating owner:', error);
@@ -255,7 +255,7 @@ export const OwnerManagement = () => {
         window.location.href = '/login';
         return;
       } else {
-        setError('Erreur lors de la mise à jour du propriétaire. Veuillez réessayer.');
+        setError('Erreur lors de la mise à jour du membre. Veuillez réessayer.');
       }
     } finally {
       setIsSubmitting(false);
@@ -279,11 +279,11 @@ export const OwnerManagement = () => {
 
   return (
     <div className="p-8 min-h-screen w-full md:w-4/5 lg:w-3/4 mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md">
-      <h2 className="text-3xl text-center font-bold mb-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">Gestion des propriétaires</h2>
-  
-      {/* Formulaire d'ajout de propriétaire */}
+      <h2 className="text-3xl text-center font-bold mb-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">Gestion des membres</h2>
+
+      {/* Formulaire d'ajout de membre */}
       <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-sm mb-10">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ajouter un propriétaire</h3>
+        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ajouter un membre</h3>
         <form onSubmit={handleSubmit} className="flex flex-col items-center">
           <div className="grid gap-4 md:grid-cols-3 w-full">
             <div className="space-y-1">
@@ -292,7 +292,7 @@ export const OwnerManagement = () => {
                 type="text"
                 value={newOwner.name}
                 onChange={(e) => setNewOwner({ ...newOwner, name: e.target.value })}
-                placeholder="Nom du propriétaire"
+                placeholder="Nom du membre"
                 required
                 disabled={isSubmitting}
                 className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -304,7 +304,7 @@ export const OwnerManagement = () => {
                 type="email"
                 value={newOwner.email}
                 onChange={(e) => setNewOwner({ ...newOwner, email: e.target.value })}
-                placeholder="Email du propriétaire"
+                placeholder="Email du membre"
                 required
                 disabled={isSubmitting}
                 className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -342,7 +342,7 @@ export const OwnerManagement = () => {
               ) : (
                 <>
                   <Plus className="mr-2 h-5 w-5" />
-                  Ajouter un propriétaire
+                  Ajouter un membre
                 </>
               )}
             </Button>
@@ -350,18 +350,18 @@ export const OwnerManagement = () => {
           </div>
         </form>
       </div>
-  
-      {/* Conteneur principal qui change de layout basé sur la sélection d'un propriétaire */}
+
+      {/* Conteneur principal qui change de layout basé sur la sélection d'un membre */}
       <div className={`${selectedOwner ? 'grid gap-10 grid-cols-1 md:grid-cols-2' : 'flex justify-center'}`}>
-        {/* Liste des propriétaires - sera centrée quand aucun propriétaire n'est sélectionné */}
+        {/* Liste des membres - sera centrée quand aucun membre n'est sélectionné */}
         <div className={`space-y-6 ${!selectedOwner ? 'max-w-2xl w-full' : ''}`}>
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Liste des propriétaires</h3>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Liste des membres</h3>
             <div className="bg-blue-50 text-blue-700 text-sm py-1 px-3 rounded-full font-medium">
-              {owners.length} {owners.length > 1 ? 'propriétaires' : 'propriétaire'}
+              {owners.length} {owners.length > 1 ? 'membres' : 'membre'}
             </div>
           </div>
-  
+
           {isLoading && !isSubmitting ? (
             <div className="flex justify-center items-center py-16 bg-white dark:bg-gray-700 rounded-lg shadow-sm">
               <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
@@ -372,8 +372,8 @@ export const OwnerManagement = () => {
                 <div className="p-3 bg-gray-100 dark:bg-gray-600 rounded-full">
                   <Trash2 className="h-8 w-8 text-gray-400 dark:text-gray-300" />
                 </div>
-                <p className="font-medium">Aucun propriétaire disponible</p>
-                <p className="text-sm">Utilisez le formulaire ci-dessus pour créer votre premier propriétaire</p>
+                <p className="font-medium">Aucun membre disponible</p>
+                <p className="text-sm">Utilisez le formulaire ci-dessus pour créer votre premier membre</p>
               </div>
             </div>
           ) : (
@@ -381,15 +381,14 @@ export const OwnerManagement = () => {
               {owners.map(owner => {
                 const ownerId = owner.id || owner.owner_id || owner.ownerId;
                 const selectedId = selectedOwner?.id || selectedOwner?.owner_id || selectedOwner?.ownerId;
-  
+
                 return (
                   <Card
                     key={ownerId}
-                    className={`p-5 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                      selectedOwner && ownerId === selectedId
+                    className={`p-5 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedOwner && ownerId === selectedId
                         ? 'bg-blue-50 border-blue-400 shadow-md dark:bg-blue-900/20 dark:border-blue-500'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-700/70'
-                    }`}
+                      }`}
                     onClick={() => handleOwnerSelect(owner)}
                   >
                     <div className="flex justify-between items-center">
@@ -416,11 +415,11 @@ export const OwnerManagement = () => {
             </div>
           )}
         </div>
-  
-        {/* Détails du propriétaire sélectionné */}
+
+        {/* Détails du membre sélectionné */}
         {selectedOwner && (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Détails du propriétaire</h3>
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Détails du membre</h3>
             <Card className="p-6 shadow-md bg-white dark:bg-gray-700">
               {editMode ? (
                 <form onSubmit={handleSaveEdit} className="space-y-5">
@@ -474,13 +473,13 @@ export const OwnerManagement = () => {
                       ))}
                     </select>
                   </div>
-                  <div className="flex justify-end space-x-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleCancelEdit}
                       disabled={isSubmitting}
-                      className="border-gray-300 hover:bg-gray-100"
+                      className="border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700 transition-colors duration-200 px-4 py-2 rounded-md"
                     >
                       <X className="mr-2 h-4 w-4" />
                       Annuler
@@ -488,7 +487,7 @@ export const OwnerManagement = () => {
                     <Button
                       type="submit"
                       disabled={isSubmitting || !editedOwner.name.trim() || !editedOwner.email.trim() || !editedOwner.teamId}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 hover:bg-green-700 text-white transition-colors duration-200 px-4 py-2 rounded-md shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <>
@@ -519,7 +518,7 @@ export const OwnerManagement = () => {
                     <p className="font-medium text-lg mt-1">{selectedOwner.teamName || getTeamNameById(selectedOwner.teamId || selectedOwner.team_id)}</p>
                   </div>
                   <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
-                    <Button 
+                    <Button
                       onClick={handleEditMode}
                       className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4"
                     >
@@ -533,13 +532,13 @@ export const OwnerManagement = () => {
           </div>
         )}
       </div>
-  
+
       <ConfirmationModal
         isOpen={deleteModalOpen}
         onClose={closeDeleteModal}
         onConfirm={confirmDelete}
         title="Confirmer la suppression"
-        message={`Êtes-vous sûr de vouloir supprimer le propriétaire "${ownerToDelete?.name}" ?`}
+        message={`Êtes-vous sûr de vouloir supprimer ce membre "${ownerToDelete?.name}" ?`}
       />
     </div>
   );

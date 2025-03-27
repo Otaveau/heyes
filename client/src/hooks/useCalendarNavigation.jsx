@@ -7,71 +7,93 @@ export const useCalendarNavigation = (calendarRef, selectedYear, setSelectedYear
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
   ], []);
 
-  // Fonction pour naviguer vers un mois spécifique
-  // Fonction pour naviguer vers un mois spécifique
+  // Fonction pour naviguer vers un mois spécifique avec dates UTC
 const navigateToMonth = useCallback((monthIndex) => {
   if (!calendarRef.current) return;
-  
+
   // Accéder directement à l'API du calendrier
   const calendarApi = calendarRef.current.getApi();
-  
+
   // Obtenir l'année courante et la vue courante
   const year = selectedYear;
   const currentView = calendarApi.view.type;
-  
+
+  // Ajouter des logs pour déboguer
+  console.log(`Navigation vers: ${months[monthIndex]} ${year}, Vue: ${currentView}`);
+
   try {
-    // Pour la vue semaine, naviguer à la première semaine du mois
+    // Pour la vue semaine
     if (currentView === 'resourceTimelineWeek') {
-      // Créer une date pour le premier jour du mois
-      const firstDayOfMonth = new Date(year, monthIndex, 1);
+      // Créer une date UTC pour le premier jour du mois
+      const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1));
+      console.log("Premier jour UTC:", firstDayOfMonth.toISOString());
       
-      // Trouver le premier jour de la semaine (lundi en France)
-      const dayOfWeek = firstDayOfMonth.getDay(); // 0 = dimanche, 1 = lundi, ...
+      // Trouver le jour de la semaine (0=dimanche, 1=lundi, etc.)
+      const dayOfWeek = firstDayOfMonth.getDay();
       
-      // Créer une date pour le premier lundi du mois ou pour le lundi qui précède si le 1er est après lundi
-      // Si le premier jour est un dimanche (0), alors le lundi est le jour suivant (+1)
-      // Si le premier jour est un lundi (1), on garde le même jour (+0)
-      // Si le premier jour est après lundi (2-6), on recule jusqu'au lundi précédent (-(dayOfWeek-1))
-      const daysToAdjust = dayOfWeek === 0 ? 1 : (dayOfWeek === 1 ? 0 : -(dayOfWeek - 1));
+      // Calculer le lundi de la semaine
+      let mondayDate;
       
-      // Calculer la date du lundi de la première semaine contenant un jour du mois
-      const firstMondayDate = new Date(year, monthIndex, 1 + daysToAdjust);
-      
-      // Si le lundi calculé est dans le mois précédent et qu'on veut vraiment la première semaine du mois
-      if (firstMondayDate.getMonth() !== monthIndex) {
-        // Option 1: Utiliser le premier lundi qui tombe dans le mois
-        const firstMondayInMonth = new Date(year, monthIndex, 1 + (8 - dayOfWeek) % 7);
-        calendarApi.gotoDate(firstMondayInMonth);
+      if (dayOfWeek === 1) {
+        // Si c'est un lundi, utiliser cette date
+        mondayDate = new Date(firstDayOfMonth);
+      } else if (dayOfWeek === 0) {
+        // Si c'est un dimanche, le lundi est le lendemain
+        mondayDate = new Date(firstDayOfMonth);
+        mondayDate.setUTCDate(mondayDate.getUTCDate() + 1);
       } else {
-        // Le lundi calculé est déjà dans le mois cible ou c'est le lundi avant le premier jour du mois
-        calendarApi.gotoDate(firstMondayDate);
+        // Pour les autres jours, reculer au lundi précédent
+        const daysToSubtract = dayOfWeek - 1;
+        mondayDate = new Date(firstDayOfMonth);
+        mondayDate.setUTCDate(mondayDate.getUTCDate() - daysToSubtract);
       }
+      
+      // Si ce lundi est dans le mois précédent, chercher le premier lundi du mois
+      if (mondayDate.getUTCMonth() !== monthIndex) {
+        mondayDate = new Date(Date.UTC(year, monthIndex, 1));
+        while (mondayDate.getUTCDay() !== 1) {
+          mondayDate.setUTCDate(mondayDate.getUTCDate() + 1);
+        }
+      }
+      
+      console.log("Lundi calculé:", mondayDate.toISOString());
+      
+      // Force FullCalendar à cette date exacte
+      const adjustedDateStr = mondayDate.toISOString().split('T')[0]; // Format 'YYYY-MM-DD'
+      console.log("Navigation vers date exacte:", adjustedDateStr);
+      
+      calendarApi.gotoDate(adjustedDateStr);
     }
-    // Pour la vue mois, simplement aller au premier jour du mois
+    // Pour la vue mois
     else if (currentView === 'resourceTimelineMonth') {
-      const firstDayOfMonth = new Date(year, monthIndex, 1);
-      calendarApi.gotoDate(firstDayOfMonth);
+      // Créer une date pour le premier jour du mois en UTC
+      const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1));
+      console.log("Premier jour du mois (UTC):", firstDayOfMonth.toISOString());
+      
+      // Utiliser directement la chaîne de date ISO pour éviter les décalages
+      const dateStr = firstDayOfMonth.toISOString().split('T')[0]; // Format 'YYYY-MM-DD'
+      console.log("Navigation vers date exacte:", dateStr);
+      
+      calendarApi.gotoDate(dateStr);
     } 
-    // Pour la vue année, conserver la logique existante
+    // Pour la vue année
     else if (currentView === 'resourceTimelineYear') {
       // Créer la date cible pour le premier jour du mois sélectionné
-      const targetDate = new Date(year, monthIndex, 1);
+      const targetDate = new Date(Date.UTC(year, monthIndex, 1));
       
       // Pour les vues timeline, cette méthode est plus efficace que gotoDate
       calendarApi.scrollToTime({ 
-        days: targetDate.getDate() - 1, 
-        months: targetDate.getMonth(), 
-        years: targetDate.getFullYear() - calendarApi.getDate().getFullYear() 
+        days: targetDate.getUTCDate() - 1, 
+        months: targetDate.getUTCMonth(), 
+        years: targetDate.getUTCFullYear() - calendarApi.getDate().getFullYear() 
       });
       
-      // Amélioration: Utiliser requestAnimationFrame pour assurer que le DOM est prêt
+      // Amélioration pour le défilement visuel
       requestAnimationFrame(() => {
         const timelineBody = document.querySelector('.fc-timeline-body');
         if (timelineBody) {
-          // Trouver tous les éléments d'en-tête de mois
           const headers = document.querySelectorAll('.fc-timeline-slot[data-date]');
           
-          // Trouver l'élément correspondant au mois sélectionné
           let targetHeader = null;
           headers.forEach(header => {
             const headerDate = new Date(header.getAttribute('data-date'));
@@ -80,16 +102,13 @@ const navigateToMonth = useCallback((monthIndex) => {
             }
           });
           
-          // Si on a trouvé l'en-tête correspondant, faire défiler jusqu'à lui
           if (targetHeader) {
             const rect = targetHeader.getBoundingClientRect();
             const containerRect = timelineBody.getBoundingClientRect();
             
-            // Calculer la position de défilement pour centrer l'élément
             const scrollLeft = rect.left + timelineBody.scrollLeft - containerRect.left - 
-                              (containerRect.width / 2) + (rect.width / 2);
+                             (containerRect.width / 2) + (rect.width / 2);
             
-            // Animer le défilement
             timelineBody.scrollTo({
               left: scrollLeft,
               behavior: 'smooth'
@@ -99,17 +118,21 @@ const navigateToMonth = useCallback((monthIndex) => {
       }, 50);
     }
   } catch (error) {
-    console.error("Navigation error:", error);
+    console.error("Erreur de navigation:", error);
     
-    // Méthode de secours en cas d'erreur
+    // Méthode de secours
     try {
-      const targetDate = new Date(year, monthIndex, 1);
-      calendarApi.gotoDate(targetDate);
+      // Utiliser le format de chaîne de date pour éviter les décalages
+      const fallbackDate = new Date(Date.UTC(year, monthIndex, 1));
+      const dateStr = fallbackDate.toISOString().split('T')[0];
+      console.log("Navigation de secours vers:", dateStr);
+      
+      calendarApi.gotoDate(dateStr);
     } catch (fallbackError) {
-      console.error("Fallback navigation error:", fallbackError);
+      console.error("Erreur de secours:", fallbackError);
     }
   }
-}, [calendarRef, selectedYear]);
+}, [calendarRef, selectedYear, months]);
 
   // Fonctions pour la navigation entre les années
   const goToPreviousYear = useCallback(() => {
@@ -151,6 +174,9 @@ const navigateToMonth = useCallback((monthIndex) => {
 
     // Naviguer à la nouvelle date
     calendarApi.gotoDate(newDate);
+
+    // Retourner la nouvelle date pour permettre la mise à jour du numéro de semaine
+    return newDate;
   }, [calendarRef]);
 
   // Fonction pour naviguer à la semaine suivante
@@ -168,6 +194,9 @@ const navigateToMonth = useCallback((monthIndex) => {
 
     // Naviguer à la nouvelle date
     calendarApi.gotoDate(newDate);
+
+    // Retourner la nouvelle date pour permettre la mise à jour du numéro de semaine
+    return newDate;
   }, [calendarRef]);
 
   // Gestionnaire pour les changements de vue du calendrier

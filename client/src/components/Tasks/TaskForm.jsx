@@ -49,9 +49,10 @@ export const TaskForm = ({
                     endDate = new Date(selectedTask.extendedProps.inclusiveEndDate);
                 } else if (selectedTask.end) {
                     endDate = new Date(selectedTask.end);
-                } else {
-                    endDate = new Date(startDate);
                 }
+                // else {
+                //     endDate = new Date(startDate);
+                // }
 
                 // Formater en YYYY-MM-DD pour input type="date"
                 startDateStr = startDate.toISOString().split('T')[0];
@@ -173,17 +174,20 @@ export const TaskForm = ({
             newErrors.title = ERROR_MESSAGES.TITLE_REQUIRED;
         }
 
-        if (!formData.startDate) {
-            newErrors.startDate = ERROR_MESSAGES.START_DATE_REQUIRED;
-        }
+        // Rendre les dates obligatoires uniquement si une ressource est sélectionnée
+        if (formData.resourceId) {
+            if (!formData.startDate) {
+                newErrors.startDate = ERROR_MESSAGES.START_DATE_REQUIRED;
+            }
 
-        if (!formData.endDate) {
-            newErrors.endDate = ERROR_MESSAGES.END_DATE_REQUIRED;
-        }
+            if (!formData.endDate) {
+                newErrors.endDate = ERROR_MESSAGES.END_DATE_REQUIRED;
+            }
 
-        if (formData.startDate && formData.endDate &&
-            new Date(formData.startDate) > new Date(formData.endDate)) {
-            newErrors.endDate = ERROR_MESSAGES.END_DATE_VALIDATION;
+            if (formData.startDate && formData.endDate &&
+                new Date(formData.startDate) > new Date(formData.endDate)) {
+                newErrors.endDate = ERROR_MESSAGES.END_DATE_VALIDATION;
+            }
         }
 
         if (formData.statusId === '2' && !formData.resourceId) {
@@ -316,7 +320,7 @@ export const TaskForm = ({
                                 className="w-full p-2 border rounded"
                                 required={formData.isConge}
                             >
-                                <option value="">Sélectionner une personne</option>
+                                <option value="">Sélectionner un owner</option>
                                 {resources
                                     .filter(resource => !resource.isTeam && !resource.id.toString().startsWith('team_'))
                                     .map(resource => (
@@ -332,7 +336,9 @@ export const TaskForm = ({
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="startDate" className="block mb-1">Date de début</label>
+                                <label htmlFor="startDate" className="block mb-1">
+                                    Date de début{formData.resourceId ? ' *' : ''}
+                                </label>
                                 <input
                                     type="date"
                                     id="startDate"
@@ -340,7 +346,7 @@ export const TaskForm = ({
                                     value={formData.startDate}
                                     onChange={handleChange}
                                     className="w-full p-2 border rounded"
-                                    required
+                                    required={!!formData.resourceId}
                                 />
                                 {errors.startDate && (
                                     <span className="text-red-500 text-sm">{errors.startDate}</span>
@@ -348,7 +354,9 @@ export const TaskForm = ({
                             </div>
 
                             <div>
-                                <label htmlFor="endDate" className="block mb-1">Date de fin</label>
+                                <label htmlFor="endDate" className="block mb-1">
+                                    Date de fin{formData.resourceId ? ' *' : ''}
+                                </label>
                                 <input
                                     type="date"
                                     id="endDate"
@@ -356,7 +364,7 @@ export const TaskForm = ({
                                     value={formData.endDate}
                                     onChange={handleChange}
                                     className="w-full p-2 border rounded"
-                                    required
+                                    required={!!formData.resourceId}
                                 />
                                 {errors.endDate && (
                                     <span className="text-red-500 text-sm">{errors.endDate}</span>
