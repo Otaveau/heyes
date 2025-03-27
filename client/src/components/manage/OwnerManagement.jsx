@@ -26,7 +26,7 @@ export const OwnerManagement = () => {
 
   // Utiliser useRef pour surveiller les changements de selectedOwner
   const previousSelectedOwner = useRef(null);
-    
+
   useEffect(() => {
     // Afficher les détails du propriétaire sélectionné dans la console
     if (selectedOwner && selectedOwner !== previousSelectedOwner.current) {
@@ -66,10 +66,10 @@ export const OwnerManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newOwner.name.trim() || !newOwner.email.trim() || !newOwner.teamId) return;
-    
+
     setIsSubmitting(true);
     setError(null);
-    
+
     try {
       // Vérification si l'email existe déjà
       const existingOwner = owners.find(owner => owner.email.toLowerCase() === newOwner.email.toLowerCase());
@@ -89,11 +89,11 @@ export const OwnerManagement = () => {
       await createOwner(sanitizedOwner);
 
       setNewOwner({ name: '', email: '', teamId: '' });
- 
+
       await loadOwners();
     } catch (error) {
       console.error('Error creating owner:', error);
-      
+
       if (error.message && error.message.includes('validation')) {
         setError(error.message);
       } else if (error.status === 401) {
@@ -120,27 +120,27 @@ export const OwnerManagement = () => {
 
   const confirmDelete = async () => {
     if (!ownerToDelete) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Obtenir l'ID correct pour la suppression
       const ownerId = ownerToDelete.id || ownerToDelete.owner_id || ownerToDelete.ownerId;
-      
+
       // Utilisation du service deleteOwner
       await deleteOwner(ownerId);
-      
+
       // Si le propriétaire supprimé était sélectionné, désélectionner
       if (selectedOwner && (selectedOwner.id === ownerId || selectedOwner.owner_id === ownerId || selectedOwner.ownerId === ownerId)) {
         setSelectedOwner(null);
         setEditMode(false);
       }
-      
+
       await loadOwners();
     } catch (error) {
       console.error('Error deleting owner:', error);
-      
+
       if (error.status === 401) {
         window.location.href = '/login';
         return;
@@ -157,7 +157,7 @@ export const OwnerManagement = () => {
     // Vérifier si l'ID de l'owner est le même que celui de l'owner sélectionné
     const ownerId = owner.id || owner.owner_id || owner.ownerId;
     const selectedId = selectedOwner?.id || selectedOwner?.owner_id || selectedOwner?.ownerId;
-    
+
     if (selectedOwner && ownerId === selectedId) {
       setSelectedOwner(null);
       setEditMode(false);
@@ -169,9 +169,9 @@ export const OwnerManagement = () => {
         id: ownerId,
         teamId: owner.teamId || owner.team_id
       };
-      
+
       setSelectedOwner(normalizedOwner);
-      setEditedOwner({ 
+      setEditedOwner({
         ...normalizedOwner,
         teamId: (owner.teamId || owner.team_id || '').toString()
       });
@@ -187,7 +187,7 @@ export const OwnerManagement = () => {
   const handleCancelEdit = () => {
     setEditMode(false);
     // Remettre les valeurs originales
-    setEditedOwner({ 
+    setEditedOwner({
       ...selectedOwner,
       teamId: (selectedOwner.teamId || selectedOwner.team_id || '').toString()
     });
@@ -196,21 +196,21 @@ export const OwnerManagement = () => {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editedOwner.name.trim() || !editedOwner.email.trim() || !editedOwner.teamId) return;
-    
+
     setIsSubmitting(true);
     setError(null);
-    
+
     try {
       // Vérifier si l'email existe déjà et n'appartient pas à cet owner
       const ownerId = editedOwner.id || editedOwner.owner_id || editedOwner.ownerId;
-      
+
       const existingOwner = owners.find(owner => {
         const ownerEmail = owner.email.toLowerCase();
         const editedEmail = editedOwner.email.toLowerCase();
         const currentOwnerId = owner.id || owner.owner_id || owner.ownerId;
         return ownerEmail === editedEmail && currentOwnerId !== ownerId;
       });
-      
+
       if (existingOwner) {
         setError('Un autre propriétaire utilise déjà cet email');
         setIsSubmitting(false);
@@ -222,13 +222,13 @@ export const OwnerManagement = () => {
         email: editedOwner.email.trim(),
         teamId: editedOwner.teamId ? parseInt(editedOwner.teamId, 10) : null
       };
-      
+
       const updatedOwner = await updateOwner(ownerId, sanitizedOwner);
 
       // Récupérer le nom de l'équipe pour l'ajouter aux informations du propriétaire
       const teamId = updatedOwner.teamId || updatedOwner.team_id;
       const teamName = getTeamNameById(teamId);
-      
+
       // Normaliser les propriétés pour être cohérent dans l'UI
       const normalizedOwner = {
         ...updatedOwner,
@@ -240,15 +240,15 @@ export const OwnerManagement = () => {
 
       // Mettre à jour le propriétaire sélectionné
       setSelectedOwner(normalizedOwner);
-      
+
       // Sortir du mode édition
       setEditMode(false);
-      
+
       // Recharger la liste des propriétaires
       await loadOwners();
     } catch (error) {
       console.error('Error updating owner:', error);
-      
+
       if (error.message && error.message.includes('validation')) {
         setError(error.message);
       } else if (error.status === 401) {
@@ -264,25 +264,25 @@ export const OwnerManagement = () => {
 
   const getTeamNameById = (teamId) => {
     if (!teamId) return 'N/A';
-    
+
     // Convertir en nombre si c'est une chaîne
     const parsedTeamId = typeof teamId === 'string' ? parseInt(teamId, 10) : teamId;
-    
+
     const team = teams.find(t => {
       // Vérifier à la fois team_id et id
       const currentTeamId = t.team_id !== undefined ? t.team_id : t.id;
       return currentTeamId === parsedTeamId;
     });
-    
+
     return team ? team.name : 'N/A';
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Gestion des propriétaires</h2>
+    <div className="p-6 min-h-screen w-1/2">
+      <h2 className="text-2xl text-center font-bold mb-6">Gestion des propriétaires</h2>
 
       {/* Formulaire d'ajout de propriétaire */}
-      <form onSubmit={handleSubmit} className="mb-8">
+      <form onSubmit={handleSubmit} className="flex justify-center mb-8">
         <div className="grid gap-4 md:grid-cols-3">
           <Input
             type="text"
@@ -316,8 +316,8 @@ export const OwnerManagement = () => {
           </select>
         </div>
         <div className="mt-4">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isSubmitting || !newOwner.name.trim() || !newOwner.email.trim() || !newOwner.teamId}
           >
             {isSubmitting ? (
@@ -336,11 +336,12 @@ export const OwnerManagement = () => {
         </div>
       </form>
 
-      <div className="grid gap-8 grid-cols-1 md:grid-cols-2">
-        {/* Liste des propriétaires */}
-        <div className="space-y-4">
+      {/* Conteneur principal qui change de layout basé sur la sélection d'un propriétaire */}
+      <div className={`${selectedOwner ? 'grid gap-8 grid-cols-1 md:grid-cols-2' : 'flex justify-center'}`}>
+        {/* Liste des propriétaires - sera centrée quand aucun propriétaire n'est sélectionné */}
+        <div className={`space-y-4 ${!selectedOwner ? 'max-w-lg w-full' : ''}`}>
           <h3 className="text-lg font-semibold">Liste des propriétaires</h3>
-          
+
           {isLoading && !isSubmitting ? (
             <div className="flex justify-center items-center py-10">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -354,15 +355,14 @@ export const OwnerManagement = () => {
               {owners.map(owner => {
                 const ownerId = owner.id || owner.owner_id || owner.ownerId;
                 const selectedId = selectedOwner?.id || selectedOwner?.owner_id || selectedOwner?.ownerId;
-                
+
                 return (
-                  <Card 
-                    key={ownerId} 
-                    className={`p-4 cursor-pointer transition-colors ${
-                      selectedOwner && ownerId === selectedId 
-                        ? 'bg-blue-50 border-blue-300' 
+                  <Card
+                    key={ownerId}
+                    className={`p-4 cursor-pointer transition-colors ${selectedOwner && ownerId === selectedId
+                        ? 'bg-blue-50 border-blue-300'
                         : 'hover:bg-gray-50'
-                    }`}
+                      }`}
                     onClick={() => handleOwnerSelect(owner)}
                   >
                     <div className="flex justify-between items-center">
@@ -444,17 +444,17 @@ export const OwnerManagement = () => {
                     </select>
                   </div>
                   <div className="flex justify-end space-x-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={handleCancelEdit}
                       disabled={isSubmitting}
                     >
                       <X className="mr-2 h-4 w-4" />
                       Annuler
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={isSubmitting || !editedOwner.name.trim() || !editedOwner.email.trim() || !editedOwner.teamId}
                     >
                       {isSubmitting ? (
@@ -497,7 +497,7 @@ export const OwnerManagement = () => {
         )}
       </div>
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={deleteModalOpen}
         onClose={closeDeleteModal}
         onConfirm={confirmDelete}

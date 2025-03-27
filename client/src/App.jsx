@@ -62,7 +62,7 @@ const AppContent = () => {
   return (
     <BrowserRouter>
       {state.isAuthenticated && <Navigation />}
-      <div className="mainContainer mx-auto px-4 pt-5 transition-colors duration-200 dark:bg-gray-900 min-h-screen">
+      <div className="flex justify-center mx-autopx-4 pt-5 transition-colors duration-200 dark:bg-gray-900 min-h-screen">
         <Routes>
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<PublicOnlyWrapper><Login /></PublicOnlyWrapper>} />

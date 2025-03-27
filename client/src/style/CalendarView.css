@@ -177,6 +177,11 @@ button.fc-today-button:hover {
   cursor: move;
 }
 
+.fc-event {
+  cursor: move !important;
+  user-select: none;
+}
+
 .task-card.dragging,
 .fc-event.task-card.fc-dragging {
   opacity: 0.6;

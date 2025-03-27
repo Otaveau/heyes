@@ -39,17 +39,17 @@ export const TeamManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newTeam.name.trim()) return;
-    
+
     setIsSubmitting(true);
     setError(null);
-    
+
     try {
       await createTeam(newTeam);
       await loadTeams();
       setNewTeam({ name: '' });
     } catch (error) {
       console.error('Error creating team:', error);
-      
+
       if (error.message && error.message.includes('validation')) {
         setError(error.message);
       } else if (error.status === 401) {
@@ -76,19 +76,19 @@ export const TeamManagement = () => {
 
   const confirmDelete = async () => {
     if (!teamToDelete) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       await deleteTeam(teamToDelete.team_id);
-      
+
       // Si l'équipe supprimée était sélectionnée, désélectionner
       if (selectedTeam && selectedTeam.team_id === teamToDelete.team_id) {
         setSelectedTeam(null);
         setEditMode(false);
       }
-      
+
       await loadTeams();
     } catch (error) {
       console.error('Error deleting team:', error);
@@ -125,27 +125,27 @@ export const TeamManagement = () => {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editedTeam.name.trim()) return;
-    
+
     setIsSubmitting(true);
     setError(null);
-    
+
     try {
       // Utilisation du service updateTeam
       const updatedTeam = await updateTeam(editedTeam.team_id, {
         name: editedTeam.name.trim()
       });
-      
+
       // Mettre à jour la liste complète des équipes
       await loadTeams();
-      
+
       // Mettre à jour l'équipe sélectionnée avec les données mises à jour
       setSelectedTeam(updatedTeam);
-      
+
       // Sortir du mode édition
       setEditMode(false);
     } catch (error) {
       console.error('Error updating team:', error);
-      
+
       if (error.message && error.message.includes('validation')) {
         setError(error.message);
       } else if (error.status === 401) {
@@ -160,11 +160,11 @@ export const TeamManagement = () => {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Gestion des équipes</h2>
+    <div className="p-6 min-h-screen w-1/2">
+      <h2 className="text-2xl text-center font-bold mb-6">Gestion des équipes</h2>
 
       {/* Formulaire d'ajout d'équipe */}
-      <form onSubmit={handleSubmit} className="mb-8">
+      <form onSubmit={handleSubmit} className="flex justify-center mb-8">
         <div className="flex gap-4">
           <Input
             type="text"
@@ -175,8 +175,8 @@ export const TeamManagement = () => {
             required
             disabled={isSubmitting}
           />
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isSubmitting || !newTeam.name.trim()}
           >
             {isSubmitting ? (
@@ -195,11 +195,12 @@ export const TeamManagement = () => {
         {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
       </form>
 
-      <div className="grid gap-8 grid-cols-1 md:grid-cols-2">
-        {/* Liste des équipes */}
-        <div className="space-y-4">
+      {/* Conteneur principal qui change de layout basé sur la sélection d'équipe */}
+      <div className={`${selectedTeam ? 'grid gap-8 grid-cols-1 md:grid-cols-2' : 'flex justify-center'}`}>
+        {/* Liste des équipes - sera centrée quand aucune équipe n'est sélectionnée */}
+        <div className={`space-y-4 ${!selectedTeam ? 'max-w-lg w-full' : ''}`}>
           <h3 className="text-lg font-semibold">Liste des équipes</h3>
-          
+
           {isLoading && !isSubmitting ? (
             <div className="flex justify-center items-center py-10">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -211,13 +212,12 @@ export const TeamManagement = () => {
           ) : (
             <div className="grid gap-4 sm:grid-cols-1">
               {teams.map(team => (
-                <Card 
-                  key={team.team_id} 
-                  className={`p-4 cursor-pointer transition-colors ${
-                    selectedTeam && selectedTeam.team_id === team.team_id 
-                      ? 'bg-blue-50 border-blue-300' 
+                <Card
+                  key={team.team_id}
+                  className={`p-4 cursor-pointer transition-colors ${selectedTeam && selectedTeam.team_id === team.team_id
+                      ? 'bg-blue-50 border-blue-300'
                       : 'hover:bg-gray-50'
-                  }`}
+                    }`}
                   onClick={() => handleTeamSelect(team)}
                 >
                   <div className="flex justify-between items-center">
@@ -260,17 +260,17 @@ export const TeamManagement = () => {
                     />
                   </div>
                   <div className="flex justify-end space-x-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={handleCancelEdit}
                       disabled={isSubmitting}
                     >
                       <X className="mr-2 h-4 w-4" />
                       Annuler
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={isSubmitting || !editedTeam.name.trim()}
                     >
                       {isSubmitting ? (
@@ -310,7 +310,7 @@ export const TeamManagement = () => {
         )}
       </div>
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={deleteModalOpen}
         onClose={closeDeleteModal}
         onConfirm={confirmDelete}

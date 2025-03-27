@@ -292,7 +292,7 @@ export const CalendarView = () => {
   } = useCalendarNavigation(calendarRef, selectedYear, setSelectedYear);
 
   return (
-    <div className="flex flex-col dashboard">
+    <div className="flex flex-col">
       <div className="w-full calendar">
         <CalendarMain
           calendarRef={calendarRef}
