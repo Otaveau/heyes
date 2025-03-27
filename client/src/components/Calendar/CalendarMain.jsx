@@ -18,6 +18,8 @@ export const CalendarMain = ({
   setSelectedYear,
   goToPreviousYear,
   goToNextYear,
+  goToPreviousWeek,
+  goToNextWeek,
   navigateToMonth,
 }) => {
 
@@ -121,6 +123,29 @@ export const CalendarMain = ({
             >
               &raquo;
             </button>
+
+            {/* Boutons de navigation de semaine - Visible uniquement en vue semaine */}
+            {currentView === 'resourceTimelineWeek' && (
+              <>
+                <button
+                  type="button"
+                  className="fc-button fc-button-primary fc-prev-week-button"
+                  onClick={goToPreviousWeek}
+                  title="Semaine précédente"
+                >
+                  &lt;
+                </button>
+                <button
+                  type="button"
+                  className="fc-button fc-button-primary fc-next-week-button"
+                  onClick={goToNextWeek}
+                  title="Semaine suivante"
+                >
+                  &gt;
+                </button>
+              </>
+            )}
+
             <button
               type="button"
               className="fc-button fc-button-primary fc-today-button"

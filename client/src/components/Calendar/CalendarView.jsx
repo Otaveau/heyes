@@ -287,6 +287,8 @@ export const CalendarView = () => {
     navigateToMonth,
     goToPreviousYear,
     goToNextYear,
+    goToPreviousWeek,
+    goToNextWeek,
     handleViewChange,
     months
   } = useCalendarNavigation(calendarRef, selectedYear, setSelectedYear);
@@ -306,6 +308,8 @@ export const CalendarView = () => {
           setSelectedYear={setSelectedYear}
           goToPreviousYear={goToPreviousYear}
           goToNextYear={goToNextYear}
+          goToPreviousWeek={goToPreviousWeek}
+          goToNextWeek={goToNextWeek}    
           navigateToMonth={navigateToMonth}
           dropZoneRefs={dropZoneRefs}
           dropZones={dropZones}
