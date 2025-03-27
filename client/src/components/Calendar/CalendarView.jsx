@@ -31,7 +31,7 @@ export const CalendarView = () => {
     { id: 'done', statusId: '4', title: 'Done' }
   ], []);
 
-    // Créer les références pour les zones de dépôt
+  // Créer les références pour les zones de dépôt
   const dropZoneRefs = useRef(dropZones.map(() => createRef()));
 
   const calendarRef = useRef(null);
@@ -195,7 +195,7 @@ export const CalendarView = () => {
         // Déterminer si c'est une création ou une modification
         const isNewTask = !updatedTask.id;
         const isConge = updatedTask.isConge === true;
-       
+
         console.log('Traitement de tâche:', {
           isNewTask,
           isConge,
@@ -309,7 +309,7 @@ export const CalendarView = () => {
           navigateToMonth={navigateToMonth}
           dropZoneRefs={dropZoneRefs}
           dropZones={dropZones}
-          
+
         />
       </div>
 
