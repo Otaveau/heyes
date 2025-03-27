@@ -160,73 +160,94 @@ export const TeamManagement = () => {
   };
 
   return (
-    <div className="p-6 min-h-screen w-1/2">
-      <h2 className="text-2xl text-center font-bold mb-6">Gestion des équipes</h2>
-
+    <div className="p-8 min-h-screen w-full md:w-4/5 lg:w-3/4 mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md">
+      <h2 className="text-3xl text-center font-bold mb-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">Gestion des équipes</h2>
+  
       {/* Formulaire d'ajout d'équipe */}
-      <form onSubmit={handleSubmit} className="flex justify-center mb-8">
-        <div className="flex gap-4">
-          <Input
-            type="text"
-            value={newTeam.name}
-            onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-            placeholder="Nom de l'équipe"
-            className="w-full max-w-sm"
-            required
-            disabled={isSubmitting}
-          />
-          <Button
-            type="submit"
-            disabled={isSubmitting || !newTeam.name.trim()}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Ajout...
-              </>
-            ) : (
-              <>
-                <Plus className="mr-2 h-4 w-4" />
-                Ajouter
-              </>
-            )}
-          </Button>
-        </div>
-        {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
-      </form>
-
+      <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-sm mb-10">
+        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ajouter une équipe</h3>
+        <form onSubmit={handleSubmit} className="flex flex-col items-center">
+          <div className="flex gap-4 w-full max-w-md">
+            <div className="flex-grow">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Nom de l'équipe</label>
+              <Input
+                type="text"
+                value={newTeam.name}
+                onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                placeholder="Nom de l'équipe"
+                className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="self-end">
+              <Button
+                type="submit"
+                disabled={isSubmitting || !newTeam.name.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md shadow-sm transition-all duration-200 font-medium h-10"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Ajout...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-5 w-5" />
+                    Ajouter
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+          {error && <p className="mt-3 text-red-500 text-sm font-medium">{error}</p>}
+        </form>
+      </div>
+  
       {/* Conteneur principal qui change de layout basé sur la sélection d'équipe */}
-      <div className={`${selectedTeam ? 'grid gap-8 grid-cols-1 md:grid-cols-2' : 'flex justify-center'}`}>
+      <div className={`${selectedTeam ? 'grid gap-10 grid-cols-1 md:grid-cols-2' : 'flex justify-center'}`}>
         {/* Liste des équipes - sera centrée quand aucune équipe n'est sélectionnée */}
-        <div className={`space-y-4 ${!selectedTeam ? 'max-w-lg w-full' : ''}`}>
-          <h3 className="text-lg font-semibold">Liste des équipes</h3>
-
+        <div className={`space-y-6 ${!selectedTeam ? 'max-w-2xl w-full' : ''}`}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Liste des équipes</h3>
+            <div className="bg-blue-50 text-blue-700 text-sm py-1 px-3 rounded-full font-medium">
+              {teams.length} {teams.length > 1 ? 'équipes' : 'équipe'}
+            </div>
+          </div>
+  
           {isLoading && !isSubmitting ? (
-            <div className="flex justify-center items-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <div className="flex justify-center items-center py-16 bg-white dark:bg-gray-700 rounded-lg shadow-sm">
+              <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
             </div>
           ) : teams.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">
-              Aucune équipe disponible. Créez votre première équipe.
+            <div className="text-center py-16 bg-white dark:bg-gray-700 rounded-lg shadow-sm text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600">
+              <div className="flex flex-col items-center space-y-3">
+                <div className="p-3 bg-gray-100 dark:bg-gray-600 rounded-full">
+                  <Trash2 className="h-8 w-8 text-gray-400 dark:text-gray-300" />
+                </div>
+                <p className="font-medium">Aucune équipe disponible</p>
+                <p className="text-sm">Utilisez le formulaire ci-dessus pour créer votre première équipe</p>
+              </div>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-1">
               {teams.map(team => (
                 <Card
                   key={team.team_id}
-                  className={`p-4 cursor-pointer transition-colors ${selectedTeam && selectedTeam.team_id === team.team_id
-                      ? 'bg-blue-50 border-blue-300'
-                      : 'hover:bg-gray-50'
-                    }`}
+                  className={`p-5 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    selectedTeam && selectedTeam.team_id === team.team_id
+                      ? 'bg-blue-50 border-blue-400 shadow-md dark:bg-blue-900/20 dark:border-blue-500'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/70'
+                  }`}
                   onClick={() => handleTeamSelect(team)}
                 >
                   <div className="flex justify-between items-center">
-                    <h3 className="font-semibold">{team.name}</h3>
+                    <h3 className="font-semibold text-lg">{team.name}</h3>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={(e) => openDeleteModal(team, e)}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
                       disabled={isLoading}
                     >
                       <Trash2 className="h-5 w-5" />
@@ -237,16 +258,16 @@ export const TeamManagement = () => {
             </div>
           )}
         </div>
-
+  
         {/* Détails de l'équipe sélectionnée */}
         {selectedTeam && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Détails de l'équipe</h3>
-            <Card className="p-6">
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Détails de l'équipe</h3>
+            <Card className="p-6 shadow-md bg-white dark:bg-gray-700">
               {editMode ? (
-                <form onSubmit={handleSaveEdit} className="space-y-4">
+                <form onSubmit={handleSaveEdit} className="space-y-5">
                   <div>
-                    <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="teamName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Nom de l'équipe
                     </label>
                     <Input
@@ -257,14 +278,16 @@ export const TeamManagement = () => {
                       placeholder="Nom de l'équipe"
                       required
                       disabled={isSubmitting}
+                      className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end space-x-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleCancelEdit}
                       disabled={isSubmitting}
+                      className="border-gray-300 hover:bg-gray-100"
                     >
                       <X className="mr-2 h-4 w-4" />
                       Annuler
@@ -272,6 +295,7 @@ export const TeamManagement = () => {
                     <Button
                       type="submit"
                       disabled={isSubmitting || !editedTeam.name.trim()}
+                      className="bg-green-600 hover:bg-green-700 text-white"
                     >
                       {isSubmitting ? (
                         <>
@@ -288,18 +312,22 @@ export const TeamManagement = () => {
                   </div>
                 </form>
               ) : (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Nom</p>
-                    <p className="font-medium">{selectedTeam.name}</p>
+                <div className="space-y-5">
+                  <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom</p>
+                    <p className="font-medium text-lg mt-1">{selectedTeam.name}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">ID</p>
-                    <p className="font-medium">{selectedTeam.team_id}</p>
+                  <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">ID</p>
+                    <p className="font-medium text-lg mt-1">{selectedTeam.team_id}</p>
                   </div>
                   {/* Ajouter d'autres détails si nécessaire */}
-                  <div className="pt-2">
-                    <Button onClick={handleEditMode}>
+                  <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <Button 
+                      onClick={handleEditMode}
+                      className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
                       Modifier
                     </Button>
                   </div>
@@ -309,7 +337,7 @@ export const TeamManagement = () => {
           </div>
         )}
       </div>
-
+  
       <ConfirmationModal
         isOpen={deleteModalOpen}
         onClose={closeDeleteModal}
