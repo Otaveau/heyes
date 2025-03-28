@@ -44,6 +44,8 @@ export const useExternalTaskHandlers = (
     const fullTask = tasks.find(t => t.id.toString() === task.id.toString());
     if (!fullTask) return;
 
+    console.log('fullTask:', fullTask);
+
     // Obtenir la date de fin inclusive
     const inclusiveEndDate = getInclusiveEndDate(fullTask);
 
@@ -57,11 +59,12 @@ export const useExternalTaskHandlers = (
         description: fullTask.extendedProps?.description || '',
         statusId: fullTask.extendedProps?.statusId || task.statusId || '1',
         resourceId: fullTask.resourceId || null,
-        start: fullTask.start,
-        end: fullTask.end, // Date exclusive pour FullCalendar
+        ...(fullTask.start && { start: fullTask.start }),
+        ...(fullTask.end && { end: fullTask.end }),
         extendedProps: {
           ...(fullTask.extendedProps || {}),
-          inclusiveEndDate: inclusiveEndDate // Explicitement stocker la date inclusive
+          ...(inclusiveEndDate && { inclusiveEndDate: inclusiveEndDate }),
+          statusId: fullTask.extendedProps?.statusId || task.statusId || '1'
         }
       }
     }));

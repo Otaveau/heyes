@@ -29,21 +29,6 @@ export const TaskBoard = ({
   // Utiliser les références externes si disponibles, sinon utiliser les références internes
   const effectiveRefs = dropZoneRefs || internalRefs;
 
-  useEffect(() => {
-    console.log('TaskBoard rendu avec effectiveRefs:', effectiveRefs);
-    console.log('Nombre d\'éléments dans effectiveRefs.current:', effectiveRefs.current?.length);
-    
-    // Vérifier chaque ref
-    if (effectiveRefs.current) {
-      effectiveRefs.current.forEach((ref, index) => {
-        console.log(`Ref ${index}:`, ref?.current ? 'Attachée au DOM' : 'Non attachée');
-      });
-    }
-    
-    // Vérifier aussi les dropZones
-    console.log('dropZones:', dropZones);
-  }, [effectiveRefs, dropZones]);
-
   // Fonction pour ouvrir la modal de confirmation
   const openDeleteModal = (e, task) => {
     e.stopPropagation();

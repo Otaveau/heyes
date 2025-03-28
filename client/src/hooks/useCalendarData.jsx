@@ -72,34 +72,38 @@ export const useCalendarData = () => {
   const formatTasks = useCallback((tasksData) => {
     const tasks = Array.isArray(tasksData) ? tasksData : [];
 
+    console.log('tasksData:', tasksData);
+
     return tasks.map(task => {
       if (!task) return null;
 
       // Gestion précise des dates
-      const startDate = task.start_date
-        ? new Date(
-          Date.UTC(
-            new Date(task.start_date).getFullYear(),
-            new Date(task.start_date).getMonth(),
-            new Date(task.start_date).getDate()
-          )
-        )
-        : new Date();
+      const startDate = task.start_date || null;
+        // ? new Date(
+        //   Date.UTC(
+        //     new Date(task.start_date).getFullYear(),
+        //     new Date(task.start_date).getMonth(),
+        //     new Date(task.start_date).getDate()
+        //   )
+        // )
+        // : new Date();
 
       // Date inclusive (celle stockée en BDD)
-      const inclusiveEndDate = task.end_date
-        ? new Date(
-          Date.UTC(
-            new Date(task.end_date).getFullYear(),
-            new Date(task.end_date).getMonth(),
-            new Date(task.end_date).getDate()
-          )
-        )
-        : new Date();
+      const inclusiveEndDate = task.end_date|| null;
+        // ? new Date(
+        //   Date.UTC(
+        //     new Date(task.end_date).getFullYear(),
+        //     new Date(task.end_date).getMonth(),
+        //     new Date(task.end_date).getDate()
+        //   )
+        // )
+        // : new Date();
 
       // Date exclusive pour FullCalendar (jour suivant la date de fin inclusive)
-      const exclusiveEndDate = new Date(inclusiveEndDate);
-      exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
+      const exclusiveEndDate = inclusiveEndDate ? new Date(inclusiveEndDate) : null;
+      if (exclusiveEndDate) {
+        exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
+      }
 
       return {
         id: task.id,
@@ -184,6 +188,8 @@ export const useCalendarData = () => {
 
       const formattedTasks = formatTasks(tasksData);
       setTasks(formattedTasks);
+
+      console.log('formattedTasks:', formattedTasks);
 
     } catch (err) {
       console.error('Erreur générale dans loadData:', err);

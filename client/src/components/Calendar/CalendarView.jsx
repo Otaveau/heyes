@@ -84,8 +84,6 @@ export const CalendarView = () => {
         }
       };
 
-      console.log('updates :', updates);
-
       // Si la tâche sort du taskboard "En cours", réinitialiser les dates et le propriétaire
       if (isMovingFromInProgress) {
         updates.start = null;
@@ -195,14 +193,6 @@ export const CalendarView = () => {
         // Déterminer si c'est une création ou une modification
         const isNewTask = !updatedTask.id;
         const isConge = updatedTask.isConge === true;
-
-        console.log('Traitement de tâche:', {
-          isNewTask,
-          isConge,
-          startDate,
-          inclusiveEndDate,
-          exclusiveEndDate
-        });
 
         if (isNewTask) {
           // CAS DE CRÉATION

@@ -12,17 +12,13 @@ export const TaskForm = ({
     onSubmit: handleTaskSubmit
 }) => {
 
-    const getTodayFormatted = useCallback(() => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }, []);
-
     const formatDateForInput = useCallback((date) => {
-        if (!date) return getTodayFormatted();
+        if (!date) return '';
+
         const d = new Date(date);
+
+        // Vérifier si la date est valide
+        if (isNaN(d.getTime())) return '';
 
         // Utiliser les méthodes UTC pour éviter les décalages de fuseau horaire
         const year = d.getUTCFullYear();
@@ -31,11 +27,16 @@ export const TaskForm = ({
 
         // Retourner au format YYYY-MM-DD pour l'élément input type="date"
         return `${year}-${month}-${day}`;
-    }, [getTodayFormatted]);
+    }, []);
 
 
     const getInitialFormData = useCallback(() => {
+
+
         if (selectedTask) {
+
+            console.log('selectedTask:', selectedTask);
+
             const isAssigned = selectedTask.start && selectedTask.end;
 
             let startDateStr, endDateStr;
@@ -50,13 +51,16 @@ export const TaskForm = ({
                 } else if (selectedTask.end) {
                     endDate = new Date(selectedTask.end);
                 }
-                // else {
-                //     endDate = new Date(startDate);
-                // }
+                else {
+                    endDate = new Date(startDate);
+                }
 
                 // Formater en YYYY-MM-DD pour input type="date"
                 startDateStr = startDate.toISOString().split('T')[0];
                 endDateStr = endDate.toISOString().split('T')[0];
+            } else {
+                startDateStr = '';
+                endDateStr = '';
             }
 
             // Vérifier si la propriété isConge existe
@@ -88,17 +92,16 @@ export const TaskForm = ({
         }
 
         // Cas par défaut (nouvelle tâche sans contexte)
-        const today = getTodayFormatted();
         return {
             title: '',
             description: '',
-            startDate: today,
-            endDate: today,
+            startDate: '',
+            endDate: '',
             resourceId: '',
             statusId: '',
             isConge: false
         };
-    }, [selectedDates, selectedTask, formatDateForInput, getTodayFormatted]);
+    }, [selectedDates, selectedTask, formatDateForInput]);
 
 
     const [formData, setFormData] = useState(getInitialFormData());
