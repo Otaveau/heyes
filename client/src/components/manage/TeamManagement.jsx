@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
-import { Trash2, Plus, Loader2, Save, X } from 'lucide-react';
+import { Trash2, Plus, Loader2, Save, X, Palette } from 'lucide-react';
 import { fetchTeams, deleteTeam, createTeam, updateTeam } from '../../services/api/teamService';
 import ConfirmationModal from '../common/ConfirmationModal';
+
+// Import des fonctions de couleur centralisées
+import { getTeamColor, getContrastTextColor } from '../../utils/colorUtils';
 
 export const TeamManagement = () => {
   const [teams, setTeams] = useState([]);
@@ -159,6 +162,11 @@ export const TeamManagement = () => {
     }
   };
 
+  // Fonction pour obtenir l'ID formaté pour la cohérence des couleurs
+  const getFormattedTeamId = (team) => {
+    return `team_${team.team_id}`;
+  };
+
   return (
     <div className="p-8 min-h-screen w-full md:w-4/5 lg:w-3/4 mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md">
       <h2 className="text-3xl text-center font-bold mb-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">Gestion des équipes</h2>
@@ -231,29 +239,58 @@ export const TeamManagement = () => {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-1">
-              {teams.map(team => (
-                <Card
-                  key={team.team_id}
-                  className={`p-5 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedTeam && selectedTeam.team_id === team.team_id
-                      ? 'bg-blue-50 border-blue-400 shadow-md dark:bg-blue-900/20 dark:border-blue-500'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/70'
+              {teams.map(team => {
+                // Obtenir l'ID formaté pour la cohérence des couleurs (team_XX)
+                const formattedId = getFormattedTeamId(team);
+                
+                // Récupérer la couleur de l'équipe en utilisant notre fonction centralisée
+                const teamColor = getTeamColor(formattedId);
+                
+                // Déterminer la couleur du texte pour un bon contraste
+                const textColor = getContrastTextColor(teamColor);
+                
+                return (
+                  <Card
+                    key={team.team_id}
+                    className={`p-0 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden ${
+                      selectedTeam && selectedTeam.team_id === team.team_id
+                        ? 'shadow-md'
+                        : ''
                     }`}
-                  onClick={() => handleTeamSelect(team)}
-                >
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-lg">{team.name}</h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => openDeleteModal(team, e)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
-                      disabled={isLoading}
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+                    onClick={() => handleTeamSelect(team)}
+                  >
+                    <div className="flex">
+                      {/* Bande de couleur */}
+                      <div 
+                        className="w-2"
+                        style={{ backgroundColor: teamColor }}
+                      ></div>
+                      
+                      <div className="flex-1 p-5">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            {/* Pastille de couleur */}
+                            <div 
+                              className="w-5 h-5 rounded-full mr-3 flex-shrink-0"
+                              style={{ backgroundColor: teamColor }}
+                            ></div>
+                            <h3 className="font-semibold text-lg">{team.name}</h3>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => openDeleteModal(team, e)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
+                            disabled={isLoading}
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
@@ -262,7 +299,13 @@ export const TeamManagement = () => {
         {selectedTeam && (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Détails de l'équipe</h3>
-            <Card className="p-6 shadow-md bg-white dark:bg-gray-700">
+            <Card className="p-6 shadow-md bg-white dark:bg-gray-700 overflow-hidden">
+              {/* Bande de couleur en haut de la carte */}
+              <div 
+                className="h-2 -mx-6 -mt-6 mb-5"
+                style={{ backgroundColor: getTeamColor(getFormattedTeamId(selectedTeam)) }}
+              ></div>
+              
               {editMode ? (
                 <form onSubmit={handleSaveEdit} className="space-y-5">
                   <div>
@@ -280,6 +323,21 @@ export const TeamManagement = () => {
                       className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  
+                  <div className="pt-3 flex items-center gap-2">
+                    <Palette className="h-5 w-5 text-gray-500" />
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
+                      Couleur d'équipe: 
+                      <span 
+                        className="inline-block w-4 h-4 ml-2 rounded-full align-middle"
+                        style={{ backgroundColor: getTeamColor(getFormattedTeamId(selectedTeam)) }}
+                      ></span>
+                    </div>
+                    <div className="text-xs text-gray-500 ml-2">
+                      (Cette couleur est utilisée pour toutes les tâches de l'équipe)
+                    </div>
+                  </div>
+                  
                   <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                     <Button
                       type="button"
@@ -314,13 +372,33 @@ export const TeamManagement = () => {
                 <div className="space-y-5">
                   <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom</p>
-                    <p className="font-medium text-lg mt-1">{selectedTeam.name}</p>
+                    <div className="flex items-center mt-1">
+                      <div 
+                        className="w-4 h-4 rounded-full mr-2"
+                        style={{ backgroundColor: getTeamColor(getFormattedTeamId(selectedTeam)) }}
+                      ></div>
+                      <p className="font-medium text-lg">{selectedTeam.name}</p>
+                    </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">ID</p>
                     <p className="font-medium text-lg mt-1">{selectedTeam.team_id}</p>
                   </div>
-                  {/* Ajouter d'autres détails si nécessaire */}
+                  
+                  <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Couleur d'équipe</p>
+                    <div className="flex items-center mt-2">
+                      <div 
+                        className="w-6 h-6 rounded mr-3"
+                        style={{ backgroundColor: getTeamColor(getFormattedTeamId(selectedTeam)) }}
+                      ></div>
+                      <code className="bg-white dark:bg-gray-700 px-2 py-1 rounded text-sm">
+                        {getTeamColor(getFormattedTeamId(selectedTeam))}
+                      </code>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Cette couleur et ses variantes sont utilisées pour toutes les tâches associées à cette équipe dans le calendrier.</p>
+                  </div>
+                  
                   <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
                     <Button
                       onClick={handleEditMode}

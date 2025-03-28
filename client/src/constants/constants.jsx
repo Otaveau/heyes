@@ -63,3 +63,12 @@ export const ERROR_MESSAGES = {
   DROP_ERROR: 'Erreur lors du déplacement',
   RESIZE_ERROR: 'Erreur lors du redimensionnement'
 };
+
+export const TEAM_BASE_COLORS = {
+  team1: '#E63946', // Rouge
+  team2: '#1D3557', // Bleu foncé
+  team3: '#2A9D8F', // Vert
+  team4: '#F4A261', // Orange
+  team5: '#9B5DE5', // Violet
+  team6: '#00BBF9', // Bleu clair
+};
