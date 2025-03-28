@@ -78,7 +78,6 @@ export const TaskCard = ({
 
   const handleClick = () => {
     if (!disabled && onTaskClick) {
-      // Enrichir la tâche avec la date de fin inclusive avant de la passer au clic
       const inclusiveEndDate = DateUtils.getInclusiveEndDate(task);
       const enrichedTask = {
         ...task,

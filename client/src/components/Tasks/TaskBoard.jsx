@@ -196,25 +196,25 @@ export const TaskBoard = ({
               if (task.statusId) return task.statusId.toString();
               if (task.extendedProps?.statusId) return task.extendedProps.statusId.toString();
               if (task.status) return task.status.toString();
-              
+
               // Valeur par défaut si aucun statusId trouvé
               return null;
             };
-          
+
             const taskStatusId = extractStatusId();
 
             // Vérifier si c'est un congé 
-            const isConge = 
-            task.isConge === true || 
-            task.extendedProps?.isConge === true || 
-            task.title === 'CONGE';
+            const isConge =
+              task.isConge === true ||
+              task.extendedProps?.isConge === true ||
+              task.title === 'CONGE';
 
             // Si c'est un congé et que le tableau courant est "En cours" (statusId === '2'),
             // alors ne pas inclure cette tâche
             if (isConge) {
               return false;
             }
-          
+
             return taskStatusId === zone.statusId;
           });
 
@@ -224,7 +224,7 @@ export const TaskBoard = ({
             <div
               key={zone.id}
               ref={effectiveRefs.current[index]}
-              className={`flex-1 w-1/4 p-4 rounded mt-4 potential-drop-target ${isInProgressZone ? 'bg-blue-50' : 'bg-gray-100 dropzone'}`}
+              className={`flex-1 w-1/4 p-5 rounded mt-5 potential-drop-target ${isInProgressZone ? 'bg-blue-50' : 'bg-gray-100 dropzone'}`}
               data-status-id={zone.statusId}
               data-zone-id={zone.id}
               data-dropzone-id={zone.id}
@@ -235,10 +235,10 @@ export const TaskBoard = ({
               {zoneTasks.map(task => {
 
                 // Vérifier si c'est un congé
-                const isConge = 
-                task.isConge === true || 
-                task.extendedProps?.isConge === true || 
-                task.title === 'CONGE';
+                const isConge =
+                  task.isConge === true ||
+                  task.extendedProps?.isConge === true ||
+                  task.title === 'CONGE';
 
                 return (
                   <div
@@ -248,10 +248,18 @@ export const TaskBoard = ({
                     data-is-conge={isConge ? 'true' : 'false'}
                     onClick={() => handleExternalTaskClick && handleExternalTaskClick(task)}
                   >
+                    {/* Titre affiché pour toutes les tâches */}
                     <div className="font-medium">{task.title}</div>
 
-                    {/* Affichage amélioré pour le taskboard 2 */}
-                    {isInProgressZone ? (
+                    {/* Description affichée pour toutes les tâches si elle existe */}
+                    {(task.description || task.extendedProps?.description) && (
+                      <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                        {task.description || task.extendedProps?.description}
+                      </div>
+                    )}
+
+                    {/* Informations supplémentaires uniquement pour le taskboard "En cours" */}
+                    {isInProgressZone && (
                       <>
                         {task.resourceId && (
                           <div className="text-xs text-blue-600 mt-1">
@@ -264,16 +272,6 @@ export const TaskBoard = ({
                           <div><span className="font-medium">Début:</span> {formatDate(task.start)}</div>
                           <div><span className="font-medium">Fin:</span> {formatDate(DateUtils.getInclusiveEndDate(task))}</div>
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        {/* Affichage standard pour les autres taskboards */}
-                        <div className="text-xs text-gray-500">ID: {task.id}</div>
-                        {task.resourceId && (
-                          <div className="text-xs text-blue-600 mt-1">
-                            Assigné: {task.resourceId}
-                          </div>
-                        )}
                       </>
                     )}
 

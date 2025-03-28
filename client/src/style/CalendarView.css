@@ -1,12 +1,77 @@
-/* =========================
- * 1. NAVIGATION ET EN-TÊTE
- * ========================= */
- .fc-custom-nav-container {
-  margin-bottom: 15px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+/* ===================================
+ * TABLE DES MATIÈRES
+ * ===================================
+ * 1. Variables et Reset
+ * 2. Navigation et En-tête
+ * 3. Jours Spéciaux
+ * 4. Ressources et Équipes
+ * 5. Drag and Drop
+ * 6. États Spéciaux
+ * 7. Éléments Temporaires
+ * 8. Animations
+ * 9. Media Queries
+ * =================================== */
+
+/* ===================================
+ * 1. Variables et Reset
+ * =================================== */
+ :root {
+  /* Couleurs primaires */
+  --color-primary: #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-primary-light: #60a5fa;
+  
+  /* Couleurs de fond */
+  --color-bg-light: #f8f9fa;
+  --color-bg-white: #ffffff;
+  --color-bg-hover: #f3f4f6;
+
+  /* Couleurs pour états */
+  --color-today-bg: rgba(59, 130, 246, 0.05);
+  --color-weekend-bg: #f3f4f6;
+  --color-holiday-bg: #fef3c7;
+  --color-highlight: rgba(74, 108, 247, 0.5);
+  
+  /* Couleurs de texte */
+  --color-text-dark: #1f2937;
+  --color-text-medium: #4b5563;
+  --color-text-light: #666666;
+  
+  /* Bordures */
+  --color-border-light: #e2e8f0;
+  --color-border-medium: #d1d5db;
+  
+  /* Espacement */
+  --spacing-xs: 3px;
+  --spacing-sm: 5px;
+  --spacing-md: 10px;
+  --spacing-lg: 15px;
+  
+  /* Ombres */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.05);
+  
+  /* Typographie */
+  --font-size-xs: 0.85rem;
+  --font-size-sm: 0.9rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.1rem;
+  
+  /* Border-radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+/* ===================================
+ * 2. Navigation et En-tête
+ * =================================== */
+.fc-custom-nav-container {
+  margin-bottom: var(--spacing-lg);
+  background-color: var(--color-bg-light);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-md);
 }
 
 .fc-nav-row {
@@ -14,26 +79,26 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--spacing-md);
 }
 
 /* Styles communs pour tous les boutons */
 .fc-custom-nav-container button.fc-button {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #4b5563;
+  background-color: var(--color-bg-white);
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-medium);
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 6px 12px;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .fc-custom-nav-container button.fc-button:hover {
-  background-color: #f3f4f6;
-  border-color: #d1d5db;
-  color: #1f2937;
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-border-medium);
+  color: var(--color-text-dark);
 }
 
 /* Groupes de boutons */
@@ -41,35 +106,47 @@
 .fc-view-buttons {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--spacing-sm);
 }
 
-/* Style spécifique pour l'affichage de l'année */
+/* Style pour l'affichage de l'année */
 .fc-year-display {
   font-weight: 600;
-  font-size: 1.1rem;
-  color: #1f2937;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-dark);
   padding: 0 8px;
+}
+
+/* Style pour l'affichage de la semaine */
+.fc-week-display {
+  display: inline-block;
+  padding: 0 8px;
+  font-weight: 600;
+  min-width: 100px;
+  text-align: center;
+  background-color: var(--color-bg-hover);
+  border-radius: var(--radius-sm);
+  margin: 0 4px;
 }
 
 /* Styles pour les boutons de mois */
 .fc-months-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: var(--spacing-xs);
   justify-content: center;
 }
 
 .fc-month-button {
   padding: 4px 8px !important;
-  font-size: 0.85rem !important;
+  font-size: var(--font-size-xs) !important;
   min-width: 40px;
 }
 
 /* Bouton actif */
 .fc-button-active {
-  background-color: #3b82f6 !important;
-  border-color: #2563eb !important;
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary-dark) !important;
   color: white !important;
   font-weight: 600 !important;
 }
@@ -78,39 +155,18 @@
 button.fc-today-button {
   background-color: #f0f9ff;
   border-color: #93c5fd;
-  color: #2563eb;
+  color: var(--color-primary-dark);
   font-weight: 600;
 }
 
 button.fc-today-button:hover {
   background-color: #dbeafe;
-  border-color: #60a5fa;
+  border-color: var(--color-primary-light);
 }
 
-/* Responsive pour les boutons de mois */
-@media (max-width: 768px) {
-  .month-full { display: none; }
-  .month-abbr { display: inline; }
-  
-  .fc-nav-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .fc-year-nav,
-  .fc-view-buttons {
-    justify-content: center;
-  }
-}
-
-@media (min-width: 769px) {
-  .month-full { display: inline; }
-  .month-abbr { display: none; }
-}
-
-/* =========================
- * 2. JOURS SPÉCIAUX
- * ========================= */
+/* ===================================
+ * 3. Jours Spéciaux
+ * =================================== */
 /* Styles communs pour les jours fériés et weekends */
 .fc .holiday-slot,
 .fc .weekend-slot,
@@ -123,30 +179,30 @@ button.fc-today-button:hover {
 .fc .weekend-slot .fc-timeline-slot-cushion,
 .fc .holiday-column .fc-timeline-slot-cushion,
 .fc .weekend-column .fc-timeline-slot-cushion {
-  color: #666;
+  color: var(--color-text-light);
 }
 
 /* Styles spécifiques */
 .holiday-column {
-  background-color: #fef3c7 !important; /* Jaune pâle */
+  background-color: var(--color-holiday-bg) !important; /* Jaune pâle */
 }
 
 .weekend-column {
-  background-color: #f3f4f6 !important; /* Gris très clair */
+  background-color: var(--color-weekend-bg) !important; /* Gris très clair */
 }
 
 .fc-day-today {
-  background-color: rgba(59, 130, 246, 0.05) !important;
-  border-left: 2px solid #3b82f6 !important;
-  border-right: 2px solid #3b82f6 !important;
+  background-color: var(--color-today-bg) !important;
+  border-left: 2px solid var(--color-primary) !important;
+  border-right: 2px solid var(--color-primary) !important;
 }
 
-/* =========================
- * 3. RESSOURCES ET ÉQUIPES
- * ========================= */
+/* ===================================
+ * 4. Ressources et Équipes
+ * =================================== */
 /* Style pour les lignes d'équipes */
 .fc-timeline-lane.team-resource-lane {
-  background-color: #f3f4f6 !important;
+  background-color: var(--color-bg-hover) !important;
   cursor: not-allowed !important;
 }
 
@@ -159,7 +215,7 @@ button.fc-today-button:hover {
 .fc-datagrid-cell.team-header {
   font-weight: bold !important;
   background-color: #e5e7eb !important;
-  border-bottom: 1px solid #d1d5db !important;
+  border-bottom: 1px solid var(--color-border-medium) !important;
 }
 
 /* Style pour propriétaires (enfants des équipes) */
@@ -167,9 +223,9 @@ button.fc-today-button:hover {
   padding-left: 20px !important;
 }
 
-/* =========================
- * 4. DRAG AND DROP
- * ========================= */
+/* ===================================
+ * 5. Drag and Drop
+ * =================================== */
 /* Styles de base pour les cartes de tâches */
 .task-card {
   touch-action: none;
@@ -180,6 +236,11 @@ button.fc-today-button:hover {
 .fc-event {
   cursor: move !important;
   user-select: none;
+}
+
+.fc-timeline-event{
+  margin: 0!important;
+  padding: 0!important;
 }
 
 .task-card.dragging,
@@ -205,19 +266,19 @@ button.fc-today-button:hover {
 /* Feedback de drop */
 .fc-highlight {
   background-color: rgba(59, 130, 246, 0.1) !important;
-  border: 2px dashed rgb(59, 130, 246) !important;
+  border: 2px dashed var(--color-primary) !important;
 }
 
 .backlog-container.drag-active,
 .fc-view-harness.fc-drop-active {
   background-color: rgba(59, 130, 246, 0.1);
-  border: 2px dashed rgb(59, 130, 246);
+  border: 2px dashed var(--color-primary);
   outline-offset: -2px;
 }
 
-/* =========================
- * 5. ÉTATS SPÉCIAUX
- * ========================= */
+/* ===================================
+ * 6. États Spéciaux
+ * =================================== */
 /* Traitement en cours */
 .processing .task-card {
   pointer-events: none;
@@ -226,8 +287,8 @@ button.fc-today-button:hover {
 
 /* Mise en surbrillance */
 .taskboard-highlight {
-  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
-  border-radius: 8px;
+  box-shadow: 0 0 0 2px var(--color-highlight), 0 0 15px rgba(74, 108, 247, 0.4);
+  border-radius: var(--radius-lg);
   animation: pulse-border 1.5s infinite ease-in-out;
   transition: all 0.15s ease-out;
 }
@@ -249,18 +310,18 @@ button.fc-today-button:hover {
   border: 1px dashed #ccc;
 }
 
-/* =========================
- * 6. ÉLÉMENTS TEMPORAIRES
- * ========================= */
- .task-ghost-element {
+/* ===================================
+ * 7. Éléments Temporaires
+ * =================================== */
+.task-ghost-element {
   font-weight: bold;
   border: 2px solid rgba(74, 108, 247, 0.7);
   transform-origin: center center;
-  background-color: white!important;
+  background-color: white !important;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  color: #333!important;
+  color: #333 !important;
 }
 
 .task-added {
@@ -270,13 +331,13 @@ button.fc-today-button:hover {
 .temporary-task-placeholder {
   background-color: rgba(74, 108, 247, 0.2);
   border: 2px dashed rgba(74, 108, 247, 0.7);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   box-shadow: none;
 }
 
-/* =========================
- * 7. ANIMATIONS
- * ========================= */
+/* ===================================
+ * 8. Animations
+ * =================================== */
 @keyframes pulse-border {
   0% {
     box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.5), 0 0 15px rgba(74, 108, 247, 0.4);
@@ -304,26 +365,25 @@ button.fc-today-button:hover {
   }
 }
 
-/*Styles CSS pour l'affichage du numéro de semaine*/
-
-/* Ajoutez ces styles à votre fichier CSS */
-.fc-week-display {
-  display: inline-block;
-  padding: 0 8px;
-  font-weight: 600;
-  min-width: 100px;
-  text-align: center;
+/* ===================================
+ * 9. Media Queries
+ * =================================== */
+@media (max-width: 768px) {
+  .month-full { display: none; }
+  .month-abbr { display: inline; }
+  
+  .fc-nav-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .fc-year-nav,
+  .fc-view-buttons {
+    justify-content: center;
+  }
 }
 
-/* Assurez-vous que les boutons et l'affichage de la semaine sont bien alignés */
-.fc-year-nav {
-  display: flex;
-  align-items: center;
-}
-
-/* Style optionnel pour mettre en évidence l'affichage du numéro de semaine */
-.fc-week-display {
-  background-color: #f3f4f6;
-  border-radius: 4px;
-  margin: 0 4px;
+@media (min-width: 769px) {
+  .month-full { display: inline; }
+  .month-abbr { display: none; }
 }

@@ -314,7 +314,7 @@ export const CalendarView = () => {
         />
       </div>
 
-      <div className="w-full mt-4">
+      <div className="w-full m-4">
         <TaskBoard
           dropZones={dropZones}
           dropZoneRefs={dropZoneRefs}
