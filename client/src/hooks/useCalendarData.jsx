@@ -72,8 +72,6 @@ export const useCalendarData = () => {
   const formatTasks = useCallback((tasksData) => {
     const tasks = Array.isArray(tasksData) ? tasksData : [];
 
-    console.log('tasksData:', tasksData);
-
     return tasks.map(task => {
       if (!task) return null;
 
@@ -188,8 +186,6 @@ export const useCalendarData = () => {
 
       const formattedTasks = formatTasks(tasksData);
       setTasks(formattedTasks);
-
-      console.log('formattedTasks:', formattedTasks);
 
     } catch (err) {
       console.error('Erreur générale dans loadData:', err);

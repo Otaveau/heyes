@@ -54,8 +54,6 @@ export const CalendarView = () => {
     // Trouver la tâche à déplacer
     const taskToMove = tasks.find(task => task.id.toString() === taskId.toString());
 
-    console.log('taskToMove :', taskToMove);
-
     if (!taskToMove) {
       console.error(`Tâche avec l'ID ${taskId} non trouvée`);
       return;

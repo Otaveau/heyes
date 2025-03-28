@@ -44,8 +44,6 @@ export const useExternalTaskHandlers = (
     const fullTask = tasks.find(t => t.id.toString() === task.id.toString());
     if (!fullTask) return;
 
-    console.log('fullTask:', fullTask);
-
     // Obtenir la date de fin inclusive
     const inclusiveEndDate = getInclusiveEndDate(fullTask);
 
@@ -146,7 +144,6 @@ export const useExternalTaskHandlers = (
       const droppableElements = document.querySelectorAll('[data-status-id]');
 
       if (!droppableElements || droppableElements.length === 0) {
-        console.log('Aucun élément avec data-status-id trouvé dans le DOM');
         return null;
       }
 
@@ -170,7 +167,6 @@ export const useExternalTaskHandlers = (
           // Trouver la dropZone correspondante
           const dropZone = dropZones.find(zone => zone.statusId === statusId);
           if (dropZone) {
-            console.log(`Élément trouvé au-dessus de la zone ${dropZone.title}`);
             return { dropZone, element };
           }
         }
@@ -285,7 +281,6 @@ export const useExternalTaskHandlers = (
 
       // Si c'est un congé, ignorer le drop
       if (isConge) {
-        console.log("Drop ignoré: les congés ne peuvent pas être déplacés");
 
         // Restaurer visuellement l'élément
         if (info.el) {
@@ -298,7 +293,6 @@ export const useExternalTaskHandlers = (
     }
 
     try {
-      console.log('État de dropZones:', dropZones ? `tableau avec ${dropZones.length} éléments` : 'undefined');
 
       // Nettoyer tous les effets visuels
       highlightTaskBoard(false);
@@ -324,9 +318,7 @@ export const useExternalTaskHandlers = (
         y: info.jsEvent.clientY
       };
 
-      console.log('Position de l\'événement:', eventPosition);
       const dropTarget = isEventOverDropZone(eventPosition);
-      console.log('Cible de dépôt:', dropTarget);
 
       if (dropTarget && dropTarget.dropZone) {
         const { dropZone } = dropTarget;
@@ -403,7 +395,6 @@ export const useExternalTaskHandlers = (
               successMessage: `Tâche déplacée vers ${dropZone.title || 'la colonne'}`
             });
 
-            console.log('Réponse de mise à jour:', response);
           } catch (error) {
             console.error('Erreur lors de la mise à jour de la tâche:', error);
             if (typeof toast !== 'undefined' && toast.error) {
@@ -417,7 +408,7 @@ export const useExternalTaskHandlers = (
     } catch (error) {
       console.error('Erreur dans handleEventDragStop:', error);
     }
-  }, [tasks, updateTaskStatus, handleTaskUpdate, highlightTaskBoard, isEventOverDropZone, simulateImmediateAppearance, dropZones]);
+  }, [tasks, updateTaskStatus, handleTaskUpdate, highlightTaskBoard, isEventOverDropZone, simulateImmediateAppearance]);
 
 
   // Dépôt d'une tâche externe sur le calendrier

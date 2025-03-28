@@ -60,7 +60,6 @@ export const useCalendarEventHandlers = (
 
   // Déplacement d'un événement dans le calendrier
   const handleEventDrop = useCallback(async (dropInfo) => {
-    console.log('handleEventDrop :', handleEventDrop);
     const { event } = dropInfo;
     const startDate = event.start;
     const endDate = event.end || new Date(startDate.getTime() + 86400000);
@@ -117,16 +116,9 @@ export const useCalendarEventHandlers = (
     const startDate = event.start;
     const endDate = event.end || new Date(startDate.getTime() + 86400000);
 
-    console.log ('startDate :', startDate);
-    console.log ('endDate :', endDate);
-
     const exclusiveEndDate = endDate;
     const inclusiveEndDate = new Date(exclusiveEndDate);
     inclusiveEndDate.setDate(inclusiveEndDate.getDate() - 1);
-
-    console.log ('inclusiveEndDate :', inclusiveEndDate);
-
-
 
     // Validation des dates avec la date de fin inclusive
     if (!DateUtils.hasValidEventBoundaries(startDate, inclusiveEndDate, holidays)) {

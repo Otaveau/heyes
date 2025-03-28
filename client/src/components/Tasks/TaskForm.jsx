@@ -34,9 +34,6 @@ export const TaskForm = ({
 
 
         if (selectedTask) {
-
-            console.log('selectedTask:', selectedTask);
-
             const isAssigned = selectedTask.start && selectedTask.end;
 
             let startDateStr, endDateStr;

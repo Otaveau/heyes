@@ -18,15 +18,11 @@ const navigateToMonth = useCallback((monthIndex) => {
   const year = selectedYear;
   const currentView = calendarApi.view.type;
 
-  // Ajouter des logs pour déboguer
-  console.log(`Navigation vers: ${months[monthIndex]} ${year}, Vue: ${currentView}`);
-
   try {
     // Pour la vue semaine
     if (currentView === 'resourceTimelineWeek') {
       // Créer une date UTC pour le premier jour du mois
       const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1));
-      console.log("Premier jour UTC:", firstDayOfMonth.toISOString());
       
       // Trouver le jour de la semaine (0=dimanche, 1=lundi, etc.)
       const dayOfWeek = firstDayOfMonth.getDay();
@@ -56,11 +52,8 @@ const navigateToMonth = useCallback((monthIndex) => {
         }
       }
       
-      console.log("Lundi calculé:", mondayDate.toISOString());
-      
       // Force FullCalendar à cette date exacte
-      const adjustedDateStr = mondayDate.toISOString().split('T')[0]; // Format 'YYYY-MM-DD'
-      console.log("Navigation vers date exacte:", adjustedDateStr);
+      const adjustedDateStr = mondayDate.toISOString().split('T')[0];
       
       calendarApi.gotoDate(adjustedDateStr);
     }
@@ -68,11 +61,9 @@ const navigateToMonth = useCallback((monthIndex) => {
     else if (currentView === 'resourceTimelineMonth') {
       // Créer une date pour le premier jour du mois en UTC
       const firstDayOfMonth = new Date(Date.UTC(year, monthIndex, 1));
-      console.log("Premier jour du mois (UTC):", firstDayOfMonth.toISOString());
       
       // Utiliser directement la chaîne de date ISO pour éviter les décalages
-      const dateStr = firstDayOfMonth.toISOString().split('T')[0]; // Format 'YYYY-MM-DD'
-      console.log("Navigation vers date exacte:", dateStr);
+      const dateStr = firstDayOfMonth.toISOString().split('T')[0];
       
       calendarApi.gotoDate(dateStr);
     } 
@@ -125,14 +116,13 @@ const navigateToMonth = useCallback((monthIndex) => {
       // Utiliser le format de chaîne de date pour éviter les décalages
       const fallbackDate = new Date(Date.UTC(year, monthIndex, 1));
       const dateStr = fallbackDate.toISOString().split('T')[0];
-      console.log("Navigation de secours vers:", dateStr);
       
       calendarApi.gotoDate(dateStr);
     } catch (fallbackError) {
       console.error("Erreur de secours:", fallbackError);
     }
   }
-}, [calendarRef, selectedYear, months]);
+}, [calendarRef, selectedYear]);
 
   // Fonctions pour la navigation entre les années
   const goToPreviousYear = useCallback(() => {

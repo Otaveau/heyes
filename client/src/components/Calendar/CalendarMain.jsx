@@ -5,6 +5,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 import { DateUtils } from '../../utils/dateUtils';
 import { getEnhancedCalendarStyles } from '../../style/calendarStyles';
+import { generateTaskColorSystem, getContrastTextColor } from '../../utils/colorUtils';
 
 export const CalendarMain = ({
   calendarRef,
@@ -25,6 +26,10 @@ export const CalendarMain = ({
 
   const [currentView, setCurrentView] = useState('resourceTimelineYear');
   const [currentWeekNumber, setCurrentWeekNumber] = useState(1);
+  const memberColorMap = useMemo(() => {
+    return generateTaskColorSystem(resources);
+  }, [resources]);
+
 
   // Calcule le numéro de semaine
   const getWeekNumber = (date) => {
@@ -39,8 +44,6 @@ export const CalendarMain = ({
     // Calculer le numéro de la semaine
     return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
   };
-
-
 
 
   const formattedTasksForCalendar = useMemo(() => {
@@ -367,7 +370,7 @@ export const CalendarMain = ({
         datesSet={(info) => {
           // Appeler le gestionnaire existant
           internalHandleViewChange(info);
-          
+
           // Mettre à jour le numéro de semaine si on est en vue semaine
           if (info.view.type === 'resourceTimelineWeek') {
             setCurrentWeekNumber(getWeekNumber(info.view.currentStart));
@@ -451,6 +454,52 @@ export const CalendarMain = ({
             classes.push('holiday-cell');
           }
           return classes;
+        }}
+
+        eventContent={(arg) => {
+          const { event } = arg;
+          // Obtenir la ressource (owner) associée à cet événement
+          const resourceId = event.getResources()[0]?.id;
+          console.log('resourceId', resourceId);
+
+          // Définir une couleur par défaut
+          let backgroundColor = '#9CA3AF'; // Gris par défaut
+
+          // Log pour débogage
+          console.log(`Tâche: ${event.title}, ResourceId: ${resourceId}`);
+
+          // Si nous avons une ressource et une couleur associée, l'utiliser
+          if (resourceId !== null && memberColorMap[resourceId]) {
+            backgroundColor = memberColorMap[resourceId];
+            console.log(`Couleur pour ${resourceId}: ${backgroundColor}`);
+          } else {
+            console.log(`Pas de couleur trouvée pour la ressource ${resourceId}`);
+          }
+
+          // Déterminer la couleur du texte pour un bon contraste
+          const textColor = getContrastTextColor(backgroundColor);
+
+          // Appliquer le style uniquement pour les vues timeline
+          if (arg.view.type.includes('resourceTimeline')) {
+            return {
+              html: `
+        <div class="fc-event-main-custom" 
+             style="background-color:${backgroundColor}; 
+                    color:${textColor}; 
+                    padding:2px 4px; 
+                    border-radius:3px; 
+                    height:100%;
+                    overflow:hidden; 
+                    text-overflow:ellipsis; 
+                    white-space:nowrap;">
+          ${event.title}
+        </div>
+      `
+            };
+          }
+
+          // Pour les autres types de vues, utiliser le rendu par défaut
+          return null;
         }}
 
         // Gestionnaires d'événements

@@ -79,8 +79,6 @@ export const useTaskMutationHandlers = (setTasks, setCalendarState, tasks, holid
             end_date: null
           }
         };
-
-        console.log('Mise à jour avec dates nulles:', completeUpdates);
       }
 
       // Mise à jour locale
@@ -92,9 +90,7 @@ export const useTaskMutationHandlers = (setTasks, setCalendarState, tasks, holid
       // Appel API si nécessaire
       let apiResponse = completeUpdates;
       if (!skipApiCall) {
-        console.log('Envoi API de la mise à jour:', apiUpdates);
         apiResponse = await updateTask(taskId, apiUpdates);
-        console.log('Réponse API:', apiResponse);
       }
 
       if (successMessage) {
