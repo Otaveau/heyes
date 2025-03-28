@@ -45,7 +45,7 @@ export const Navigation = () => {
               <div className="flex-shrink-0 flex items-center">
                 <Link to="/calendar" className="flex items-center">
                   <img src={logoImage} alt="Heyes" className="h-10 w-auto" />
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white ml-2">Eyes</span>
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white ml-1">Eyes</span>
                 </Link>
               </div>
 
