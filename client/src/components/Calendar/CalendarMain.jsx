@@ -328,7 +328,7 @@ export const CalendarMain = ({
 
 
   return (
-    <div className="calendar-container">
+    <div className="calendar-container ml-4">
       {renderCustomNavigation()}
       <FullCalendar
         ref={calendarRef}

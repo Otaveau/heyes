@@ -35,11 +35,15 @@ export const getTeamColor = (teamId) => {
 /**
  * Fonction pour générer un système de couleurs basé sur les équipes et leurs membres
  */
+/**
+ * Fonction pour générer un système de couleurs basé sur les équipes et leurs membres
+ * avec des nuances fortement accentuées, surtout entre les positions 2 et 3
+ */
 export const generateTaskColorSystem = (resources) => {
   // Map pour stocker les couleurs de chaque membre
   const memberColorMap = {};
   
-  // Identifier toutes les équipes (celles dont l'ID commence par "team_")
+  // Identifier toutes les équipes
   const teams = resources.filter(resource => 
     typeof resource.id === 'string' && resource.id.startsWith('team_')
   );
@@ -47,42 +51,57 @@ export const generateTaskColorSystem = (resources) => {
   // Map pour associer les IDs d'équipe à leurs couleurs de base
   const teamColorMap = {};
   
-  // Attribuer une couleur de base à chaque équipe en utilisant notre fonction cohérente
+  // Attribuer une couleur de base à chaque équipe
   teams.forEach(team => {
     teamColorMap[team.id] = getTeamColor(team.id);
   });
   
-  // Pour chaque équipe, trouver tous ses membres et leur attribuer des nuances de la couleur de l'équipe
+  // Pour chaque équipe, trouver tous ses membres et leur attribuer des nuances distinctes
   teams.forEach(team => {
-    // Trouver tous les membres de cette équipe (ceux qui ont parentId égal à l'ID de l'équipe)
     const teamMembers = resources.filter(
       resource => resource.parentId === team.id
     );
     
-    // La couleur de base de l'équipe
     const baseColor = teamColorMap[team.id];
     
     if (baseColor && teamMembers.length > 0) {
-      // Créer des nuances différentes pour chaque membre
+      // Définir des paliers de variation prédéfinis pour créer des écarts plus marqués
+      // Utiliser une distribution non-linéaire pour accentuer les différences
+      const variationTable = [
+        -35,  // Premier membre: beaucoup plus sombre
+        -15,  // Deuxième membre: légèrement plus sombre
+        20,   // Troisième membre: nettement plus clair (grand écart avec le 2ème)
+        40    // Quatrième membre: très clair
+      ];
+      
+      // Pour les équipes avec plus de membres, générer plus de variations
+      if (teamMembers.length > variationTable.length) {
+        // Compléter avec des valeurs intermédiaires ou extrêmes pour les membres supplémentaires
+        for (let i = variationTable.length; i < teamMembers.length; i++) {
+          // Alterner entre des valeurs très sombres et très claires pour maximiser le contraste
+          variationTable.push(i % 2 === 0 ? -40 - (i * 2) : 45 + (i * 2));
+        }
+      }
+      
+      // Assigner les couleurs aux membres
       teamMembers.forEach((member, memberIndex) => {
-        // Calcul de variation pour obtenir des nuances différentes
-        const variationPercent = -15 + (memberIndex * (30 / Math.max(teamMembers.length - 1, 1)));
+        // Utiliser la valeur de variation du tableau ou une valeur par défaut
+        const variationPercent = memberIndex < variationTable.length 
+          ? variationTable[memberIndex]
+          : (memberIndex % 2 === 0 ? -30 : 30); // Valeur par défaut alternée
         
-        // Générer la couleur variée pour ce membre
         const memberColor = adjustColor(baseColor, variationPercent);
         memberColorMap[member.id] = memberColor;
       });
     }
   });
   
-  // Pour tout membre qui n'aurait pas de couleur assignée (pas d'équipe ou autre)
+  // Traiter les membres sans équipe assignée
   resources.forEach(resource => {
-    // Ne pas attribuer de couleur aux équipes
     if (typeof resource.id === 'string' && resource.id.startsWith('team_')) {
       return;
     }
     
-    // Si le membre n'a pas encore de couleur, lui attribuer une couleur par défaut
     if (!memberColorMap[resource.id]) {
       memberColorMap[resource.id] = '#9CA3AF';
     }
