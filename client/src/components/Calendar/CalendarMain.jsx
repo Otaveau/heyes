@@ -458,15 +458,45 @@ export const CalendarMain = ({
 
         eventContent={(arg) => {
           const { event } = arg;
+
           // Obtenir la ressource (owner) associée à cet événement
           const resourceId = event.getResources()[0]?.id;
-          console.log('resourceId', resourceId);
+
+          const isConge =  event.title?.toLowerCase().includes('conge');
 
           // Définir une couleur par défaut
-          let backgroundColor = '#9CA3AF'; // Gris par défaut
-
-          // Log pour débogage
-          console.log(`Tâche: ${event.title}, ResourceId: ${resourceId}`);
+          let backgroundColor = '';
+          
+          if (isConge) {
+            const textColor = "#2C3539";
+            
+            if (arg.view.type.includes('resourceTimeline')) {
+              return {
+                html: `
+                  <div class="fc-event-main-custom" 
+                       style="position: relative;
+                              height: 100%;
+                              padding: 2px 4px; 
+                              border-radius: 3px;
+                              overflow: hidden; 
+                              text-overflow: ellipsis; 
+                              white-space: nowrap;
+                              background: repeating-linear-gradient(
+                                45deg,
+                              #9CA3AF,
+                              #9CA3AF 2px,
+                              #FFFFFF 2px,
+                              #FFFFFF 4px
+                              );
+                              color: ${textColor};
+                              font-weight: bold;">
+                    ${event.title}
+                  </div>
+                `
+              };
+            }
+            return null;
+          }// Gris par défaut
 
           // Si nous avons une ressource et une couleur associée, l'utiliser
           if (resourceId !== null && memberColorMap[resourceId]) {
