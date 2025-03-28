@@ -14,7 +14,6 @@ export const fetchOwners = async () => {
             id: owner.id,
             ownerId: owner.owner_id,
             name: owner.name,
-            email: owner.email,
             teamId: owner.team_id,
             userId: owner.user_id
         }));

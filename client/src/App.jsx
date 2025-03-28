@@ -6,47 +6,26 @@ import Register from './components/auth/Register';
 import { OwnerManagement } from './components/manage/OwnerManagement';
 import { TeamManagement } from './components/manage/TeamManagement';
 import { Navigation } from './components/common/Navigation';
+import { Spinner } from './components/common/Spinner';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const PrivateWrapper = ({ children }) => {
   const { state } = useAuth();
-  
-  if (state.loading) {
-    return <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-    </div>;
-  }
-  
-  return state.isAuthenticated ? children : <Navigate to="/login" replace />;
+  return state.loading ? <Spinner /> : (state.isAuthenticated ? children : <Navigate to="/login" replace />);
 };
 
 const PublicOnlyWrapper = ({ children }) => {
   const { state } = useAuth();
-  
-  if (state.loading) {
-    return <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-    </div>;
-  }
-  
-  return state.isAuthenticated ? <Navigate to="/calendar" replace /> : children;
+  return state.loading ? <Spinner /> : (state.isAuthenticated ? <Navigate to="/calendar" replace /> : children);
 };
+
 
 const RootRedirect = () => {
   const { state } = useAuth();
-  
-  if (state.loading) {
-    return <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-    </div>;
-  }
-  
-  return state.isAuthenticated ? (
-    <Navigate to="/calendar" replace />
-  ) : (
-    <Navigate to="/login" replace />
+  return state.loading ? <Spinner /> : (
+    state.isAuthenticated ? <Navigate to="/calendar" replace /> : <Navigate to="/login" replace />
   );
 };
 
@@ -54,9 +33,7 @@ const AppContent = () => {
   const { state } = useAuth();
 
   if (state.loading) {
-    return <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-    </div>;
+    return <Spinner />;
   }
 
   return (

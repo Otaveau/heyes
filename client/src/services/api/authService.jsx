@@ -22,15 +22,18 @@ export const validateToken = async (token) => {
 };
 
 export const login = async (credentials) => {
-    if (!credentials?.email || !credentials?.password) {
-        throw new Error('Email et mot de passe requis');
+    if (!credentials?.name || !credentials?.password) {
+        throw new Error('Nom et mot de passe requis');
     }
 
     try {
         const response = await fetchWithTimeout(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(credentials)
+            body: JSON.stringify({
+                name: credentials.name,
+                password: credentials.password
+            })
         });
 
         return handleResponse(response);
@@ -41,15 +44,18 @@ export const login = async (credentials) => {
 };
 
 export const register = async (userData) => {
-    if (!userData?.email || !userData?.password || !userData?.name) {
-        throw new Error('Email, mot de passe et nom requis');
+    if (!userData?.name || !userData?.password) {
+        throw new Error('Nom et mot de passe requis');
     }
 
     try {
         const response = await fetchWithTimeout(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData)
+            body: JSON.stringify({
+                name: userData.name,
+                password: userData.password
+            })
         });
 
         return handleResponse(response);

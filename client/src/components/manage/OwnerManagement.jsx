@@ -14,7 +14,6 @@ export const OwnerManagement = () => {
   const [owners, setOwners] = useState([]);
   const [newOwner, setNewOwner] = useState({
     name: '',
-    email: '',
     teamId: ''
   });
   const [teams, setTeams] = useState([]);
@@ -25,7 +24,7 @@ export const OwnerManagement = () => {
   const [error, setError] = useState(null);
   const [selectedOwner, setSelectedOwner] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [editedOwner, setEditedOwner] = useState({ name: '', email: '', teamId: '' });
+  const [editedOwner, setEditedOwner] = useState({ name: '',  teamId: '' });
 
   // Utiliser useRef pour surveiller les changements de selectedOwner
   const previousSelectedOwner = useRef(null);
@@ -68,30 +67,29 @@ export const OwnerManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newOwner.name.trim() || !newOwner.email.trim() || !newOwner.teamId) return;
+    if (!newOwner.name.trim() || !newOwner.teamId) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Vérification si l'email existe déjà
-      const existingOwner = owners.find(owner => owner.email.toLowerCase() === newOwner.email.toLowerCase());
+      // Vérification si le name existe déjà
+      const existingOwner = owners.find(owner => owner.name.toLowerCase() === newOwner.name.toLowerCase());
       if (existingOwner) {
-        setError('Un membre avec cet email existe déjà');
+        setError('Un membre avec ce nom existe déjà');
         setIsSubmitting(false);
         return;
       }
 
       const sanitizedOwner = {
         name: newOwner.name.trim(),
-        email: newOwner.email.trim(),
         teamId: newOwner.teamId ? parseInt(newOwner.teamId, 10) : null
       };
 
       // Utilisation du service createOwner
       await createOwner(sanitizedOwner);
 
-      setNewOwner({ name: '', email: '', teamId: '' });
+      setNewOwner({ name: '',teamId: '' });
 
       await loadOwners();
     } catch (error) {
@@ -198,31 +196,29 @@ export const OwnerManagement = () => {
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
-    if (!editedOwner.name.trim() || !editedOwner.email.trim() || !editedOwner.teamId) return;
+    if (!editedOwner.name.trim() || !editedOwner.teamId) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Vérifier si l'email existe déjà et n'appartient pas à cet owner
+      // Vérifier si le nom existe déjà et n'appartient pas à cet owner
       const ownerId = editedOwner.id || editedOwner.owner_id || editedOwner.ownerId;
 
       const existingOwner = owners.find(owner => {
-        const ownerEmail = owner.email.toLowerCase();
-        const editedEmail = editedOwner.email.toLowerCase();
-        const currentOwnerId = owner.id || owner.owner_id || owner.ownerId;
-        return ownerEmail === editedEmail && currentOwnerId !== ownerId;
+        const ownerName = owner.name.toLowerCase();
+        const editedName = editedOwner.name.toLowerCase();
+        return ownerName === editedName;
       });
 
       if (existingOwner) {
-        setError('Un autre membre utilise déjà cet email');
+        setError('Un autre membre utilise déjà ce nom');
         setIsSubmitting(false);
         return;
       }
 
       const sanitizedOwner = {
         name: editedOwner.name.trim(),
-        email: editedOwner.email.trim(),
         teamId: editedOwner.teamId ? parseInt(editedOwner.teamId, 10) : null
       };
 
@@ -295,7 +291,7 @@ export const OwnerManagement = () => {
       <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-sm mb-10">
         <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Ajouter un membre</h3>
         <form onSubmit={handleSubmit} className="flex flex-col items-center">
-          <div className="grid gap-4 md:grid-cols-3 w-full">
+          <div className="grid gap-4 md:grid-cols-2 w-full">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nom</label>
               <Input
@@ -303,18 +299,6 @@ export const OwnerManagement = () => {
                 value={newOwner.name}
                 onChange={(e) => setNewOwner({ ...newOwner, name: e.target.value })}
                 placeholder="Nom du membre"
-                required
-                disabled={isSubmitting}
-                className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-              <Input
-                type="email"
-                value={newOwner.email}
-                onChange={(e) => setNewOwner({ ...newOwner, email: e.target.value })}
-                placeholder="Email du membre"
                 required
                 disabled={isSubmitting}
                 className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -347,7 +331,7 @@ export const OwnerManagement = () => {
           <div className="mt-6">
             <Button
               type="submit"
-              disabled={isSubmitting || !newOwner.name.trim() || !newOwner.email.trim() || !newOwner.teamId}
+              disabled={isSubmitting || !newOwner.name.trim() ||!newOwner.teamId}
               className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md shadow-sm transition-all duration-200 font-medium"
             >
               {isSubmitting ? (
@@ -421,7 +405,6 @@ export const OwnerManagement = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-semibold text-lg">{owner.name}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{owner.email}</p>
                             <div className="mt-2 flex items-center">
                               {/* Pastille de couleur de l'équipe */}
                               <div 
@@ -481,21 +464,6 @@ export const OwnerManagement = () => {
                     />
                   </div>
                   <div>
-                    <label htmlFor="ownerEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Email
-                    </label>
-                    <Input
-                      id="ownerEmail"
-                      type="email"
-                      value={editedOwner.email}
-                      onChange={(e) => setEditedOwner({ ...editedOwner, email: e.target.value })}
-                      placeholder="Email"
-                      required
-                      disabled={isSubmitting}
-                      className="w-full border-gray-300 focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
                     <label htmlFor="ownerTeam" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Équipe
                     </label>
@@ -540,7 +508,7 @@ export const OwnerManagement = () => {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={isSubmitting || !editedOwner.name.trim() || !editedOwner.email.trim() || !editedOwner.teamId}
+                      disabled={isSubmitting || !editedOwner.name.trim() || !editedOwner.teamId}
                       className="bg-green-600 hover:bg-green-700 text-white transition-colors duration-200 px-4 py-2 rounded-md shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
@@ -562,10 +530,6 @@ export const OwnerManagement = () => {
                   <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom</p>
                     <p className="font-medium text-lg mt-1">{selectedOwner.name}</p>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</p>
-                    <p className="font-medium text-lg mt-1">{selectedOwner.email}</p>
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Équipe</p>

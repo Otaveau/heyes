@@ -1,57 +1,84 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { generateToken } = require('../config/jwt');
 const pool = require('../config/database');
 
 const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, password } = req.body;
+
+  // Validation des entrées
+  if (!name || !password) {
+    return res.status(400).json({ error: 'Le nom d\'utilisateur et le mot de passe sont requis' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
+  }
 
   try {
-    // Vérifications avant l'insertion
-    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1 OR name = $2', [email, name]);
+    // Vérification si le nom d'utilisateur existe déjà
+    const existingUser = await pool.query('SELECT * FROM users WHERE name = $1', [name]);
     
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: 'Email ou nom déjà utilisé' });
+      return res.status(400).json({ error: 'Ce nom d\'utilisateur est déjà utilisé' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const result = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING user_id, name, email',
-      [name, email, hashedPassword]
+      'INSERT INTO users (name, password) VALUES ($1, $2) RETURNING user_id, name',
+      [name, hashedPassword]
     );
-    res.status(201).json(result.rows[0]);
+
+    const newUser = result.rows[0];
+    
+    res.status(201).json({
+      message: 'Inscription réussie',
+      user: {
+        id: newUser.user_id,
+        name: newUser.name
+      }
+    });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: 'Erreur lors de l\'inscription' });
   }
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { name, password } = req.body;
+
+  // Validation des entrées
+  if (!name || !password) {
+    return res.status(400).json({ error: 'Le nom d\'utilisateur et le mot de passe sont requis' });
+  }
 
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT * FROM users WHERE name = $1', [name]);
 
     const user = result.rows[0];
     if (!user) {
-      return res.status(400).json({ error: 'Utilisateur non trouvé' });
+      return res.status(400).json({ error: 'Nom d\'utilisateur ou mot de passe incorrect' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(400).json({ error: 'Mot de passe incorrect' });
+      return res.status(400).json({ error: 'Nom d\'utilisateur ou mot de passe incorrect' });
     }
 
-    const token = jwt.sign(
-      { userId: user.user_id }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '1h' }
-    );
-    res.json({ user: { id: user.user_id, email: user.email }, token });
+    const token = generateToken(user.user_id);
+    
+    res.json({ 
+      message: 'Connexion réussie',
+      user: { 
+        id: user.user_id, 
+        name: user.name 
+      }, 
+      token 
+    });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Erreur lors de la connexion' });
   }
 };
 

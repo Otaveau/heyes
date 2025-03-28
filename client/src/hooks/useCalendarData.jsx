@@ -48,7 +48,6 @@ export const useCalendarData = () => {
         title: owner.name || 'Membre sans nom',
         parentId: `team_${teamId}`,
         extendedProps: {
-          email: owner.email || '',
           teamId: teamId,
           teamName: teamName
         }

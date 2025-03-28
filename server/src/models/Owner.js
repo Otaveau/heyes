@@ -10,19 +10,19 @@ class Owner {
     }
   
     static async create(data, userId) {
-      const { name, email, teamId } = data;
+      const { name, teamId } = data;
       const result = await pool.query(
-        'INSERT INTO owners (name, email, team_id, user_id) VALUES ($1, $2, $3, $4) RETURNING *',
-        [name, email, teamId, userId]
+        'INSERT INTO owners (name, team_id, user_id) VALUES ($1, $2, $3) RETURNING *',
+        [name, teamId, userId]
       );
       return result.rows[0];
     }
   
     static async update(id, data, userId) {
-      const { name, email, teamId } = data;
+      const { name, teamId } = data;
       const result = await pool.query(
-        'UPDATE owners SET name = $1, email = $2, team_id = $3, updated_at = CURRENT_TIMESTAMP WHERE owner_id = $4 AND user_id = $5 RETURNING *',
-        [name, email, teamId, id, userId]
+        'UPDATE owners SET name = $1, team_id = $2, updated_at = CURRENT_TIMESTAMP WHERE owner_id = $3 AND user_id = $4 RETURNING *',
+        [name, teamId, id, userId]
       );
       return result.rows[0];
     }
