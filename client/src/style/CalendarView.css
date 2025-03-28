@@ -252,10 +252,15 @@ button.fc-today-button:hover {
 /* =========================
  * 6. ÉLÉMENTS TEMPORAIRES
  * ========================= */
-.task-ghost-element {
+ .task-ghost-element {
   font-weight: bold;
   border: 2px solid rgba(74, 108, 247, 0.7);
   transform-origin: center center;
+  background-color: white!important;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  color: #333!important;
 }
 
 .task-added {

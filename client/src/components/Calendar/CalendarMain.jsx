@@ -468,7 +468,7 @@ export const CalendarMain = ({
           let backgroundColor = '';
           
           if (isConge) {
-            const textColor = "#2C3539";
+            const textColor = "#5f666a";
             
             if (arg.view.type.includes('resourceTimeline')) {
               return {
@@ -483,8 +483,8 @@ export const CalendarMain = ({
                               white-space: nowrap;
                               background: repeating-linear-gradient(
                                 45deg,
-                              #9CA3AF,
-                              #9CA3AF 2px,
+                              #c6cbd4,
+                              #c6cbd4 2px,
                               #FFFFFF 2px,
                               #FFFFFF 4px
                               );
