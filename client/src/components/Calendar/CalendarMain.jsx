@@ -501,11 +501,7 @@ export const CalendarMain = ({
           // Si nous avons une ressource et une couleur associée, l'utiliser
           if (resourceId !== null && memberColorMap[resourceId]) {
             backgroundColor = memberColorMap[resourceId];
-            console.log(`Couleur pour ${resourceId}: ${backgroundColor}`);
-          } else {
-            console.log(`Pas de couleur trouvée pour la ressource ${resourceId}`);
           }
-
           // Déterminer la couleur du texte pour un bon contraste
           const textColor = getContrastTextColor(backgroundColor);
 

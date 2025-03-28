@@ -122,8 +122,11 @@ export const useTaskMutationHandlers = (setTasks, setCalendarState, tasks, holid
     const startDate = formData.startDate || formData.start;
     const inclusiveEndDate = formData.endDate || formData.end;
 
+    console.log('formData', formData);
+
+
     // Validation des dates - utiliser la date inclusive pour validation
-    if (!DateUtils.hasValidEventBoundaries(startDate, inclusiveEndDate, holidays)) {
+    if ((startDate && inclusiveEndDate) && !DateUtils.hasValidEventBoundaries(startDate, inclusiveEndDate, holidays)) {
       toast.warning('Les dates de début et de fin doivent être des jours ouvrés', TOAST_CONFIG);
       return;
     }

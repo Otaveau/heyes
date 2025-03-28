@@ -94,27 +94,6 @@ export class DateUtils {
     return this.isWeekend(date) || this.isHoliday(date, holidays);
   }
 
-  //Vérifie si une plage de dates est valide pour un événement
-  static isAllowedDateRange(startDate, endDate, holidays) {
-    const start = this.toDate(startDate);
-    const end = this.toDate(endDate);
-
-    if (!start || !end) return false;
-
-    if (this.isHolidayOrWeekend(start, holidays)) {
-      return false;
-    }
-
-    // Convertir la date de fin exclusive en inclusive pour la vérification
-    const actualEndDate = this.toInclusiveEndDate(end);
-
-    if (this.isHolidayOrWeekend(actualEndDate, holidays)) {
-      return false;
-    }
-
-    return true;
-  }
-
   //Convertit une date de fin INCLUSIVE (API) en EXCLUSIVE (FullCalendar)
   static toExclusiveEndDate(date) {
     const endDate = this.toDate(date);

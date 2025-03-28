@@ -2,10 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
-import { Trash2, Plus, Loader2, Save, X } from 'lucide-react';
+import { Trash2, Plus, Loader2, Save, X, Palette } from 'lucide-react';
 import { fetchOwners, deleteOwner, createOwner, updateOwner } from '../../services/api/ownerService';
 import { fetchTeams } from '../../services/api/teamService';
 import ConfirmationModal from '../common/ConfirmationModal';
+
+// Import des fonctions de couleur centralisées
+import { getTeamColor, getContrastTextColor } from '../../utils/colorUtils';
 
 export const OwnerManagement = () => {
   const [owners, setOwners] = useState([]);
@@ -277,6 +280,13 @@ export const OwnerManagement = () => {
     return team ? team.name : 'N/A';
   };
 
+  // Get team color
+  const getTeamColorById = (teamId) => {
+    if (!teamId) return '#9CA3AF';
+    const formattedTeamId = `team_${teamId}`;
+    return getTeamColor(formattedTeamId);
+  };
+
   return (
     <div className="p-8 min-h-screen w-full md:w-4/5 lg:w-3/4 mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md">
       <h2 className="text-3xl text-center font-bold mb-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">Gestion des membres</h2>
@@ -320,11 +330,17 @@ export const OwnerManagement = () => {
                 disabled={isSubmitting}
               >
                 <option key="default-new" value="">Sélectionner une équipe</option>
-                {teams.map(team => (
-                  <option key={`new-${team.team_id || team.id}`} value={team.team_id || team.id}>
-                    {team.name}
-                  </option>
-                ))}
+                {teams.map(team => {
+                  const teamId = team.team_id || team.id;
+                  return (
+                    <option 
+                      key={`new-${teamId}`} 
+                      value={teamId}
+                    >
+                      {team.name}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -381,33 +397,53 @@ export const OwnerManagement = () => {
               {owners.map(owner => {
                 const ownerId = owner.id || owner.owner_id || owner.ownerId;
                 const selectedId = selectedOwner?.id || selectedOwner?.owner_id || selectedOwner?.ownerId;
-
+                const teamId = owner.teamId || owner.team_id;
+                const teamColor = getTeamColorById(teamId);
+                
                 return (
                   <Card
                     key={ownerId}
-                    className={`p-5 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedOwner && ownerId === selectedId
-                        ? 'bg-blue-50 border-blue-400 shadow-md dark:bg-blue-900/20 dark:border-blue-500'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/70'
-                      }`}
+                    className={`p-0 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden ${
+                      selectedOwner && ownerId === selectedId
+                        ? 'shadow-md'
+                        : ''
+                    }`}
                     onClick={() => handleOwnerSelect(owner)}
                   >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold text-lg">{owner.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{owner.email}</p>
-                        <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                          Équipe: {owner.teamName || getTeamNameById(owner.teamId || owner.team_id)}
+                    <div className="flex">
+                      {/* Bande de couleur de l'équipe */}
+                      <div 
+                        className="w-2"
+                        style={{ backgroundColor: teamColor }}
+                      ></div>
+                      
+                      <div className="flex-1 p-5">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold text-lg">{owner.name}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{owner.email}</p>
+                            <div className="mt-2 flex items-center">
+                              {/* Pastille de couleur de l'équipe */}
+                              <div 
+                                className="w-3 h-3 rounded-full mr-1"
+                                style={{ backgroundColor: teamColor }}
+                              ></div>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                {owner.teamName || getTeamNameById(teamId)}
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => openDeleteModal(owner, e)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
+                            disabled={isLoading}
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => openDeleteModal(owner, e)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full"
-                        disabled={isLoading}
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
                     </div>
                   </Card>
                 );
@@ -420,7 +456,13 @@ export const OwnerManagement = () => {
         {selectedOwner && (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Détails du membre</h3>
-            <Card className="p-6 shadow-md bg-white dark:bg-gray-700">
+            <Card className="p-6 shadow-md bg-white dark:bg-gray-700 overflow-hidden">
+              {/* Bande de couleur en haut de la carte (couleur de l'équipe) */}
+              <div 
+                className="h-2 -mx-6 -mt-6 mb-5"
+                style={{ backgroundColor: getTeamColorById(selectedOwner.teamId || selectedOwner.team_id) }}
+              ></div>
+              
               {editMode ? (
                 <form onSubmit={handleSaveEdit} className="space-y-5">
                   <div>
@@ -466,13 +508,25 @@ export const OwnerManagement = () => {
                       disabled={isSubmitting}
                     >
                       <option key="default-edit" value="">Sélectionner une équipe</option>
-                      {teams.map(team => (
-                        <option key={`edit-${team.team_id || team.id}`} value={team.team_id || team.id}>
-                          {team.name}
-                        </option>
-                      ))}
+                      {teams.map(team => {
+                        const teamId = team.team_id || team.id;
+                        const teamColor = getTeamColorById(teamId);
+                        return (
+                          <option 
+                            key={`edit-${teamId}`} 
+                            value={teamId}
+                            style={{ 
+                              backgroundColor: teamColor,
+                              color: getContrastTextColor(teamColor)
+                            }}
+                          >
+                            {team.name}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
+                  
                   <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                     <Button
                       type="button"
@@ -515,8 +569,29 @@ export const OwnerManagement = () => {
                   </div>
                   <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Équipe</p>
-                    <p className="font-medium text-lg mt-1">{selectedOwner.teamName || getTeamNameById(selectedOwner.teamId || selectedOwner.team_id)}</p>
+                    <div className="flex items-center mt-1">
+                      <div 
+                        className="w-4 h-4 rounded-full mr-2"
+                        style={{ backgroundColor: getTeamColorById(selectedOwner.teamId || selectedOwner.team_id) }}
+                      ></div>
+                      <p className="font-medium text-lg">{selectedOwner.teamName || getTeamNameById(selectedOwner.teamId || selectedOwner.team_id)}</p>
+                    </div>
                   </div>
+                  
+                  <div className="bg-gray-50 dark:bg-gray-600 p-3 rounded-md">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Couleur de l'équipe</p>
+                    <div className="flex items-center mt-2">
+                      <div 
+                        className="w-6 h-6 rounded mr-3"
+                        style={{ backgroundColor: getTeamColorById(selectedOwner.teamId || selectedOwner.team_id) }}
+                      ></div>
+                      <code className="bg-white dark:bg-gray-700 px-2 py-1 rounded text-sm">
+                        {getTeamColorById(selectedOwner.teamId || selectedOwner.team_id)}
+                      </code>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Cette couleur est utilisée pour la représentation visuelle de l'équipe dans le calendrier.</p>
+                  </div>
+                  
                   <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
                     <Button
                       onClick={handleEditMode}

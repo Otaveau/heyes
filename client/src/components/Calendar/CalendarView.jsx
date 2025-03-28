@@ -131,9 +131,11 @@ export const CalendarView = () => {
             resourceId: null,
             owner_id: null,
             statusId: targetStatusId,
+            description: updatedTask.description,
             extendedProps: {
               ...updatedTask.extendedProps,
-              statusId: targetStatusId
+              statusId: targetStatusId,
+              description: updatedTask.description
             }
           };
 
@@ -153,7 +155,8 @@ export const CalendarView = () => {
             statusId: '2',
             extendedProps: {
               ...updatedTask.extendedProps,
-              statusId: '2'
+              statusId: '2',
+              description: updatedTask.description
             }
           };
 
@@ -163,11 +166,13 @@ export const CalendarView = () => {
             updatedTask,
             {
               successMessage: "Tâche mise à jour avec succès",
-              skipApiCall: false // S'assurer que l'appel API est effectué
+              skipApiCall: false
             }
           );
         }
       } else {
+
+        console.log('updatedTask', updatedTask)
 
         // Préparer les dates inclusives et exclusives
         const startDate = updatedTask.startDate || updatedTask.start;
@@ -202,12 +207,14 @@ export const CalendarView = () => {
             exclusiveEndDate: exclusiveEndDate,
             startDate: startDate,
             endDate: inclusiveEndDate,
+            description: updatedTask.description,
             extendedProps: {
               ...(updatedTask.extendedProps || {}),
               inclusiveEndDate: inclusiveEndDate,
               exclusiveEndDate: exclusiveEndDate,
               statusId: updatedTask.statusId,
-              isConge: isConge
+              isConge: isConge,
+              description: updatedTask.description
             }
           };
 
@@ -221,12 +228,14 @@ export const CalendarView = () => {
             start: startDate,
             end: exclusiveEndDate,
             exclusiveEndDate: exclusiveEndDate,
+            description: updatedTask.description,
             extendedProps: {
               ...(updatedTask.extendedProps || {}),
               inclusiveEndDate: inclusiveEndDate,
               exclusiveEndDate: exclusiveEndDate,
               statusId: updatedTask.statusId,
-              isConge: isConge
+              isConge: isConge,
+              description: updatedTask.description,
             }
           };
 

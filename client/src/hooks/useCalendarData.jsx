@@ -77,25 +77,9 @@ export const useCalendarData = () => {
 
       // Gestion précise des dates
       const startDate = task.start_date || null;
-        // ? new Date(
-        //   Date.UTC(
-        //     new Date(task.start_date).getFullYear(),
-        //     new Date(task.start_date).getMonth(),
-        //     new Date(task.start_date).getDate()
-        //   )
-        // )
-        // : new Date();
 
       // Date inclusive (celle stockée en BDD)
       const inclusiveEndDate = task.end_date|| null;
-        // ? new Date(
-        //   Date.UTC(
-        //     new Date(task.end_date).getFullYear(),
-        //     new Date(task.end_date).getMonth(),
-        //     new Date(task.end_date).getDate()
-        //   )
-        // )
-        // : new Date();
 
       // Date exclusive pour FullCalendar (jour suivant la date de fin inclusive)
       const exclusiveEndDate = inclusiveEndDate ? new Date(inclusiveEndDate) : null;
