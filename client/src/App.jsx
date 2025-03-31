@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 // import CalendarView from './components/calendar/CalendarView.jsx';
-// import Login from './components/auth/Login.jsx';
-// import Register from './components/auth/Register.jsx';
+ import Login from './components/auth/Login.jsx';
+import Register from './components/auth/Register.jsx';
 // import OwnerManagement from './components/manage/OwnerManagement.jsx';
 // import TeamManagement from './components/manage/TeamManagement.jsx';
 // import Navigation from './components/common/Navigation.jsx';
@@ -39,8 +39,8 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/" element={<div>Page d'accueil</div>} />
-      {/* <Route path="/login" element={<PublicOnlyWrapper><Login /></PublicOnlyWrapper>} /> */}
-      {/* <Route path="/register" element={<PublicOnlyWrapper><Register /></PublicOnlyWrapper>} /> */}
+      <Route path="/login" element={<PublicOnlyWrapper><Login /></PublicOnlyWrapper>} />
+       <Route path="/register" element={<PublicOnlyWrapper><Register /></PublicOnlyWrapper>} />
       {/* <Route path="/calendar" element={<PrivateWrapper><CalendarView /></PrivateWrapper>} /> */}
       {/* <Route path="/owners" element={<PrivateWrapper><OwnerManagement /></PrivateWrapper>} /> */}
       {/* <Route path="/teams" element={<PrivateWrapper><TeamManagement /></PrivateWrapper>} /> */}
