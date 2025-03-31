@@ -3,13 +3,19 @@
   "builds": [
     {
       "src": "server/src/app.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["server/**/*.js"]
+      }
     },
     {
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build"
+        "distDir": "build",
+        "env": {
+          "REACT_APP_API_URL": "@react_app_api_url"
+        }
       }
     }
   ],
