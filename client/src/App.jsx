@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-//import CalendarView from './components/calendar/CalendarView.jsx';
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import OwnerManagement from './components/manage/OwnerManagement';
-import TeamManagement from './components/manage/TeamManagement';
-import Navigation from './components/common/Navigation';
-import Spinner from './components/common/Spinner';
+import CalendarView from './components/calendar/CalendarView.jsx';
+import Login from './components/auth/Login.jsx';
+import Register from './components/auth/Register.jsx';
+import OwnerManagement from './components/manage/OwnerManagement.jsx';
+import TeamManagement from './components/manage/TeamManagement.jsx';
+import Navigation from './components/common/Navigation.jsx';
+import Spinner from './components/common/Spinner.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -44,7 +44,7 @@ const AppContent = () => {
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<PublicOnlyWrapper><Login /></PublicOnlyWrapper>} />
           <Route path="/register" element={<PublicOnlyWrapper><Register /></PublicOnlyWrapper>} />
-          {/* <Route path="/calendar" element={<PrivateWrapper><CalendarView /></PrivateWrapper>} /> */}
+          <Route path="/calendar" element={<PrivateWrapper><CalendarView /></PrivateWrapper>} />
           <Route path="/owners" element={<PrivateWrapper><OwnerManagement /></PrivateWrapper>} />
           <Route path="/teams" element={<PrivateWrapper><TeamManagement /></PrivateWrapper>} />
           <Route path="*" element={<Navigate to="/" replace />} />
