@@ -44,7 +44,7 @@ const AppContent = () => {
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<PublicOnlyWrapper><Login /></PublicOnlyWrapper>} />
           <Route path="/register" element={<PublicOnlyWrapper><Register /></PublicOnlyWrapper>} />
-          <Route path="/calendar" element={<PrivateWrapper><CalendarView /></PrivateWrapper>} />
+          {/* <Route path="/calendar" element={<PrivateWrapper><CalendarView /></PrivateWrapper>} /> */}
           <Route path="/owners" element={<PrivateWrapper><OwnerManagement /></PrivateWrapper>} />
           <Route path="/teams" element={<PrivateWrapper><TeamManagement /></PrivateWrapper>} />
           <Route path="*" element={<Navigate to="/" replace />} />
