@@ -9,7 +9,7 @@ import ConfirmationModal from '../common/ConfirmationModal';
 // Import des fonctions de couleur centralisées
 import { getTeamColor, getContrastTextColor } from '../../utils/colorUtils';
 
-export const TeamManagement = () => {
+export default function TeamManagement() {
   const [teams, setTeams] = useState([]);
   const [newTeam, setNewTeam] = useState({ name: '' });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);

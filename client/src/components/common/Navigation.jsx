@@ -12,7 +12,7 @@ import {
   Settings
 } from 'lucide-react';
 
-export const Navigation = () => {
+export default function Navigation () {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { state, logout } = useAuth();

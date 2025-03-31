@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card } from '../ui/card';
-import { Trash2, Plus, Loader2, Save, X, Palette } from 'lucide-react';
+import { Trash2, Plus, Loader2, Save, X } from 'lucide-react';
 import { fetchOwners, deleteOwner, createOwner, updateOwner } from '../../services/api/ownerService';
 import { fetchTeams } from '../../services/api/teamService';
 import ConfirmationModal from '../common/ConfirmationModal';
@@ -10,7 +10,7 @@ import ConfirmationModal from '../common/ConfirmationModal';
 // Import des fonctions de couleur centralisées
 import { getTeamColor, getContrastTextColor } from '../../utils/colorUtils';
 
-export const OwnerManagement = () => {
+export default function OwnerManagement() {
   const [owners, setOwners] = useState([]);
   const [newOwner, setNewOwner] = useState({
     name: '',

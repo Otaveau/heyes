@@ -7,7 +7,7 @@ import { TaskBoard } from '../tasks/TaskBoard';
 import { TaskForm } from '../tasks/TaskForm';
 import '../../style/CalendarView.css';
 
-export const CalendarView = () => {
+export default function CalendarView() {
   // État principal du calendrier
   const [calendarState, setCalendarState] = useState({
     showWeekends: true,
