@@ -11,7 +11,12 @@
   ],
   "routes": [
     {
-      "handle": "filesystem"
+      "src": "/static/(.*)",
+      "dest": "client/build/static/$1"
+    },
+    {
+      "src": "/(favicon.ico|logo192.png|logo512.png|manifest.json|robots.txt|asset-manifest.json)",
+      "dest": "client/build/$1"
     },
     {
       "src": "/(.*)",
