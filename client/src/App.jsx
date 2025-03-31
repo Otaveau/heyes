@@ -1,9 +1,74 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import CalendarView from '/client/src/components/calendar/CalendarView.jsx';
+import Login from '/client/src/components/auth/Login.jsx';
+import Register from '/client/src/components/auth/Register.jsx';
+import OwnerManagement from '/client/src/components/owners/OwnerManagement.jsx';
+import TeamManagement from '/client/src/components/teams/TeamManagement.jsx';
+import Navigation from '/client/src/components/common/Navigation.jsx';
+import { AuthProvider, useAuth } from '/client/src/context/AuthContext.jsx';
+import Spinner from '/client/src/components/ui/spinner.jsx';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const PrivateWrapper = ({ children }) => {
+  const { state } = useAuth();
+  return state.loading ? <Spinner /> : (state.isAuthenticated ? children : <Navigate to="/login" replace />);
+};
+
+const PublicOnlyWrapper = ({ children }) => {
+  const { state } = useAuth();
+  return state.loading ? <Spinner /> : (state.isAuthenticated ? <Navigate to="/calendar" replace /> : children);
+};
+
+
+const RootRedirect = () => {
+  const { state } = useAuth();
+  return state.loading ? <Spinner /> : (
+    state.isAuthenticated ? <Navigate to="/calendar" replace /> : <Navigate to="/login" replace />
+  );
+};
+
+const AppContent = () => {
+  const { state } = useAuth();
+
+  if (state.loading) {
+    return <Spinner />;
+  }
+
+  return (
+    <BrowserRouter>
+      {state.isAuthenticated && <Navigation />}
+      <div className="flex justify-center mx-autopx-4 pt-5 transition-colors duration-200 dark:bg-gray-900 min-h-screen">
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/login" element={<PublicOnlyWrapper><Login /></PublicOnlyWrapper>} />
+          <Route path="/register" element={<PublicOnlyWrapper><Register /></PublicOnlyWrapper>} />
+          <Route path="/calendar" element={<PrivateWrapper><CalendarView /></PrivateWrapper>} />
+          <Route path="/owners" element={<PrivateWrapper><OwnerManagement /></PrivateWrapper>} />
+          <Route path="/teams" element={<PrivateWrapper><TeamManagement /></PrivateWrapper>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
+   );
+};
 
 const App = () => (
-  <div>
-    <h1>Application Déployée avec Succès!</h1>
-  </div>
+  <AuthProvider>
+    <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      <AppContent />
+  </AuthProvider>
 );
 
 export default App;
