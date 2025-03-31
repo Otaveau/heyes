@@ -5,7 +5,7 @@ import { Card } from '../ui/card';
 import { Trash2, Plus, Loader2, Save, X } from 'lucide-react';
 import { fetchOwners, deleteOwner, createOwner, updateOwner } from '../../services/api/ownerService';
 import { fetchTeams } from '../../services/api/teamService';
-import ConfirmationModal from '../common/ConfirmationModal';
+import ConfirmationModal from '../ui/confirmationModal';
 
 // Import des fonctions de couleur centralisées
 import { getTeamColor, getContrastTextColor } from '../../utils/colorUtils';
