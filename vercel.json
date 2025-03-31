@@ -13,6 +13,7 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build",
+        "includeFiles": ["client/src/**/*"],
         "env": {
           "REACT_APP_API_URL": "@react_app_api_url"
         }
