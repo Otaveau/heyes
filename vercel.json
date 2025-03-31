@@ -3,20 +3,14 @@
   "builds": [
     {
       "src": "server/src/app.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["server/**/*.js"]
-      }
+      "use": "@vercel/node"
     },
     {
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build",
-        "includeFiles": ["client/src/**/*"],
-        "env": {
-          "REACT_APP_API_URL": "@react_app_api_url"
-        }
+        "buildCommand": "CI=false npm run build"
       }
     }
   ],
@@ -24,6 +18,9 @@
     {
       "src": "/api/(.*)",
       "dest": "server/src/app.js"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
