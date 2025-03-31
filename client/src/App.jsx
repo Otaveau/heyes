@@ -1,13 +1,13 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import CalendarView from './components/calendar/CalendarView.jsx';
- import Login from './components/auth/Login.jsx';
-import Register from './components/auth/Register.jsx';
-import OwnerManagement from './components/manage/OwnerManagement.jsx';
-import TeamManagement from './components/manage/TeamManagement.jsx';
-import Navigation from './components/common/Navigation.jsx';
-import Spinner from './components/common/Spinner.jsx';
-import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import CalendarView from '/components/Calendar/CalendarView.jsx';
+import Login from '/components/Auth/Login.jsx';
+import Register from '/components/Auth/Register.jsx';
+import OwnerManagement from '/components/Manage/OwnerManagement.jsx';
+import TeamManagement from '/components/Manage/TeamManagement.jsx';
+import Navigation from '/components/Common/Navigation.jsx';
+import { AuthProvider, useAuth } from '/context/AuthContext.jsx';
+import Spinner from '/components/Common/Spinner.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
