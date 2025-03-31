@@ -7,7 +7,7 @@ import { fetchTeams, deleteTeam, createTeam, updateTeam } from '../../services/a
 import ConfirmationModal from '../ui/confirmationModal';
 
 // Import des fonctions de couleur centralisées
-import { getTeamColor, getContrastTextColor } from '../../utils/colorUtils';
+import { getTeamColor } from '../../utils/colorUtils';
 
 export default function TeamManagement() {
   const [teams, setTeams] = useState([]);
@@ -245,9 +245,6 @@ export default function TeamManagement() {
                 
                 // Récupérer la couleur de l'équipe en utilisant notre fonction centralisée
                 const teamColor = getTeamColor(formattedId);
-                
-                // Déterminer la couleur du texte pour un bon contraste
-                const textColor = getContrastTextColor(teamColor);
                 
                 return (
                   <Card
