@@ -7,7 +7,7 @@ import OwnerManagement from './components/manage/OwnerManagement';
 import TeamManagement from './components/manage/TeamManagement';
 import Navigation from './components/common/Navigation';
 import Spinner from './components/common/Spinner';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
