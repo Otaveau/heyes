@@ -1,18 +1,20 @@
 const express = require('express');
 const cors = require('cors');
-const apiRoutes = require('./routes/api');
 const helmet = require('helmet');
-
+const apiRoutes = require('./routes/api');
 const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000"
+  origin: process.env.CLIENT_URL || '*', // URL de votre frontend
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
+
 app.use(helmet());
 app.use(express.json());
 
-// Ajoutez une route racine
+// Route racine (pour vérifier que l'API fonctionne)
 app.get('/', (req, res) => {
   res.status(200).json({ 
     message: "Heyes API is running", 
@@ -20,8 +22,7 @@ app.get('/', (req, res) => {
   });
 });
 
-const apiRoutes = require('./routes/api');
-
+// Routes API
 app.use('/api', apiRoutes);
 
 // Gestion des erreurs
