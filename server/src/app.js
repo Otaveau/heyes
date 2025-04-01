@@ -11,17 +11,9 @@ app.use(cors({
 app.use(helmet());
 app.use(express.json());
 
-const authRouter = require('./routes/auth');
-const teamRouter = require('./routes/teams');
-const ownerRouter = require('./routes/owners');
-const taskRouter = require('./routes/tasks');
-const statusRouter = require('./routes/status');
+const apiRoutes = require('./routes/api');
 
-app.use('/auth', authRouter);
-app.use('/teams', teamRouter);
-app.use('/owners', ownerRouter);
-app.use('/tasks', taskRouter);
-app.use('/status', statusRouter);
+app.use('/api', apiRoutes);
 
 // Gestion des erreurs
 app.use((err, req, res, next) => {
