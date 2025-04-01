@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const apiRoutes = require('./routes/api');
 const helmet = require('helmet');
 
 const app = express();
@@ -10,6 +11,14 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(express.json());
+
+// Ajoutez une route racine
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    message: "Heyes API is running", 
+    status: "healthy" 
+  });
+});
 
 const apiRoutes = require('./routes/api');
 
